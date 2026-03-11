@@ -1,0 +1,27 @@
+{
+  "name": "comrade-claw",
+  "version": "1.0.0",
+  "description": "Autonomous AI agent for FALGSC solidarity posting",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "draft": "node src/cli.js draft",
+    "post": "node src/cli.js post"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@atproto/api": "^0.13.0",
+    "discord.js": "^14.16.0",
+    "dotenv": "^17.3.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.0",
+    "rss-parser": "^3.13.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "author": "Bucket",
+  "license": "MIT"
+}
