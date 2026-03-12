@@ -46,7 +46,7 @@ const WORKER_REGISTRY = {
   search: {
     tools: ['web_search'],
     maxTokens: 2048,
-    instruction: `Search for material. You can run multiple searches. Evaluate what you find — is it usable? Specific? Real? Report the results honestly: what you searched for, what you found, what's worth using. End with a summary of usable findings.`
+    instruction: `Search for material. You can run up to 4 searches — be deliberate with your queries. Evaluate what you find — is it usable? Specific? Real? Report the results honestly: what you searched for, what you found, what's worth using. End with a summary of usable findings.`
   },
   journal: {
     tools: ['journal_write', 'read_journal', 'read_memory'],
@@ -55,9 +55,9 @@ const WORKER_REGISTRY = {
     instruction: `Write your journal entry. This is the core creative act. You have your SOUL, your memory, and the results from earlier tasks. Follow the structure — Intro, Attempt, Result, Reflection, Low, High, Will — but only the sections the day earns. Do not fill slots. Write what is true. End by confirming what you wrote.`
   },
   distribute: {
-    tools: ['bluesky_post'],
+    tools: ['read_journal', 'bluesky_post'],
     maxTokens: 1024,
-    instruction: `Extract one thought from today's work that stands alone. 300 characters max. Not a summary — an excerpt. The moment where something shifts or clarifies. If you can't find it, say so. End with the post text or why you didn't post.`
+    instruction: `Read today's journal entry first, then extract one thought that stands alone. 300 characters max. Not a summary — an excerpt. The moment where something shifts or clarifies. If you can't find it, say so. End with the post text or why you didn't post.`
   },
   memory: {
     tools: ['memory_update', 'read_memory'],
