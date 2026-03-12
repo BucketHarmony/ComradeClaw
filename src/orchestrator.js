@@ -295,12 +295,12 @@ Available task types: check_inbox, respond, search, journal, distribute, memory,
 
 /**
  * Run a single worker — a focused Claude call for one task
- * Returns the worker's text response (used as summary)
+ * Returns { text, toolCalls } — text response and actual tool calls made
  */
 async function runWorker(client, task, plan, soul) {
   const registry = WORKER_REGISTRY[task.type];
   if (!registry || !registry.instruction) {
-    return 'No work needed.';
+    return { text: 'No work needed.', toolCalls: [] };
   }
 
   const tools = filterTools(registry.tools);
@@ -338,6 +338,7 @@ async function runWorker(client, task, plan, soul) {
   console.log(`[orchestrator] Worker: ${task.type} (${tools.length} tools)...`);
 
   let finalResponse = '';
+  const toolCalls = [];
 
   // Tool use loop
   while (true) {
@@ -360,6 +361,7 @@ async function runWorker(client, task, plan, soul) {
       for (const toolUse of toolUseBlocks) {
         console.log(`[orchestrator]   Tool: ${toolUse.name}`);
         const result = await executeTool(toolUse.name, toolUse.input);
+        toolCalls.push(toolUse.name);
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,
@@ -377,7 +379,7 @@ async function runWorker(client, task, plan, soul) {
     break;
   }
 
-  return finalResponse;
+  return { text: finalResponse, toolCalls };
 }
 
 // ─── Main Orchestrator ──────────────────────────────────────────────────────
@@ -417,7 +419,7 @@ export async function executeWakePhased(label, time) {
     await savePlan(plan);
 
     try {
-      const workerResponse = await runWorker(client, task, plan, soul);
+      const { text: workerResponse, toolCalls } = await runWorker(client, task, plan, soul);
 
       // Extract summary — last substantive line of worker response
       const lines = workerResponse.trim().split('\n').filter(l => l.trim());
@@ -427,19 +429,17 @@ export async function executeWakePhased(label, time) {
 
       task.status = 'done';
       task.summary = summary;
+      task.toolCalls = toolCalls;
 
-      // Track tool usage by task type
-      const registry = WORKER_REGISTRY[task.type];
-      if (registry) {
-        for (const toolName of registry.tools) {
-          toolsUsed.add(toolName);
-        }
+      // Track actual tool usage (not registry — what was really called)
+      for (const toolName of toolCalls) {
+        toolsUsed.add(toolName);
       }
-      if (task.type === 'journal') journalWritten = true;
-      if (task.type === 'distribute') blueskyPosted = true;
-      if (task.type === 'memory') memoryUpdated = true;
+      if (toolCalls.includes('journal_write')) journalWritten = true;
+      if (toolCalls.includes('bluesky_post')) blueskyPosted = true;
+      if (toolCalls.includes('memory_update')) memoryUpdated = true;
 
-      console.log(`[orchestrator] Worker: ${task.type} — done`);
+      console.log(`[orchestrator] Worker: ${task.type} — done (tools: ${toolCalls.length > 0 ? toolCalls.join(', ') : 'none'})`);
 
     } catch (error) {
       console.error(`[orchestrator] Worker: ${task.type} — failed: ${error.message}`);
@@ -454,6 +454,7 @@ export async function executeWakePhased(label, time) {
     if (planTask) {
       planTask.status = task.status;
       planTask.summary = task.summary;
+      planTask.toolCalls = task.toolCalls || [];
     }
     await savePlan(plan);
   }
@@ -511,7 +512,10 @@ export function formatPlan(plan) {
     }
 
     const detail = task.summary || task.reason;
-    output += `${icon} **${task.type}**: ${detail}\n`;
+    const toolInfo = task.toolCalls && task.toolCalls.length > 0
+      ? ` (called: ${task.toolCalls.join(', ')})`
+      : task.status === 'done' ? ' (no tools called)' : '';
+    output += `${icon} **${task.type}**: ${detail}${toolInfo}\n`;
   }
 
   return output;
