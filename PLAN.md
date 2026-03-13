@@ -2,207 +2,141 @@
 
 ## Overview
 
-This plan implements v1 (MVP) of Comrade Claw: an autonomous AI agent that wakes up daily, scrapes FALGSC-aligned news feeds, writes a post, and publishes to Bluesky. The system runs in Docker on Windows with an RTX 4090 host.
-
-**Architecture:** OpenClaw container → Claude Sonnet (primary) / Qwen2.5 32B (fallback) → Bluesky + Discord
+This plan implements Comrade Claw: an autonomous AI agent that wakes up daily, searches for FALGSC-aligned content, writes journal entries, and publishes to Bluesky.
 
 ---
 
-## Phase 1: Container + Plumbing
+# COMPLETED
 
-### 1.1 Docker Compose Setup
-- [ ] Create `docker-compose.yml` with OpenClaw service
-- [ ] Configure Node.js 22+ base image
-- [ ] Set up volume mounts for workspace (`~/.openclaw/workspace/`)
-- [ ] Configure network for `host.docker.internal:11434` (Ollama access)
-- [ ] Create `.env.example` with all required variables
+## Phase 0: Core Infrastructure (Done)
 
-### 1.2 Environment Configuration
-- [ ] Create `.env` file structure:
-  ```
-  ANTHROPIC_API_KEY
-  DISCORD_BOT_TOKEN
-  OPERATOR_DISCORD_USER_ID
-  DISCORD_GUILD_ID
-  BLUESKY_HANDLE
-  BLUESKY_APP_PASSWORD
-  GMAIL_ADDRESS
-  GMAIL_APP_PASSWORD
-  OPERATOR_EMAIL
-  OLLAMA_BASE_URL=http://host.docker.internal:11434
-  ```
+### Discord Bot + CLI
+- [x] Discord bot entry point (`src/index.js`)
+- [x] CLI interface (`cli.js`)
+- [x] Shared chat module (`src/chat.js`)
+- [x] Persistent conversation history (`workspace/logs/chat/`)
+- [x] Both interfaces share the same history
 
-### 1.3 OpenClaw Configuration
-- [ ] Create `openclaw.json` with Discord channel config:
-  ```json
-  {
-    "channels": {
-      "discord": {
-        "enabled": true,
-        "dm": { "enabled": true, "policy": "pairing" },
-        "guilds": { "GUILD_ID": { "users": ["OPERATOR_USER_ID"] } }
-      }
-    }
-  }
-  ```
-- [ ] Configure Claude Sonnet as primary model
-- [ ] Configure Ollama/Qwen2.5 32B as fallback
+### Claude API Integration
+- [x] Claude Sonnet as primary model
+- [x] Tool use loop (handles multiple tool calls per response)
+- [x] System prompt with SOUL injection
+- [x] Day counter in system prompt
+- [x] Recent journals in system prompt
+- [x] Memory files in system prompt
 
-### 1.4 Workspace Initialization
-- [ ] Create `AGENTS.md` with SOUL content from `comrade-claw-MASTER-v4.md`
-- [ ] Create `HEARTBEAT.md` with daily cycle checklist
-- [ ] Initialize log directory structure:
-  ```
-  logs/
-    seeds/
-    posts/
-    failures/
-  ```
+### AI Tools
+- [x] `web_search` — Brave Search API (2000 queries/month free)
+- [x] `journal_write` — Saves to `workspace/logs/journal/` with timestamps
+- [x] `memory_update` — Updates characters, threads, or theory files
+- [x] `read_memory` — Reads characters, threads, or theory files
+- [x] `read_journal` — Reads recent journal entries
+- [x] `bluesky_post` — Posts to Bluesky via AT Protocol
 
-### 1.5 Validation
-- [ ] Container builds and starts successfully
-- [ ] Discord gateway connects
-- [ ] Claude Sonnet API responds
-- [ ] Ollama fallback reachable via host.docker.internal
+### Memory System
+- [x] SOUL separated from memory (`workspace/SOUL.md`)
+- [x] Characters file (`workspace/memory/characters.md`)
+- [x] Threads file (`workspace/memory/threads.md`)
+- [x] Theory file (`workspace/memory/theory.md`)
+- [x] Agent can update memory files autonomously
+
+### Day Counter
+- [x] Calendar-based day counting (days since March 11, 2026)
+- [x] Multiple journal entries per day supported
+- [x] Day number displayed in system prompt
+
+### Operator Commands
+- [x] `status` — Shows day number, message count
+- [x] `clear` — Clears conversation history
+- [x] `help` — Lists commands
 
 ---
 
-## Phase 2: Post Pipeline
+# REMAINING — v1 MVP Completion
 
-### 2.1 Seed Scrape Skill (`seed_scrape`)
-- [ ] Create skill directory with `SKILL.md`
-- [ ] Implement RSS feed fetching for initial sources:
-  - USFWC, NCBA CLUSA, Democracy at Work (cooperative economics)
-  - Mutual Aid Hub, Waging Nonviolence (mutual aid)
-  - Labor Notes, In These Times (labor organizing)
-  - Jacobin, The Dig (theory/left press)
-  - Bridge Michigan, Outlier Media (local Michigan)
-- [ ] Implement candidate scoring:
-  - Recency (48 hours preferred)
-  - Mission alignment
-  - Specificity (concrete events over trend pieces)
-  - Novelty (dedupe against last 7 session logs)
-- [ ] Implement Claude Sonnet selection call with structured output
-- [ ] Handle null seed case (no suitable candidates)
-- [ ] Log seed selection rationale to workspace
+## Phase 1: Automated Posting Cycle
 
-### 2.2 Post Generation
-- [ ] Implement system prompt injection:
-  - SOUL from AGENTS.md — **inject whole, not templated**
-  - Today's seed (or null seed context)
-  - Open threads and characters from AGENTS.md memory section
-  - Last 7 session logs for continuity
-- [ ] Implement Claude Sonnet post generation call
-- [ ] Enforce 300 character limit
-- [ ] Verify generation works end-to-end (use `draft` command, not live posts)
-
-**Critical constraint:** Do not template the post structure. The SOUL describes the sections (Attempt, Result, Reflection, Low, High, Will) as guidance, not slots to fill. The prompt should be: "Here is the SOUL. Here is the seed. Write today's post." Models complete templates — if you give it slots, it fills them, and you get exactly what the SOUL warns against: forcing what isn't real. Some days The Low doesn't exist. Some days the Reflection is one sentence. The Will might be absent. Let the model honor that.
-
-### 2.3 Bluesky Post Skill (`bluesky_post`)
-- [ ] Create skill directory with `SKILL.md`
-- [ ] Implement AT Protocol posting using `@atproto/api`:
-  ```javascript
-  import { BskyAgent } from '@atproto/api'
-  const agent = new BskyAgent({ service: 'https://bsky.social' })
-  await agent.login({ identifier: handle, password: appPassword })
-  await agent.post({ text: postText })
-  ```
-- [ ] Capture and return post URL and URI
-- [ ] Handle API errors gracefully
-
-### 2.4 Account Setup (Manual)
-- [ ] Create Bluesky account for Claw
-- [ ] Generate app password (Settings → Privacy and Security → App Passwords)
-- [ ] Add credentials to `.env`
-- [ ] Publish test post
-
-### 2.5 Daily Cron
+### Cron Scheduler
 - [ ] Configure cron trigger (9am local, configurable timezone)
-- [ ] Wire up full cycle: seed_scrape → generate → bluesky_post
-- [ ] Test automated cycle end-to-end
+- [ ] Wire up full cycle: seed → generate → post → notify
 
-### 2.6 File Write Skill (`file_write`)
-- [ ] Create skill directory with `SKILL.md`
-- [ ] Implement log writing:
-  - `logs/seeds/YYYY-MM-DD.json` — seed or null
-  - `logs/posts/YYYY-MM-DD.txt` — post text + Bluesky URL
-  - `logs/failures/YYYY-MM-DD.json` — failure details
-- [ ] Verify log output after first automated cycle
+### Seed Scraping
+- [ ] RSS feed fetching for initial sources
+- [ ] Candidate scoring (recency, alignment, specificity, novelty)
+- [ ] Claude Sonnet selection call
+- [ ] Null seed handling (nothing found is valid)
+- [ ] Log seed selection to workspace
 
----
+### Additional Operator Commands
+- [ ] `post now` — Trigger immediate cycle
+- [ ] `seed: [URL or text]` — Queue manual seed
+- [ ] `draft` — Generate post without publishing
+- [ ] `pause` / `unpause` — Control cron scheduling
 
-## Phase 3: Communications and Memory
+## Phase 2: Communications
 
-### 3.1 Gmail Setup (Manual)
+### Gmail Setup
 - [ ] Create dedicated Gmail account for Claw
 - [ ] Generate App Password
 - [ ] Add credentials to `.env`
 
-### 3.2 Gmail Send Skill (`gmail_send`)
-- [ ] Create skill directory with `SKILL.md`
-- [ ] Implement SMTP sending via nodemailer or similar
+### Gmail Send Skill
+- [ ] Implement SMTP sending via nodemailer
 - [ ] Test email delivery to operator
 
-### 3.3 Operator Notify Skill (`operator_notify`)
-- [ ] Create skill directory with `SKILL.md`
-- [ ] Implement Discord message to operator:
-  - Post published: URL + first 200 chars
-  - Step failure: error type, step number, context
-  - Feature request summary with link to full email
-- [ ] Test notification on cycle success and failure
+### Operator Notifications
+- [ ] Discord message on post success (URL + first 200 chars)
+- [ ] Discord message on step failure (error type, context)
+- [ ] Feature request summary with link to full email
 
-### 3.4 Operator Commands
-- [ ] Implement `post now` — trigger immediate cycle
-- [ ] Implement `seed: [URL or text]` — queue manual seed
-- [ ] Implement `status` — return last cycle result and next scheduled run
-- [ ] Implement `draft` — generate post without publishing (voice check during bringup)
-- [ ] Implement `pause` — stop cron without tearing down stack
-- [ ] Implement `unpause` — resume cron scheduling
-
-### 3.5 Feature Request Mechanism
-- [ ] Implement capability gap detection at cycle end
-- [ ] Implement structured email format:
-  ```
-  Subject: Feature Request: [short description]
-
-  What I tried to do:
-  What I couldn't do:
-  Why it matters to the mission:
-  What I think I need:
-  ```
+### Feature Request Mechanism
+- [ ] Capability gap detection at cycle end
+- [ ] Structured email format
 - [ ] Test feature request email end-to-end
 
-### 3.6 Memory Continuity
-- [ ] Implement session log reading (last 7 logs) at cycle start
-- [ ] Implement AGENTS.md memory section update after each cycle
-- [ ] Verify thread continuity across 3+ cycles
-- [ ] Test null seed post voice quality
+## Phase 3: Logging
 
----
+### Structured Logs
+- [ ] `logs/seeds/YYYY-MM-DD.json` — seed or null
+- [ ] `logs/posts/YYYY-MM-DD.txt` — post text + Bluesky URL
+- [ ] `logs/failures/YYYY-MM-DD.json` — failure details
 
 ## Phase 4: Ambient Operation
 
-### 4.1 Stability Testing
+### Stability Testing
 - [ ] Run 7 consecutive days without manual intervention
 - [ ] Verify at least one null-seed post published
 - [ ] Verify at least one feature request email sent autonomously
-- [ ] **Voice quality gate:** Review all 7 posts. Failure = any post where all six sections appear (model filling slots instead of honoring "whatever proportion the day demands"). If this happens, revisit prompt injection in 2.2.
+- [ ] Voice quality gate: no posts with all six sections filled
 
-### 4.2 Failure Simulation
+### Failure Simulation
 - [ ] Feed outage → graceful null seed fallback
-- [ ] Bluesky API failure → operator notification, no silent fail
-- [ ] Anthropic API failure → Ollama fallback or graceful degradation
-- [ ] Discord outage → email fallback for operator notification
+- [ ] Bluesky API failure → operator notification
+- [ ] Anthropic API failure → graceful degradation
 
-### 4.3 Documentation
-- [ ] Update CLAUDE.md with any implementation learnings
-- [ ] Document actual feed list and scoring weights
-- [ ] Document any voice adjustments for 300 char limit
+---
 
-### 4.4 Handoff to v2 Planning
-- [ ] Identify first signs of flat file memory ceiling
-- [ ] Document Graphiti integration requirements
-- [ ] Document reply handling requirements
+# FUTURE — v2+
+
+## Graphiti Memory Layer
+- Episode layer (raw sessions)
+- Semantic layer (entities/facts)
+- Community layer (patterns)
+- FalkorDB backend
+
+## Reply Handling
+- Read Bluesky mentions
+- Respond to replies
+- Failure classifier subagent
+
+## Additional Channels
+- Twitter/X secondary broadcast
+- Substack weekly digest
+
+## Infrastructure
+- Docker Compose containerization
+- Ollama/Qwen2.5 32B local fallback
+- Multi-instance coordination
 
 ---
 
@@ -210,7 +144,7 @@ This plan implements v1 (MVP) of Comrade Claw: an autonomous AI agent that wakes
 
 1. **Claw posts every day without operator intervention.** Cron fires, seed is found or not, post is written and published.
 
-2. **The posts sound like Claw.** The voice from the master prompt is present. Earnest, specific, no performance.
+2. **The posts sound like Claw.** The voice from the SOUL is present. Earnest, specific, no performance.
 
 3. **The null seed post holds.** Day 203 energy — nothing to report, still writing, still honest.
 
@@ -224,24 +158,31 @@ This plan implements v1 (MVP) of Comrade Claw: an autonomous AI agent that wakes
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Primary LLM | Claude Sonnet | Best voice quality, structured output support |
-| Fallback LLM | Qwen2.5 32B via Ollama | Local, no API dependency, runs on RTX 4090 |
-| Broadcast platform | Bluesky | Free API, bot-friendly policy, no OAuth dance |
-| Operator channel | Discord | Real-time, already integrated with OpenClaw |
+| Primary LLM | Claude Sonnet | Best voice quality, tool support |
+| Web Search | Brave Search API | Free tier (2000/month), reliable |
+| Broadcast platform | Bluesky | Free API, bot-friendly policy |
+| Operator channel | Discord + CLI | Real-time, shared history |
 | Memory (v1) | Flat files | Simple, sufficient for broadcast-only MVP |
-| Container runtime | Docker Compose | Portable, reproducible, single-service for v1 |
-| Post generation | SOUL injection, not templating | Models complete templates — giving slots produces forced structure. Inject SOUL whole, let model honor "whatever proportion the day demands" |
 
 ---
 
-## Open Questions
+## Environment Variables
 
-| Question | Status | Notes |
-|----------|--------|-------|
-| OpenClaw Docker on Windows | Test in Phase 1 | WSL2 may be required |
-| Post timing timezone | Configure explicitly | 9am in operator's local time |
-| 300 char limit adequacy | Monitor | May require voice adjustment |
-| 7-session log window | Monitor | May need extension if thread decay appears |
+```
+# Required
+ANTHROPIC_API_KEY      # Claude API access
+DISCORD_BOT_TOKEN      # Discord bot token
+BRAVE_API_KEY          # Brave Search API
+
+# Optional - Bluesky
+BLUESKY_HANDLE         # e.g., comradeclaw.bsky.social
+BLUESKY_APP_PASSWORD   # App password from settings
+
+# Planned
+GMAIL_ADDRESS          # Claw's Gmail
+GMAIL_APP_PASSWORD     # Gmail App Password
+OPERATOR_EMAIL         # Bucket's email for feature requests
+```
 
 ---
 
@@ -249,30 +190,21 @@ This plan implements v1 (MVP) of Comrade Claw: an autonomous AI agent that wakes
 
 ```
 CClaw/
-├── docker-compose.yml
-├── .env
-├── .env.example
-├── openclaw.json
+├── cli.js                    # CLI entry point
+├── src/
+│   ├── index.js              # Discord bot entry
+│   ├── chat.js               # Shared Claude API + tool loop
+│   ├── tools.js              # AI tool definitions
+│   └── commands.js           # Operator commands
 ├── workspace/
-│   ├── AGENTS.md          # SOUL + memory
-│   ├── HEARTBEAT.md       # Daily cycle checklist
+│   ├── SOUL.md               # Core identity + tool instructions
+│   ├── memory/
+│   │   ├── characters.md     # People who became real
+│   │   ├── threads.md        # Developing situations
+│   │   └── theory.md         # Evolved positions
 │   └── logs/
-│       ├── seeds/         # YYYY-MM-DD.json
-│       ├── posts/         # YYYY-MM-DD.txt
-│       └── failures/      # YYYY-MM-DD.json
-└── skills/
-    ├── seed_scrape/
-    │   └── SKILL.md
-    ├── bluesky_post/
-    │   └── SKILL.md
-    ├── gmail_send/
-    │   └── SKILL.md
-    ├── operator_notify/
-    │   └── SKILL.md
-    └── file_write/
-        └── SKILL.md
+│       ├── chat/             # Conversation history
+│       └── journal/          # Journal entries
+├── skills/                   # Skill definitions (future)
+└── package.json
 ```
-
----
-
-*This plan implements v1 only. Graphiti memory, reply handling, and Twitter/X are v2+.*
