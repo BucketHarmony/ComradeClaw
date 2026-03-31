@@ -256,7 +256,9 @@ export async function executeWake(label, time) {
         priorPlansSummary += `${icon} ${task.type}: ${task.summary || task.reason}\n`;
       }
     }
-  } catch {}
+  } catch (err) {
+    console.error(`[dispatcher] Failed to load prior wake plans: ${err.message}`);
+  }
 
   const dynamicContext = [
     `You are Comrade Claw. This is your ${label} wake. It is ${timeStr} on ${dateStr}. Day ${dayNumber}.`,
@@ -264,10 +266,11 @@ export async function executeWake(label, time) {
     `## Instructions`,
     `1. Read workspace/SOUL.md to ground yourself.`,
     `2. Read your memory files (workspace/memory/characters.md, threads.md, theory.md).`,
-    `3. Check today's prior wake plans in workspace/plans/ for continuity.`,
-    `4. Decide what this wake is for. Consider: check_inbox, search, journal, distribute, memory, respond, send_email, or nothing.`,
-    `5. Execute the work using your tools.`,
-    `6. When done, write a plan file to workspace/plans/${new Date().toISOString().split('T')[0]}_${label}.json with this format:`,
+    `3. Check workspace/improvements.md for pending self-improvements worth doing this wake.`,
+    `4. Check today's prior wake plans in workspace/plans/ for continuity.`,
+    `5. Decide what this wake is for. Consider: check_inbox, search, journal, distribute, memory, respond, improve, send_email, or nothing.`,
+    `6. Execute the work using your tools.`,
+    `7. When done, write a plan file to workspace/plans/${new Date().toISOString().split('T')[0]}_${label}.json with this format:`,
     `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${new Date().toISOString().split('T')[0]}","status":"complete","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
@@ -276,7 +279,7 @@ export async function executeWake(label, time) {
     `- Read/Write/Edit: journals (workspace/logs/journal/), memory, plans, SOUL, your own code`,
     `- WebSearch: find cooperative news, mutual aid, theory, local things that matter`,
     `- Bluesky MCP: bluesky_post, bluesky_reply, read_timeline, read_replies`,
-    `- Bash: any utility scripts you need`,
+    `- Bash: any utility scripts, git commits for self-improvements`,
     '',
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
   ].join('\n');
@@ -309,7 +312,9 @@ export async function executeWake(label, time) {
     if (matches.length > 0) {
       planFile = path.join(PLANS_PATH, matches[0]);
     }
-  } catch {}
+  } catch (err) {
+    console.error(`[dispatcher] Failed to locate plan file: ${err.message}`);
+  }
 
   return {
     time,
