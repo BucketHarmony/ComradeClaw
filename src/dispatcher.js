@@ -291,13 +291,30 @@ export async function executeWake(label, time) {
 
   // Parse wake results
   const toolsUsed = result.toolsUsed || [];
+
+  // Find the plan file written during this wake
+  let planFile = null;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    await fs.mkdir(PLANS_PATH, { recursive: true });
+    const files = await fs.readdir(PLANS_PATH);
+    const matches = files
+      .filter(f => f.startsWith(`${today}_${label}`) && f.endsWith('.json'))
+      .sort()
+      .reverse();
+    if (matches.length > 0) {
+      planFile = path.join(PLANS_PATH, matches[0]);
+    }
+  } catch {}
+
   return {
     time,
     label,
     tools_used: toolsUsed,
-    journal_written: toolsUsed.some(t => t === 'Write' && result.text.includes('journal')),
-    bluesky_posted: toolsUsed.includes('mcp__claw_social__bluesky_post') || toolsUsed.includes('bluesky_post'),
+    journal_written: toolsUsed.some(t => t === 'Write'),
+    bluesky_posted: toolsUsed.some(t => t.includes('bluesky_post')),
     memory_updated: toolsUsed.some(t => t === 'Edit' || t === 'Write'),
+    planFile,
     summary: result.text.length > 200 ? result.text.substring(0, 197) + '...' : result.text,
     empty: toolsUsed.length === 0,
     cost: result.cost
