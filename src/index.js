@@ -6,8 +6,8 @@
  */
 
 import 'dotenv/config';
-// Remove API key so Claude Code CLI uses Max plan subscription auth instead
-delete process.env.ANTHROPIC_API_KEY;
+// Clear API key so Claude Code CLI uses Max plan subscription auth instead
+process.env.ANTHROPIC_API_KEY = '';
 
 import { Client, GatewayIntentBits, Events, Partials } from 'discord.js';
 import { handleOperatorCommand } from './commands.js';
