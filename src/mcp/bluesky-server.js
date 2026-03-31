@@ -67,6 +67,18 @@ async function saveLastSeenTimestamp(timestamp) {
   await fs.writeFile(LAST_SEEN_PATH, JSON.stringify({ lastSeen: timestamp }, null, 2));
 }
 
+// ─── Retry Helper ────────────────────────────────────────────────────────────
+
+async function withRetry(fn, retries = 1, delayMs = 2000) {
+  try {
+    return await fn();
+  } catch (err) {
+    if (retries <= 0) throw err;
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+    return withRetry(fn, retries - 1, delayMs);
+  }
+}
+
 // ─── MCP Server Setup ────────────────────────────────────────────────────────
 
 const server = new McpServer({
@@ -90,7 +102,7 @@ server.tool(
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     try {
-      const result = await agent.post({ text });
+      const result = await withRetry(() => agent.post({ text }));
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, cid: result.cid, text, charCount: text.length }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -130,7 +142,7 @@ server.tool(
         parent: { uri: replyTo.uri, cid: replyTo.cid }
       };
 
-      const result = await agent.post({ text, reply: replyRef });
+      const result = await withRetry(() => agent.post({ text, reply: replyRef }));
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, inReplyTo: uri, text, charCount: text.length }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
