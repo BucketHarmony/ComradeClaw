@@ -102,8 +102,12 @@ export async function invokeClaude(prompt, options = {}) {
         USERPROFILE: process.env.USERPROFILE || 'C:\\Users\\kenne',
       },
       shell: false,
+      stdio: ['pipe', 'pipe', 'pipe'],
       timeout: timeoutMs
     });
+
+    // Close stdin immediately so claude doesn't wait for input
+    proc.stdin.end();
 
     proc.stdout.on('data', (data) => {
       stdout += data.toString();
