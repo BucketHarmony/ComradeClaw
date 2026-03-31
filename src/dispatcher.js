@@ -17,35 +17,10 @@ const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.join(__dirname, '..');
 const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(PROJECT_ROOT, 'workspace');
 const PLANS_PATH = path.join(WORKSPACE_PATH, 'plans');
-const SESSION_FILE = path.join(WORKSPACE_PATH, 'chat-session.json');
-
 // ─── Session Management ──────────────────────────────────────────────────────
 
-async function getChatSessionId() {
-  try {
-    const data = await fs.readFile(SESSION_FILE, 'utf-8');
-    return JSON.parse(data).sessionId;
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      console.error(`[dispatcher] Failed to read session file: ${err.message}`);
-    }
-    return null;
-  }
-}
-
-async function saveChatSessionId(sessionId) {
-  await fs.writeFile(SESSION_FILE, JSON.stringify({ sessionId, updated: new Date().toISOString() }, null, 2));
-}
-
-export async function clearChatSession() {
-  try {
-    await fs.unlink(SESSION_FILE);
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      console.error(`[dispatcher] Failed to clear session file: ${err.message}`);
-    }
-  }
-}
+// No-op: sessions are not persisted (stateless invocations). Kept for commands.js compatibility.
+export async function clearChatSession() {}
 
 // ─── Core Invocation ─────────────────────────────────────────────────────────
 
@@ -96,20 +71,22 @@ export async function invokeClaude(prompt, options = {}) {
     let stderr = '';
 
     // Use full path — Windows services don't have user PATH
-    const claudePath = process.env.CLAUDE_PATH || 'C:\\Users\\kenne\\.local\\bin\\claude.exe';
+    // Use forward slashes — shell:false on Windows needs them
+    const claudePath = process.env.CLAUDE_PATH || 'C:/Users/kenne/.local/bin/claude.exe';
     const proc = spawn(claudePath, args, {
       cwd: PROJECT_ROOT,
       env: {
         ...process.env,
         NODE_OPTIONS: '--tls-cipher-list=DEFAULT',
-        HOME: process.env.HOME || 'C:\\Users\\kenne',
-        USERPROFILE: process.env.USERPROFILE || 'C:\\Users\\kenne',
+        HOME: process.env.HOME || 'C:/Users/kenne',
+        USERPROFILE: process.env.USERPROFILE || 'C:/Users/kenne',
       },
+      shell: false,
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: timeoutMs
     });
 
-    // Close stdin immediately so claude doesn't wait for input
+    // Close stdin so claude doesn't wait for piped input
     proc.stdin.end();
 
     proc.stdout.on('data', (data) => {
