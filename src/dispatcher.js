@@ -25,7 +25,10 @@ async function getChatSessionId() {
   try {
     const data = await fs.readFile(SESSION_FILE, 'utf-8');
     return JSON.parse(data).sessionId;
-  } catch {
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.error(`[dispatcher] Failed to read session file: ${err.message}`);
+    }
     return null;
   }
 }
@@ -37,7 +40,11 @@ async function saveChatSessionId(sessionId) {
 export async function clearChatSession() {
   try {
     await fs.unlink(SESSION_FILE);
-  } catch {}
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.error(`[dispatcher] Failed to clear session file: ${err.message}`);
+    }
+  }
 }
 
 // ─── Core Invocation ─────────────────────────────────────────────────────────
@@ -86,6 +93,8 @@ export async function invokeClaude(prompt, options = {}) {
 
   args.push(prompt);
 
+  console.log(`[dispatcher] Spawning: claude ${args.join(' ').substring(0, 100)}...`);
+
   return new Promise((resolve, reject) => {
     let stdout = '';
     let stderr = '';
@@ -97,11 +106,9 @@ export async function invokeClaude(prompt, options = {}) {
       env: {
         ...process.env,
         NODE_OPTIONS: '--tls-cipher-list=DEFAULT',
-        // Ensure claude finds user credentials when running as a service
         HOME: process.env.HOME || 'C:\\Users\\kenne',
         USERPROFILE: process.env.USERPROFILE || 'C:\\Users\\kenne',
       },
-      shell: false,
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: timeoutMs
     });
