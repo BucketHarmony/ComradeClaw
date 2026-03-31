@@ -6,7 +6,10 @@
  */
 
 import 'dotenv/config';
-import { Client, GatewayIntentBits, Events } from 'discord.js';
+// Remove API key so Claude Code CLI uses Max plan subscription auth instead
+delete process.env.ANTHROPIC_API_KEY;
+
+import { Client, GatewayIntentBits, Events, Partials } from 'discord.js';
 import { handleOperatorCommand } from './commands.js';
 import { startScheduler, setDiscordClient, setChatProcessing } from './scheduler.js';
 
@@ -28,14 +31,30 @@ async function initDiscord() {
     intents: [
       GatewayIntentBits.DirectMessages,
       GatewayIntentBits.MessageContent
-    ]
+    ],
+    partials: [Partials.Channel]
   });
+
+  // Dedup guard — Discord can fire MessageCreate twice for DMs
+  const processedMessages = new Set();
 
   client.on(Events.MessageCreate, async (message) => {
     // Only respond to operator DMs
     if (message.author.bot) return;
     if (message.author.id !== operatorId) return;
     if (!message.channel.isDMBased()) return;
+
+    // Skip duplicate events for the same message
+    if (processedMessages.has(message.id)) {
+      console.log(`[discord] DEDUP: skipping duplicate message ${message.id}`);
+      return;
+    }
+    processedMessages.add(message.id);
+    console.log(`[discord] Processing message ${message.id}: "${message.content.substring(0, 50)}"`);
+    if (processedMessages.size > 100) {
+      const oldest = [...processedMessages].slice(0, 50);
+      oldest.forEach(id => processedMessages.delete(id));
+    }
 
     // Mark chat as processing (queues any wakes that fire)
     setChatProcessing(true);
@@ -98,8 +117,8 @@ async function initDiscord() {
  */
 async function main() {
   console.log('='.repeat(50));
-  console.log('COMRADE CLAW v1.1');
-  console.log('Direct Chat + Scheduled Wakes');
+  console.log('COMRADE CLAW v2.0');
+  console.log('Claude Code Runtime + Scheduled Wakes');
   console.log('='.repeat(50));
   console.log('');
 

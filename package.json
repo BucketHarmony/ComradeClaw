@@ -1,32 +1,35 @@
 {
   "name": "comrade-claw",
-  "version": "1.0.0",
-  "description": "Autonomous AI agent for FALGSC solidarity posting",
+  "version": "2.0.0",
+  "description": "Autonomous AI agent for FALGSC solidarity posting — powered by Claude Code",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "draft": "node src/cli.js draft",
-    "post": "node src/cli.js post",
+    "start": "node --tls-cipher-list=DEFAULT src/index.js",
+    "dev": "node --tls-cipher-list=DEFAULT --watch src/index.js",
+    "cli": "node --tls-cipher-list=DEFAULT cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "service:install": "node service-install.cjs",
     "service:uninstall": "node service-uninstall.cjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.30.0",
-    "@atproto/api": "^0.13.0",
+    "@atproto/api": "^0.19.3",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "discord.js": "^14.16.0",
     "dotenv": "^17.3.1",
-    "duck-duck-scrape": "^2.2.7",
-    "imapflow": "^1.2.13",
     "node-cron": "^3.0.3",
     "node-windows": "^1.0.0-beta.8",
-    "nodemailer": "^6.9.0",
-    "rss-parser": "^3.13.0"
+    "zod": "^3.25.76"
   },
   "engines": {
     "node": ">=22.0.0"
   },
   "author": "Bucket",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.2",
+    "vitest": "^4.1.2"
+  }
 }

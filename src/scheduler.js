@@ -11,7 +11,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getDayNumber } from './tools.js';
-import { executeWakePhased, formatPlan } from './orchestrator.js';
+import { executeWake as dispatchWake } from './dispatcher.js';
+import { formatPlan } from './plan-format.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -155,8 +156,8 @@ export async function executeWake(label, time) {
   console.log(`[scheduler] Starting ${label} wake (${time})`);
 
   try {
-    // Run the phased wake (planner → workers)
-    const wakeData = await executeWakePhased(label, time);
+    // Run wake via Claude Code dispatcher (single session)
+    const wakeData = await dispatchWake(label, time);
 
     // Log the wake
     await writeWakeLog(wakeData);

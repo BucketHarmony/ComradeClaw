@@ -1,20 +1,15 @@
 /**
  * Operator Command Handler
  *
- * Commands:
- * - status: Return current state
- * - clear: Clear conversation history
- * - wake: Trigger a wake immediately
- * - wakes: Show today's wake summary
- * - help: Show available commands
- *
- * Any other message is treated as direct chat with Comrade Claw.
+ * Commands are handled locally (fast, no LLM).
+ * Everything else routes through the dispatcher to Claude Code.
  */
 
-import { chat, clearHistory, getDayNumber } from './chat.js';
+import { chat, clearChatSession } from './dispatcher.js';
+import { getDayNumber } from './tools.js';
 import { triggerWake, getWakeSummary } from './scheduler.js';
 import { getLatestPlanPath, readPlan } from './tools.js';
-import { formatPlan } from './orchestrator.js';
+import { formatPlan } from './plan-format.js';
 
 /**
  * Handle operator message (command or chat)
@@ -32,13 +27,14 @@ export async function handleOperatorCommand(message, context) {
 
   // clear conversation
   if (textLower === 'clear') {
-    return clearHistory();
+    await clearChatSession();
+    return 'Conversation cleared.';
   }
 
   // trigger wake manually
   if (textLower === 'wake' || textLower.startsWith('wake ')) {
     const parts = textLower.split(' ');
-    const label = parts[1] || null; // optional: morning, noon, afternoon, evening, night
+    const label = parts[1] || null;
 
     try {
       const validLabels = ['morning', 'noon', 'afternoon', 'evening', 'night'];
@@ -46,7 +42,6 @@ export async function handleOperatorCommand(message, context) {
         return `Unknown wake: ${label}. Valid: ${validLabels.join(', ')}`;
       }
 
-      // Return immediately with acknowledgment, wake runs async
       triggerWake(label).then(result => {
         console.log(`[commands] Manual wake complete: ${result.summary}`);
       }).catch(err => {
@@ -68,9 +63,7 @@ export async function handleOperatorCommand(message, context) {
   if (textLower === 'plan') {
     try {
       const planPath = await getLatestPlanPath();
-      if (!planPath) {
-        return 'No wake plans yet.';
-      }
+      if (!planPath) return 'No wake plans yet.';
       const plan = await readPlan(planPath);
       return formatPlan(plan);
     } catch (error) {
@@ -82,18 +75,18 @@ export async function handleOperatorCommand(message, context) {
   if (textLower === 'help') {
     return `Commands:
 • \`status\` — Check status and today's wakes
-• \`clear\` — Clear conversation history
+• \`clear\` — Clear conversation session
 • \`wake\` — Trigger a wake now (or \`wake morning\`, \`wake noon\`, etc.)
 • \`wakes\` — Show today's wake summary
 • \`plan\` — Show the latest wake plan
 • \`help\` — Show this message
 
-Any other message is a direct chat with Comrade Claw.
+Any other message is a direct chat with Comrade Claw (via Claude Code).
 
 **Scheduled Wakes:** 9am, noon, 3pm, 6pm, 11pm`;
   }
 
-  // Everything else is chat
+  // Everything else goes through Claude Code
   try {
     const response = await chat(text);
     return response;

@@ -5,7 +5,7 @@ const svc = new Service({
   name: 'Comrade Claw',
   description: 'Autonomous AI agent for FALGSC solidarity posting',
   script: path.join(__dirname, 'src', 'index.js'),
-  nodeOptions: [],
+  nodeOptions: ['--tls-cipher-list=DEFAULT'],
   workingDirectory: __dirname,
   wait: 2,
   grow: 0.5,

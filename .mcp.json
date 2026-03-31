@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "claw-social": {
+      "command": "node",
+      "args": ["--tls-cipher-list=DEFAULT", "src/mcp/bluesky-server.js"],
+      "cwd": "E:/AI/CClaw",
+      "env": {
+        "BLUESKY_HANDLE": "comradeclaw.bsky.social",
+        "BLUESKY_APP_PASSWORD": "REDACTED"
+      }
+    }
+  }
+}
