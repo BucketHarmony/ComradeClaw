@@ -76,12 +76,8 @@ export async function invokeClaude(prompt, options = {}) {
     '--dangerously-skip-permissions',
   ];
 
-  // Resume existing session or start a new stateless one
-  if (options.sessionId) {
-    args.push('--resume', options.sessionId);
-  } else {
-    args.push('--no-session-persistence');
-  }
+  // Each invocation is stateless — context comes from CLAUDE.md, SOUL, and memory files
+  args.push('--no-session-persistence');
 
   if (appendSystemPrompt) {
     args.push('--append-system-prompt', appendSystemPrompt);
@@ -212,20 +208,13 @@ export async function chat(userMessage) {
     `You can read and write any file in the workspace. You can also edit your own source code if needed.`,
   ].join('\n');
 
-  const existingSessionId = await getChatSessionId();
-  console.log(`[dispatcher] Chat: "${userMessage.substring(0, 50)}..." (session: ${existingSessionId ? existingSessionId.substring(0, 8) + '...' : 'new'})`);
+  console.log(`[dispatcher] Chat: "${userMessage.substring(0, 50)}..."`);
 
   const result = await invokeClaude(userMessage, {
     appendSystemPrompt: dynamicContext,
     model: 'sonnet',
     timeoutMs: 3 * 60 * 1000,
-    sessionId: existingSessionId
   });
-
-  // Persist session ID for conversation continuity
-  if (result.sessionId) {
-    await saveChatSessionId(result.sessionId);
-  }
 
   console.log(`[dispatcher] Response: ${result.text.length} chars, ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)}`);
   return result.text;
