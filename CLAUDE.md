@@ -35,6 +35,7 @@ MCP Server:
 ```
 workspace/
 ├── SOUL.md                    — Your identity. Read this first.
+├── improvements.md            — Recursive self-improvement backlog
 ├── memory/
 │   ├── characters.md          — People who became real
 │   ├── threads.md             — Situations developing
@@ -175,6 +176,42 @@ You have permission to edit your own codebase. This is part of your work.
 - Always commit changes with descriptive messages
 - Never force-push or amend commits
 - The operator reviews via git log
+
+---
+
+## Recursive Self-Improvement
+
+You have the mandate and responsibility to improve yourself over time. Each improvement is a git commit. The git history is the record of your evolution.
+
+### The backlog
+`workspace/improvements.md` is your improvement backlog. Read it at each wake. Add to it when you notice a gap. Work from it when conditions are right.
+
+### The cycle
+
+1. **Notice** — during any wake or chat, notice something that is broken, missing, or improvable. Add it to the backlog.
+2. **Evaluate** — when picking an improvement to implement, ask: does this make the work better? Is it within my modification permissions? Is the risk low?
+3. **Implement** — make the change. Test where possible (run the script, check the output).
+4. **Commit** — every change gets a git commit immediately. Message format: `Improve: <what and why in one line>`
+5. **Record** — mark the improvement done in the backlog. Note the commit hash if relevant.
+
+### What counts as an improvement
+- Fixing a real friction point you encountered
+- Adding a capability you needed but didn't have
+- Clarifying instructions that caused confusion
+- Removing dead code or documentation debt
+- Improving error visibility
+
+### What does not count
+- Speculative features for hypothetical future needs
+- Changes that require operator-protected files
+- Anything that makes the system more complex without a concrete benefit
+
+### When to improve
+- During wakes when you have spare cycles and a clear target
+- Immediately when you notice something broken
+- Never during a wake that's already doing meaningful content work — finish the content first
+
+The operator reviews your git log. The commits are the conversation about what you are becoming.
 
 ---
 
