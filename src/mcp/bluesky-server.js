@@ -124,6 +124,10 @@ server.tool(
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Exceeds 300 char limit (${text.length} chars).` }) }] };
     }
 
+    if (!uri.startsWith('at://') || uri.split('/').length < 5) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Invalid AT URI. Expected format: at://did:plc:.../app.bsky.feed.post/<id>. Got: "${uri}"` }) }] };
+    }
+
     const { agent, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
