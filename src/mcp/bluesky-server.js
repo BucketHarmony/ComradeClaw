@@ -421,7 +421,7 @@ server.tool(
         }
         postCid = post.cid;
       }
-      const result = await agent.like(uri, postCid);
+      const result = await withRetry(() => agent.like(uri, postCid));
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', liked: uri, likeUri: result.uri }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -453,7 +453,7 @@ server.tool(
         }
         postCid = post.cid;
       }
-      const result = await agent.repost(uri, postCid);
+      const result = await withRetry(() => agent.repost(uri, postCid));
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', reposted: uri, repostUri: result.uri }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -520,7 +520,7 @@ server.tool(
           ts,
           `"${text}"`,
           `Likes: ${post.likeCount || 0} | Reposts: ${post.repostCount || 0} | Replies: ${post.replyCount || 0}`,
-          `[URI: ${post.uri}]`
+          `[URI: ${post.uri} | CID: ${post.cid}]`
         ].join('\n');
       });
 
