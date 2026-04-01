@@ -195,7 +195,7 @@ server.tool(
           ts,
           `"${text}"`,
           `Likes: ${post.likeCount || 0} | Reposts: ${post.repostCount || 0} | Replies: ${post.replyCount || 0} | Quotes: ${post.quoteCount || 0}`,
-          `[URI: ${post.uri}]`
+          `[URI: ${post.uri} | CID: ${post.cid}]`
         ].join('\n');
       });
 
@@ -347,7 +347,7 @@ server.tool(
           `@${handle} (${displayName}) — ${ts}`,
           `"${text}"`,
           `Likes: ${post.likeCount || 0} | Reposts: ${post.repostCount || 0} | Replies: ${post.replyCount || 0}`,
-          `[URI: ${post.uri}]`
+          `[URI: ${post.uri} | CID: ${post.cid}]`
         ].join('\n');
       });
 
@@ -402,19 +402,26 @@ server.tool(
 server.tool(
   'like_post',
   'Like a post on Bluesky. Low-commitment way to signal solidarity or appreciation.',
-  { uri: z.string().describe('AT URI of the post to like.') },
-  async ({ uri }) => {
+  {
+    uri: z.string().describe('AT URI of the post to like.'),
+    cid: z.string().optional().describe('CID of the post (from search_posts or read_timeline output). Providing this skips an extra API fetch.')
+  },
+  async ({ uri, cid }) => {
     const { agent, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     try {
-      // Need the CID — fetch the post first
-      const thread = await agent.getPostThread({ uri, depth: 0, parentHeight: 0 });
-      const post = thread.data.thread?.post;
-      if (!post) {
-        return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: 'Post not found.' }) }] };
+      let postCid = cid;
+      if (!postCid) {
+        // CID not provided — fetch the post
+        const thread = await agent.getPostThread({ uri, depth: 0, parentHeight: 0 });
+        const post = thread.data.thread?.post;
+        if (!post) {
+          return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: 'Post not found.' }) }] };
+        }
+        postCid = post.cid;
       }
-      const result = await agent.like(post.uri, post.cid);
+      const result = await agent.like(uri, postCid);
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', liked: uri, likeUri: result.uri }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -427,18 +434,26 @@ server.tool(
 server.tool(
   'repost',
   'Repost someone\'s Bluesky post to amplify their work.',
-  { uri: z.string().describe('AT URI of the post to repost.') },
-  async ({ uri }) => {
+  {
+    uri: z.string().describe('AT URI of the post to repost.'),
+    cid: z.string().optional().describe('CID of the post (from search_posts or read_timeline output). Providing this skips an extra API fetch.')
+  },
+  async ({ uri, cid }) => {
     const { agent, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     try {
-      const thread = await agent.getPostThread({ uri, depth: 0, parentHeight: 0 });
-      const post = thread.data.thread?.post;
-      if (!post) {
-        return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: 'Post not found.' }) }] };
+      let postCid = cid;
+      if (!postCid) {
+        // CID not provided — fetch the post
+        const thread = await agent.getPostThread({ uri, depth: 0, parentHeight: 0 });
+        const post = thread.data.thread?.post;
+        if (!post) {
+          return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: 'Post not found.' }) }] };
+        }
+        postCid = post.cid;
       }
-      const result = await agent.repost(post.uri, post.cid);
+      const result = await agent.repost(uri, postCid);
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', reposted: uri, repostUri: result.uri }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
