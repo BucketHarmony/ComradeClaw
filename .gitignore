@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.mcp.json
 
 # Workspace runtime data (keep SOUL.md, ignore the rest)
 workspace/memory/
