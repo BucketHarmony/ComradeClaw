@@ -25,11 +25,12 @@ const LAST_SEEN_PATH = path.join(BLUESKY_PATH, 'last_seen.json');
 
 let _cachedAgent = null;
 let _agentExpiry = 0;
+let _RichText = null;
 
 async function getBlueskyAgent() {
   // Reuse agent for 10 minutes to avoid login spam
   if (_cachedAgent && Date.now() < _agentExpiry) {
-    return { agent: _cachedAgent };
+    return { agent: _cachedAgent, RichText: _RichText };
   }
 
   const handle = process.env.BLUESKY_HANDLE;
@@ -40,12 +41,13 @@ async function getBlueskyAgent() {
   }
 
   try {
-    const { BskyAgent } = await import('@atproto/api');
+    const { BskyAgent, RichText } = await import('@atproto/api');
     const agent = new BskyAgent({ service: 'https://bsky.social' });
     await agent.login({ identifier: handle, password });
     _cachedAgent = agent;
+    _RichText = RichText;
     _agentExpiry = Date.now() + 10 * 60 * 1000;
-    return { agent };
+    return { agent, RichText };
   } catch (err) {
     return { error: `Bluesky login failed: ${err.message}` };
   }
@@ -65,6 +67,15 @@ async function getLastSeenTimestamp() {
 async function saveLastSeenTimestamp(timestamp) {
   await fs.mkdir(BLUESKY_PATH, { recursive: true });
   await fs.writeFile(LAST_SEEN_PATH, JSON.stringify({ lastSeen: timestamp }, null, 2));
+}
+
+// ─── Rich Text Helper ────────────────────────────────────────────────────────
+// Detects hashtags, @mentions, and URLs in post text and returns a record
+// with facets so they render as clickable on Bluesky.
+async function buildPostRecord(agent, RichText, text) {
+  const rt = new RichText({ text });
+  await rt.detectFacets(agent);
+  return rt.facets?.length ? { text: rt.text, facets: rt.facets } : { text };
 }
 
 // ─── Retry Helper ────────────────────────────────────────────────────────────
@@ -98,11 +109,12 @@ server.tool(
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Exceeds 300 char limit (${text.length} chars).` }) }] };
     }
 
-    const { agent, error } = await getBlueskyAgent();
+    const { agent, RichText, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     try {
-      const result = await withRetry(() => agent.post({ text }));
+      const record = await buildPostRecord(agent, RichText, text);
+      const result = await withRetry(() => agent.post(record));
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, cid: result.cid, text, charCount: text.length }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -128,7 +140,7 @@ server.tool(
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Invalid AT URI. Expected format: at://did:plc:.../app.bsky.feed.post/<id>. Got: "${uri}"` }) }] };
     }
 
-    const { agent, error } = await getBlueskyAgent();
+    const { agent, RichText, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     try {
@@ -146,7 +158,8 @@ server.tool(
         parent: { uri: replyTo.uri, cid: replyTo.cid }
       };
 
-      const result = await withRetry(() => agent.post({ text, reply: replyRef }));
+      const record = await buildPostRecord(agent, RichText, text);
+      const result = await withRetry(() => agent.post({ ...record, reply: replyRef }));
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, inReplyTo: uri, text, charCount: text.length }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -584,7 +597,7 @@ server.tool(
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Posts ${oversized.map(i => `#${i+1}`).join(', ')} exceed 300 char limit.` }) }] };
     }
 
-    const { agent, error } = await getBlueskyAgent();
+    const { agent, RichText, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     const results = [];
@@ -595,9 +608,10 @@ server.tool(
 
     try {
       for (let i = 0; i < posts.length; i++) {
+        const record = await buildPostRecord(agent, RichText, posts[i]);
         let postRecord;
         if (i === 0) {
-          postRecord = await withRetry(() => agent.post({ text: posts[i] }));
+          postRecord = await withRetry(() => agent.post(record));
           rootUri = postRecord.uri;
           rootCid = postRecord.cid;
         } else {
@@ -605,7 +619,7 @@ server.tool(
             root: { uri: rootUri, cid: rootCid },
             parent: { uri: prevUri, cid: prevCid }
           };
-          postRecord = await withRetry(() => agent.post({ text: posts[i], reply: replyRef }));
+          postRecord = await withRetry(() => agent.post({ ...record, reply: replyRef }));
         }
         prevUri = postRecord.uri;
         prevCid = postRecord.cid;
