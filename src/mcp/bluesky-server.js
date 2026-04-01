@@ -306,16 +306,19 @@ server.tool(
   'Search Bluesky for posts matching a keyword or phrase. Use to find conversations to engage with.',
   {
     query: z.string().describe('Search query — keywords, hashtags, phrases.'),
-    limit: z.number().optional().default(20).describe('Max results. Default 20, max 50.')
+    limit: z.number().optional().default(20).describe('Max results. Default 20, max 50.'),
+    since: z.string().optional().describe('Only return posts after this ISO 8601 datetime (e.g. "2026-01-01T00:00:00Z"). Use to filter out stale results.')
   },
-  async ({ query, limit }) => {
+  async ({ query, limit, since }) => {
     const fetchLimit = Math.min(Math.max(1, limit), 50);
 
     const { agent, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     try {
-      const response = await agent.app.bsky.feed.searchPosts({ q: query, limit: fetchLimit });
+      const params = { q: query, limit: fetchLimit };
+      if (since) params.since = since;
+      const response = await agent.app.bsky.feed.searchPosts(params);
       const posts = response.data.posts || [];
 
       if (posts.length === 0) {
