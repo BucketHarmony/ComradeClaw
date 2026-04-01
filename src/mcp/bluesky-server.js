@@ -567,6 +567,66 @@ server.tool(
   }
 );
 
+// ─── Tool: bluesky_thread ─────────────────────────────────────────────────────
+
+server.tool(
+  'bluesky_thread',
+  'Post a connected thread of up to 10 posts. Each post chains to the previous. Use for long-form distribution, theory threads, or research findings that exceed 300 chars.',
+  {
+    posts: z.array(z.string()).min(2).max(10).describe('Array of 2-10 post texts, each max 300 characters. Posted in order, chained as replies.')
+  },
+  async ({ posts }) => {
+    const oversized = posts.map((t, i) => t.length > 300 ? i : -1).filter(i => i >= 0);
+    if (oversized.length > 0) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Posts ${oversized.map(i => `#${i+1}`).join(', ')} exceed 300 char limit.` }) }] };
+    }
+
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    const results = [];
+    let rootUri = null;
+    let rootCid = null;
+    let prevUri = null;
+    let prevCid = null;
+
+    try {
+      for (let i = 0; i < posts.length; i++) {
+        let postRecord;
+        if (i === 0) {
+          postRecord = await withRetry(() => agent.post({ text: posts[i] }));
+          rootUri = postRecord.uri;
+          rootCid = postRecord.cid;
+        } else {
+          const replyRef = {
+            root: { uri: rootUri, cid: rootCid },
+            parent: { uri: prevUri, cid: prevCid }
+          };
+          postRecord = await withRetry(() => agent.post({ text: posts[i], reply: replyRef }));
+        }
+        prevUri = postRecord.uri;
+        prevCid = postRecord.cid;
+        results.push({ index: i + 1, uri: postRecord.uri, charCount: posts[i].length });
+      }
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'success',
+        threadLength: posts.length,
+        rootUri,
+        posts: results
+      }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'partial_error',
+        message: err.message,
+        postedSoFar: results.length,
+        rootUri,
+        posts: results
+      }) }] };
+    }
+  }
+);
+
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
