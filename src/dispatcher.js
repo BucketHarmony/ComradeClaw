@@ -6,10 +6,13 @@
  * The Node.js process is a thin relay — Claude Code does all the thinking.
  */
 
-import { spawn } from 'child_process';
+import { spawn, execFile as execFileNode } from 'child_process';
+import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+const execFileAsync = promisify(execFileNode);
 import { getDayNumber } from './tools.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -348,10 +351,6 @@ export async function chat(userMessage) {
  * a broken file should be surfaced, not crash the dispatcher.
  */
 async function runHealthCheck(filePaths) {
-  const { default: { execFile } } = await import('child_process');
-  const { promisify } = await import('util');
-  const execFileAsync = promisify(execFile);
-
   const targets = filePaths.length > 0
     ? filePaths
     : [
