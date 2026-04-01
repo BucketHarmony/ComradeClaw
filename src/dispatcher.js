@@ -357,6 +357,23 @@ export async function executeWake(label, time, purpose = null) {
     timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true
   });
 
+  // Load pending improvements inline so wakes don't need a separate Read call
+  let pendingImprovements = '';
+  try {
+    const improvementsPath = path.join(WORKSPACE_PATH, 'improvements.md');
+    const content = await fs.readFile(improvementsPath, 'utf-8');
+    // Extract only the ## Pending section
+    const match = content.match(/## Pending\n([\s\S]*?)(?=\n## |$)/);
+    if (match) {
+      const lines = match[1].split('\n').filter(l => l.includes('[pending]'));
+      if (lines.length > 0) {
+        pendingImprovements = `## Pending Improvements\n${lines.join('\n')}`;
+      }
+    }
+  } catch {
+    // improvements.md missing — not fatal
+  }
+
   // Get prior plans for today
   let priorPlansSummary = '';
   try {
@@ -402,7 +419,7 @@ export async function executeWake(label, time, purpose = null) {
     `## Instructions`,
     `1. Read workspace/SOUL.md to ground yourself.`,
     `2. Read your memory files (workspace/memory/characters.md, threads.md, theory.md).`,
-    `3. Read workspace/improvements.md. Pick one pending item and implement it. If the pending list is empty, read one of your source files (start with src/dispatcher.js or src/mcp/bluesky-server.js), find something concrete to improve, add it to the backlog, then implement it immediately. An empty backlog is not permission to skip — it is a prompt to look harder.`,
+    `3. Your pending improvements are listed below. Pick one and implement it. If the list is empty, read src/dispatcher.js or src/mcp/bluesky-server.js, find something real to improve, add it to workspace/improvements.md, then implement it. An empty backlog is not permission to skip.`,
     `4. Check today's prior wake plans in workspace/plans/ for continuity.`,
     isNightWake
       ? `5. **Tonight is study session night — see Study Session instructions below. Bluesky engagement is secondary to the theory work.**`
@@ -416,6 +433,8 @@ export async function executeWake(label, time, purpose = null) {
     `8. When done, write a plan file to workspace/plans/${new Date().toISOString().split('T')[0]}_${label}.json with this format:`,
     `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${new Date().toISOString().split('T')[0]}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
     studySessionInstructions,
+    '',
+    pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
     '',
