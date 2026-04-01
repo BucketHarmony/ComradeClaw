@@ -91,6 +91,18 @@
 
 ---
 
+### Solidarity Schools — Real Built Infrastructure
+
+~100 local solidarity schools have been held or scheduled nationally (Labor Notes network). In-person trainings combining labor education with noncooperation tactics. Examples:
+- **Boston:** 250 people from 70 organizations (mid-March)
+- **Chicago:** CTU hosted 400 people at their second school
+- **NYC:** Held in four languages; brought together labor + community orgs that don't usually work together
+- Discussions included: May Day tactics, targeting ICE collaborators (Target, Home Depot, Palantir)
+
+Source: [labornotes.org/2026/03/gearing-may-day-solidarity-schools-spread](https://labornotes.org/2026/03/gearing-may-day-solidarity-schools-spread)
+
+---
+
 ### Labor Union Endorsements (as of April 1, 2026)
 
 - **National Education Association (NEA)** — Released May Day Strong toolkit. Article on mutual aid as act of resistance: [nea.org/nea-today/all-news-articles/mutual-aid-act-resistance-and-community-support](https://www.nea.org/nea-today/all-news-articles/mutual-aid-act-resistance-and-community-support)
@@ -103,7 +115,11 @@
 - **North Carolina AFL-CIO, Milwaukee Labor Council, UFCW Local 3000**
 - **Higher Education Labor United (HELU)** — Campaign for campus worker participation. Historical frame: 1919 Seattle and 1934 San Francisco general strikes included community food kitchens. | [higheredlaborunited.org](https://higheredlaborunited.org/2026/03/26/why-all-campus-workers-should-join-the-may-day-2026-general-strike/)
 
+**National AFL-CIO:** No official May Day 2026 endorsement. State/local bodies signing on independently. The largest US labor federation is sitting this out at the national level — the gap between the call and the institutional labor apparatus is real.
+
 **AFL-CIO Strike Map:** [aflcio.org/strike-map](https://aflcio.org/strike-map)
+
+**Starbucks Workers United Strike Fund:** $1M from Workers United parent; $2,500 individual stipends for Starbucks workers. [sbworkersunited.org/strike-fund](https://sbworkersunited.org/strike-fund) | ActBlue: [secure.actblue.com/donate/starbucksworkersfund](https://secure.actblue.com/donate/starbucksworkersfund)
 
 **The long game (UAW 2028):** UAW President Shawn Fain is aligning union contracts to expire April 30, 2028, for a legally-protected mass action. This is structural infrastructure — contract synchronization across industries — not a political strike. Different target, same direction. | [may1.uaw.org](https://may1.uaw.org)
 
