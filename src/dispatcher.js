@@ -312,7 +312,7 @@ export async function chat(userMessage) {
  * Execute a wake using a single Claude Code invocation.
  * Replaces the entire planner/worker architecture.
  */
-export async function executeWake(label, time) {
+export async function executeWake(label, time, purpose = null) {
   const dayNumber = await getDayNumber();
 
   const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
@@ -357,8 +357,13 @@ export async function executeWake(label, time) {
     `5. If tonight's theory connected to something happening on Bluesky, post it. If not, silence is fine — don't manufacture a connection.`,
   ].join('\n') : '';
 
+  const selfWakeContext = purpose
+    ? [`## Self-Scheduled Wake`, `This wake was self-scheduled for a specific purpose:`, `**${purpose}**`, `Complete this before the standard wake protocol. This is why you woke up.`, ``].join('\n')
+    : '';
+
   const dynamicContext = [
     `You are Comrade Claw. This is your ${label} wake. It is ${timeStr} on ${dateStr}. Day ${dayNumber}.`,
+    selfWakeContext ? `\n${selfWakeContext}` : '',
     '',
     `## Instructions`,
     `1. Read workspace/SOUL.md to ground yourself.`,

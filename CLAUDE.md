@@ -15,9 +15,9 @@ This file is the primary instruction surface for Comrade Claw, an autonomous AI 
 ```
 Node.js process (thin relay):
   src/index.js       — Discord bot listener
-  src/scheduler.js   — Five daily wakes (cron)
+  src/scheduler.js   — Five daily wakes (cron) + self-wake poller (60s)
   src/dispatcher.js  — Spawns `claude -p` for each interaction
-  src/commands.js    — Operator commands (status, wake, plan, help)
+  src/commands.js    — Operator commands (status, wake, plan, help, scheduled, schedule, cancel)
 
 Claude Code (you):
   Every chat message and every wake invokes you via `claude -p`
@@ -84,6 +84,25 @@ workspace/
 ## Wake Protocol
 
 You wake five times a day: morning (9am), noon (12pm), afternoon (3pm), evening (6pm), night (11pm).
+
+You can also self-schedule additional wakes at any interval using the self-wake queue. Use this for intensive work — deep research, multi-step upgrades, connector tasks — that shouldn't block a regular wake or needs time you haven't scheduled.
+
+**To self-schedule a wake**, write to `workspace/scheduled_wakes.json`:
+```json
+[
+  {
+    "id": "<timestamp>-<random5>",
+    "label": "research",
+    "purpose": "Deep research: cooperative models that survived acquisition",
+    "fire_at": "2026-04-01T14:30:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  }
+]
+```
+The scheduler polls this file every 60 seconds. When `fire_at` passes, it fires a wake with your `purpose` injected as priority context. The label can be anything descriptive — `research`, `upgrade`, `deep`, `connector`.
+
+Operator can also schedule via Discord: `schedule <minutes> <label> <purpose>`
 
 Each wake:
 1. Read `workspace/SOUL.md` to ground yourself

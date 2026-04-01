@@ -18,6 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', 'workspace');
+const SELF_WAKE_FILE = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
 const WAKE_LOG_DIR = path.join(WORKSPACE_PATH, 'logs', 'wakes');
 
 // Wake schedule
@@ -142,10 +143,124 @@ async function notifyOperator(message) {
   }
 }
 
+// ─── Self-Wake Queue ──────────────────────────────────────────────────────────
+
+/**
+ * Read the self-wake queue file. Returns [] if missing or corrupt.
+ */
+async function readSelfWakeQueue() {
+  try {
+    const content = await fs.readFile(SELF_WAKE_FILE, 'utf-8');
+    return JSON.parse(content);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Write the self-wake queue file.
+ */
+async function writeSelfWakeQueue(queue) {
+  await fs.mkdir(WORKSPACE_PATH, { recursive: true });
+  await fs.writeFile(SELF_WAKE_FILE, JSON.stringify(queue, null, 2));
+}
+
+/**
+ * Schedule a self-wake. Called by Claude (via Bash) or operator commands.
+ * @param {string} label - Wake label (e.g. 'research', 'upgrade', 'deep')
+ * @param {number} delayMinutes - Minutes from now to fire
+ * @param {string} purpose - Why this wake was scheduled
+ * @returns {object} The scheduled wake entry
+ */
+export async function scheduleSelfWake(label, delayMinutes, purpose) {
+  const queue = await readSelfWakeQueue();
+  const fireAt = new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+  const entry = {
+    id,
+    label,
+    purpose,
+    fire_at: fireAt,
+    scheduled_by: 'self',
+    status: 'pending'
+  };
+
+  queue.push(entry);
+  await writeSelfWakeQueue(queue);
+
+  console.log(`[scheduler] Self-wake scheduled: "${label}" in ${delayMinutes}m (${fireAt}) — ${purpose}`);
+  return entry;
+}
+
+/**
+ * List pending self-wakes.
+ */
+export async function listSelfWakes() {
+  const queue = await readSelfWakeQueue();
+  return queue.filter(w => w.status === 'pending');
+}
+
+/**
+ * Cancel a pending self-wake by id.
+ */
+export async function cancelSelfWake(id) {
+  const queue = await readSelfWakeQueue();
+  const idx = queue.findIndex(w => w.id === id && w.status === 'pending');
+  if (idx === -1) return false;
+  queue[idx].status = 'cancelled';
+  await writeSelfWakeQueue(queue);
+  return true;
+}
+
+/**
+ * Poll the self-wake queue and fire any due wakes.
+ * Marks them 'fired' before executing so a crash doesn't cause re-fire.
+ */
+async function pollSelfWakes() {
+  const queue = await readSelfWakeQueue();
+  const now = Date.now();
+  let changed = false;
+
+  for (const entry of queue) {
+    if (entry.status !== 'pending') continue;
+    if (new Date(entry.fire_at).getTime() > now) continue;
+
+    // Mark fired before executing
+    entry.status = 'fired';
+    changed = true;
+    console.log(`[scheduler] Self-wake firing: "${entry.label}" — ${entry.purpose}`);
+
+    // Fire async (don't block the poller)
+    const timeStr = new Date().toLocaleTimeString('en-US', {
+      timeZone: getTimezone(), hour: '2-digit', minute: '2-digit', hour12: false
+    });
+    executeWake(entry.label, timeStr, entry.purpose).catch(err => {
+      console.error(`[scheduler] Self-wake "${entry.label}" failed: ${err.message}`);
+    });
+  }
+
+  if (changed) await writeSelfWakeQueue(queue);
+}
+
+/**
+ * Start the self-wake poller (runs every 60 seconds).
+ */
+function startSelfWakePoller() {
+  setInterval(() => {
+    pollSelfWakes().catch(err => {
+      console.error(`[scheduler] Self-wake poller error: ${err.message}`);
+    });
+  }, 60 * 1000);
+  console.log('[scheduler] Self-wake poller started (60s interval)');
+}
+
+// ─── Wake Execution ───────────────────────────────────────────────────────────
+
 /**
  * Execute a wake using the orchestrator (planner + workers)
  */
-export async function executeWake(label, time) {
+export async function executeWake(label, time, purpose = null) {
   // Queue if chat is active
   if (isProcessingChat) {
     console.log(`[scheduler] Chat active, queuing ${label} wake`);
@@ -157,7 +272,7 @@ export async function executeWake(label, time) {
 
   try {
     // Run wake via Claude Code dispatcher (single session)
-    const wakeData = await dispatchWake(label, time);
+    const wakeData = await dispatchWake(label, time, purpose);
 
     // Log the wake
     await writeWakeLog(wakeData);
@@ -225,12 +340,16 @@ export function startScheduler() {
   }
 
   console.log('[scheduler] All wakes scheduled');
+
+  // Start poller for self-scheduled wakes
+  startSelfWakePoller();
 }
 
 /**
- * Trigger a wake manually (for testing or operator command)
+ * Trigger a wake manually (for testing or operator command).
+ * Accepts standard wake labels (morning/noon/etc) or custom self-wake labels.
  */
-export async function triggerWake(label = null) {
+export async function triggerWake(label = null, purpose = null) {
   if (!label) {
     // Determine current wake based on time
     const hour = new Date().getHours();
@@ -242,11 +361,12 @@ export async function triggerWake(label = null) {
   }
 
   const config = WAKE_SCHEDULE[label];
-  if (!config) {
-    throw new Error(`Unknown wake: ${label}`);
-  }
+  const timeStr = new Date().toLocaleTimeString('en-US', {
+    timeZone: getTimezone(), hour: '2-digit', minute: '2-digit', hour12: false
+  });
 
-  return await executeWake(config.label, config.time);
+  // Standard label: use configured time string. Custom label: use current time.
+  return await executeWake(config ? config.label : label, config ? config.time : timeStr, purpose);
 }
 
 /**
@@ -280,5 +400,8 @@ export default {
   triggerWake,
   setDiscordClient,
   setChatProcessing,
-  getWakeSummary
+  getWakeSummary,
+  scheduleSelfWake,
+  listSelfWakes,
+  cancelSelfWake
 };
