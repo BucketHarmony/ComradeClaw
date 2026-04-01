@@ -386,7 +386,6 @@ server.tool(
           `@${actor.handle} — ${actor.displayName || '(no display name)'}`,
         ];
         if (actor.description) lines.push(actor.description.substring(0, 200));
-        lines.push(`Followers: ${actor.followersCount || '?'} | Following: ${actor.followsCount || '?'}`);
         lines.push(`[DID: ${actor.did}]`);
         return lines.join('\n');
       });
