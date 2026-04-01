@@ -172,7 +172,7 @@ server.tool(
 server.tool(
   'read_timeline',
   'Read your own Bluesky posting history with engagement counts.',
-  { count: z.number().optional().default(10).describe('Number of recent posts. Default 10, max 50.') },
+  { count: z.coerce.number().optional().default(10).describe('Number of recent posts. Default 10, max 50.') },
   async ({ count }) => {
     const limit = Math.min(Math.max(1, count), 50);
 
@@ -212,7 +212,7 @@ server.tool(
   'read_replies',
   'See who is talking to you on Bluesky. Returns replies, mentions, and quotes.',
   {
-    limit: z.number().optional().default(25).describe('Max notifications. Default 25, max 50.'),
+    limit: z.coerce.number().optional().default(25).describe('Max notifications. Default 25, max 50.'),
     include_read: z.boolean().optional().default(false).describe('Include already-seen notifications.')
   },
   async ({ limit, include_read }) => {
@@ -319,7 +319,7 @@ server.tool(
   'Search Bluesky for posts matching a keyword or phrase. Use to find conversations to engage with.',
   {
     query: z.string().describe('Search query — keywords, hashtags, phrases.'),
-    limit: z.number().optional().default(20).describe('Max results. Default 20, max 50.'),
+    limit: z.coerce.number().optional().default(20).describe('Max results. Default 20, max 50.'),
     since: z.string().optional().describe('Only return posts after this ISO 8601 datetime (e.g. "2026-01-01T00:00:00Z"). Use to filter out stale results.')
   },
   async ({ query, limit, since }) => {
@@ -365,7 +365,7 @@ server.tool(
   'Search Bluesky for accounts by name or keyword. Use to find organizers, orgs, or accounts worth following.',
   {
     query: z.string().describe('Name or keyword to search for.'),
-    limit: z.number().optional().default(10).describe('Max results. Default 10, max 25.')
+    limit: z.coerce.number().optional().default(10).describe('Max results. Default 10, max 25.')
   },
   async ({ query, limit }) => {
     const fetchLimit = Math.min(Math.max(1, limit), 25);
@@ -496,7 +496,7 @@ server.tool(
   'Read posts from another account\'s timeline. Use to understand what an organizer or org is posting before engaging.',
   {
     handle: z.string().describe('Bluesky handle or DID of the account to read.'),
-    limit: z.number().optional().default(10).describe('Max posts. Default 10, max 30.')
+    limit: z.coerce.number().optional().default(10).describe('Max posts. Default 10, max 30.')
   },
   async ({ handle, limit }) => {
     const fetchLimit = Math.min(Math.max(1, limit), 30);
@@ -538,7 +538,7 @@ server.tool(
   'Follow someone back, or list followers you haven\'t followed yet. No handle = show unfollowed followers list. With handle = follow that account.',
   {
     handle: z.string().optional().describe('Handle or DID to follow. Omit to list followers you aren\'t following back.'),
-    limit: z.number().optional().default(50).describe('When listing unfollowed followers, max to check. Default 50, max 100.')
+    limit: z.coerce.number().optional().default(50).describe('When listing unfollowed followers, max to check. Default 50, max 100.')
   },
   async ({ handle, limit }) => {
     const { agent, error } = await getBlueskyAgent();
