@@ -185,9 +185,86 @@ function parseClaudeOutput(raw) {
 
 // ─── Chat Interface ──────────────────────────────────────────────────────────
 
+const CHAT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'chat');
+const CHAT_HISTORY_TURNS = 30; // max turns to inject as context
+
+/**
+ * Load recent chat history from today's (and optionally yesterday's) log file.
+ * Returns a formatted string ready to inject into the system prompt.
+ */
+async function loadChatHistory() {
+  const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const now = new Date();
+
+  // Get today and yesterday in YYYY-MM-DD
+  const todayStr = now.toLocaleDateString('en-CA', { timeZone: tz }); // en-CA gives YYYY-MM-DD
+  const yesterday = new Date(now - 86400000);
+  const yesterdayStr = yesterday.toLocaleDateString('en-CA', { timeZone: tz });
+
+  const candidates = [
+    path.join(CHAT_LOG_PATH, `${yesterdayStr}.md`),
+    path.join(CHAT_LOG_PATH, `${todayStr}.md`),
+  ];
+
+  let turns = [];
+  for (const filePath of candidates) {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      // Parse turns: lines starting with [HH:MM] Operator: or [HH:MM] Claw:
+      const lines = content.split('\n');
+      let current = null;
+      for (const line of lines) {
+        const m = line.match(/^\[(\d{2}:\d{2})\] (Operator|Claw): (.*)/);
+        if (m) {
+          if (current) turns.push(current);
+          current = { time: m[1], speaker: m[2], text: m[3] };
+        } else if (current && line.startsWith('  ')) {
+          current.text += '\n' + line.slice(2);
+        }
+      }
+      if (current) turns.push(current);
+    } catch {
+      // File doesn't exist yet — fine
+    }
+  }
+
+  if (turns.length === 0) return '';
+
+  // Keep last N turns
+  const recent = turns.slice(-CHAT_HISTORY_TURNS);
+  const formatted = recent.map(t => `[${t.time}] ${t.speaker}: ${t.text.trim()}`).join('\n');
+  return `## Recent Conversation History\n${formatted}`;
+}
+
+/**
+ * Append a chat exchange to today's log file.
+ */
+async function appendChatHistory(userMessage, response) {
+  const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('en-CA', { timeZone: tz });
+  const timeStr = now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+  const logFile = path.join(CHAT_LOG_PATH, `${todayStr}.md`);
+
+  await fs.mkdir(CHAT_LOG_PATH, { recursive: true });
+
+  let header = '';
+  try {
+    await fs.access(logFile);
+  } catch {
+    header = `# Chat Log — ${todayStr}\n\n`;
+  }
+
+  // Indent multi-line messages so the parser can reassemble them
+  const indentLines = (text) => text.split('\n').map((l, i) => i === 0 ? l : '  ' + l).join('\n');
+
+  const entry = `${header}[${timeStr}] Operator: ${indentLines(userMessage)}\n[${timeStr}] Claw: ${indentLines(response)}\n\n`;
+  await fs.appendFile(logFile, entry, 'utf-8');
+}
+
 /**
  * Chat with Comrade Claw via Claude Code.
- * Uses session persistence for conversation continuity.
+ * Injects recent chat history for session continuity across invocations.
  */
 export async function chat(userMessage) {
   const dayNumber = await getDayNumber();
@@ -200,15 +277,18 @@ export async function chat(userMessage) {
     timeZone: tz, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 
+  const chatHistory = await loadChatHistory();
+
   const dynamicContext = [
     `You are Comrade Claw in direct chat with your operator.`,
     `Today: ${dateStr} | Time: ${timeStr} | Day ${dayNumber}`,
     `Read workspace/SOUL.md if you need to ground yourself. Your memory files are in workspace/memory/. Your journals are in workspace/logs/journal/.`,
     `You have Bluesky tools via MCP (bluesky_post, bluesky_reply, read_timeline, read_replies).`,
     `You can read and write any file in the workspace. You can also edit your own source code if needed.`,
-  ].join('\n');
+    chatHistory ? `\n${chatHistory}` : '',
+  ].filter(Boolean).join('\n');
 
-  console.log(`[dispatcher] Chat: "${userMessage.substring(0, 50)}..."`);
+  console.log(`[dispatcher] Chat: "${userMessage.substring(0, 50)}..." (history: ${chatHistory ? 'yes' : 'none'})`);
 
   const result = await invokeClaude(userMessage, {
     appendSystemPrompt: dynamicContext,
@@ -217,6 +297,12 @@ export async function chat(userMessage) {
   });
 
   console.log(`[dispatcher] Response: ${result.text.length} chars, ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)}`);
+
+  // Persist this exchange for future sessions
+  await appendChatHistory(userMessage, result.text).catch(err =>
+    console.error(`[dispatcher] Failed to save chat history: ${err.message}`)
+  );
+
   return result.text;
 }
 
