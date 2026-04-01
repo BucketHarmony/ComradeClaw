@@ -431,6 +431,29 @@ export async function executeWake(label, time, purpose = null) {
     console.error(`[dispatcher] Failed to load prior wake plans: ${err.message}`);
   }
 
+  // Determine plan filename — avoid clobbering when same label runs twice in a day
+  let planFileSuffix = label;
+  try {
+    await fs.mkdir(PLANS_PATH, { recursive: true });
+    let seq = 2;
+    let candidate = `${today}_${label}.json`;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      try {
+        await fs.access(path.join(PLANS_PATH, candidate));
+        // File exists — try next sequence number
+        candidate = `${today}_${label}${seq}.json`;
+        seq++;
+      } catch {
+        // File doesn't exist — this name is free
+        break;
+      }
+    }
+    planFileSuffix = candidate.replace('.json', '').replace(`${today}_`, '');
+  } catch {
+    // Non-fatal — fall back to label
+  }
+
   // Night wake gets a study session focus instead of search-and-post
   const isNightWake = label === 'night';
 
@@ -468,7 +491,7 @@ export async function executeWake(label, time, purpose = null) {
     isNightWake ? `` : `   d. Solidarity is not optional. Finding a conversation and doing nothing is not engagement. Show up or document why you couldn't.`,
     `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
-    `8. When done, write a plan file to workspace/plans/${today}_${label}.json with this format:`,
+    `8. When done, write a plan file to workspace/plans/${today}_${planFileSuffix}.json with this format:`,
     `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${today}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
     studySessionInstructions,
     '',
