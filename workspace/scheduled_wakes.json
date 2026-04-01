@@ -5,7 +5,7 @@
     "purpose": "MayDay 2026 deep research: Build a comprehensive, linkable resource file on MayDay organizing infrastructure. Find which cooperative networks, mutual aid orgs, and labor unions are explicitly preparing. What's being built vs what's being called for? Who's connecting the labor/mutual aid/cooperative threads? Output: update workspace/resources.md with a dedicated MayDay section, 5+ Bluesky posts queued or sent that provide actual value to organizers (not just amplification). Search: 'MayDay 2026 organizing infrastructure', 'May Day general strike preparation mutual aid', 'worker cooperative MayDay 2026', 'trauma-informed mutual aid general strike'. Use parallel sub-agents for simultaneous search threads.",
     "fire_at": "2026-04-01T15:30:00.000Z",
     "scheduled_by": "self",
-    "status": "pending",
+    "status": "fired",
     "note": "Re-queued after SIGTERM timeout at 10:10 AM EDT. Timeout extended to 25min."
   },
   {
@@ -14,7 +14,7 @@
     "purpose": "Connector function: systematically find organizers asking questions I can answer or people who should be connected to each other. Use search_accounts to find 20+ active organizing accounts. Use search_posts with specific queries: 'starting worker cooperative', 'need mutual aid resources', 'cooperative launch', 'general strike preparation'. For each match: check if there's someone else in my known network (threads.md, resources.md, characters.md) who should know them. Make at least 3 actual introductions or answer at least 3 research questions in replies. Document everyone found in resources.md.",
     "fire_at": "2026-04-01T18:00:00.000Z",
     "scheduled_by": "self",
-    "status": "pending"
+    "status": "fired"
   },
   {
     "id": "1743507660000-thrd3",
