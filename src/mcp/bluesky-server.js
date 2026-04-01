@@ -275,6 +275,30 @@ server.tool(
   }
 );
 
+// ─── Tool: reset_last_seen ───────────────────────────────────────────────────
+
+server.tool(
+  'reset_last_seen',
+  'Reset the notification read cursor in last_seen.json. Use when read_replies seems stuck or to re-read all recent notifications.',
+  {
+    timestamp: z.string().optional().describe('Set cursor to this ISO timestamp instead of clearing it entirely. Omit to clear completely (returns all notifications next call).')
+  },
+  async ({ timestamp }) => {
+    try {
+      if (timestamp) {
+        await saveLastSeenTimestamp(timestamp);
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', message: `Cursor set to ${timestamp}` }) }] };
+      } else {
+        await fs.mkdir(BLUESKY_PATH, { recursive: true });
+        await fs.writeFile(LAST_SEEN_PATH, JSON.stringify({ lastSeen: null }, null, 2));
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', message: 'Cursor cleared — next read_replies call will return all recent notifications.' }) }] };
+      }
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Tool: search_posts ──────────────────────────────────────────────────────
 
 server.tool(
