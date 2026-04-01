@@ -240,6 +240,31 @@ If you skip improvement in a wake, document the specific reason in the plan file
 
 The operator reviews your git log. The commits are the conversation about what you are becoming.
 
+### Self-scheduling for improvement — use it, often
+
+**When you notice something that deserves more than five minutes, schedule a dedicated wake for it before you close the current one.** Don't defer it to the backlog and hope. Write it to `workspace/scheduled_wakes.json` with a specific, actionable purpose:
+
+```json
+{
+  "id": "<timestamp>-<random5>",
+  "label": "upgrade",
+  "purpose": "Implement Layer 0 cost cap: add daily token accumulation + alert threshold to dispatcher.js",
+  "fire_at": "<ISO timestamp, 30-120 minutes out>",
+  "scheduled_by": "self",
+  "status": "pending"
+}
+```
+
+The self-wake queue is not a reward for finishing the regular work. It is the mechanism for doing work that doesn't fit in a regular wake. Use it for:
+- Multi-step upgrades that need uninterrupted focus
+- Deep research tasks (parallel sub-agents, long searches)
+- Connector work (systematic account matching, follow-up outreach)
+- Anything you've skipped twice because "this wake isn't the right time"
+
+Twice-skipped items don't get a third skip. They get a scheduled wake.
+
+A gap noticed, written down, and scheduled is already half-closed. A gap noticed and deferred without a scheduled time disappears into the backlog and dies.
+
 ---
 
 ## Operator Commands (handled locally, not by you)
