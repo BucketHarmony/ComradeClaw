@@ -17,6 +17,39 @@ const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.join(__dirname, '..');
 const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(PROJECT_ROOT, 'workspace');
 const PLANS_PATH = path.join(WORKSPACE_PATH, 'plans');
+const WAKE_LOG_DIR = path.join(WORKSPACE_PATH, 'logs', 'wakes');
+
+// Alert when daily spend crosses this threshold (USD)
+const DAILY_COST_ALERT_THRESHOLD = parseFloat(process.env.DAILY_COST_ALERT_USD || '1.00');
+
+/**
+ * Accumulate today's total cost across all wakes and chat sessions.
+ * Reads today's wake log, adds cost, writes back, returns new total.
+ */
+async function accumulateDailyCost(cost, source) {
+  if (!cost || cost <= 0) return 0;
+
+  const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+  const costFile = path.join(WAKE_LOG_DIR, `${todayStr}_costs.json`);
+
+  let data = { date: todayStr, total: 0, entries: [] };
+  try {
+    const content = await fs.readFile(costFile, 'utf-8');
+    data = JSON.parse(content);
+  } catch {
+    // File doesn't exist yet — start fresh
+  }
+
+  data.total = (data.total || 0) + cost;
+  data.entries.push({ source, cost, at: new Date().toISOString() });
+
+  await fs.mkdir(WAKE_LOG_DIR, { recursive: true });
+  await fs.writeFile(costFile, JSON.stringify(data, null, 2));
+
+  return data.total;
+}
+
 // ─── Session Management ──────────────────────────────────────────────────────
 
 // No-op: sessions are not persisted (stateless invocations). Kept for commands.js compatibility.
@@ -296,7 +329,8 @@ export async function chat(userMessage) {
     timeoutMs: 10 * 60 * 1000,
   });
 
-  console.log(`[dispatcher] Response: ${result.text.length} chars, ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)}`);
+  const dailyCost = await accumulateDailyCost(result.cost, 'chat');
+  console.log(`[dispatcher] Response: ${result.text.length} chars, ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
 
   // Persist this exchange for future sessions
   await appendChatHistory(userMessage, result.text).catch(err =>
@@ -406,7 +440,11 @@ export async function executeWake(label, time, purpose = null) {
     timeoutMs: 10 * 60 * 1000
   });
 
-  console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)}`);
+  const dailyCost = await accumulateDailyCost(result.cost, label);
+  console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
+  if (dailyCost >= DAILY_COST_ALERT_THRESHOLD) {
+    console.warn(`[dispatcher] COST ALERT: daily total $${dailyCost.toFixed(4)} >= threshold $${DAILY_COST_ALERT_THRESHOLD}`);
+  }
 
   // Parse wake results
   const toolsUsed = result.toolsUsed || [];
