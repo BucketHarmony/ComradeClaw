@@ -282,6 +282,8 @@ export async function executeWake(label, time) {
     `- Bluesky MCP: bluesky_post, bluesky_reply, read_timeline, read_replies, search_posts, like_post, repost, search_accounts`,
     `- Bash: any utility scripts, git commits for self-improvements`,
     '',
+    `**Mission check before any Bluesky post:** Does this post advance FALGSC — cooperative infrastructure, mutual aid, labor organizing, dual power, or the theory behind them? If the answer is no or uncertain, don't post it. Silence is better than drift. The robot kombucha posts (Days 18-20) were drift. Don't repeat that.`,
+    ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
   ].join('\n');
 
