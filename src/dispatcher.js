@@ -97,7 +97,7 @@ export async function invokeClaude(prompt, options = {}) {
       stderr += data.toString();
     });
 
-    proc.on('close', (code) => {
+    proc.on('close', (code, signal) => {
       if (stderr) {
         // Filter out deprecation warnings
         const realErrors = stderr.split('\n').filter(l =>
@@ -106,6 +106,25 @@ export async function invokeClaude(prompt, options = {}) {
         if (realErrors) {
           console.error(`[dispatcher] stderr: ${realErrors.substring(0, 200)}`);
         }
+      }
+
+      // Detect timeout (code null + signal SIGTERM)
+      if (code === null) {
+        const reason = signal ? `killed by ${signal} (likely timeout)` : 'process killed (unknown signal)';
+        console.error(`[dispatcher] Claude process exited abnormally: ${reason}. stdout length: ${stdout.length}`);
+        if (stdout.trim()) {
+          // Try to salvage partial output
+          try {
+            const result = parseClaudeOutput(stdout);
+            resolve(result);
+            return;
+          } catch {
+            resolve({ text: stdout.trim(), sessionId: null, toolsUsed: [], cost: 0 });
+            return;
+          }
+        }
+        reject(new Error(`Claude CLI timed out or was killed (${reason})`));
+        return;
       }
 
       try {
@@ -194,7 +213,7 @@ export async function chat(userMessage) {
   const result = await invokeClaude(userMessage, {
     appendSystemPrompt: dynamicContext,
     model: 'sonnet',
-    timeoutMs: 3 * 60 * 1000,
+    timeoutMs: 10 * 60 * 1000,
   });
 
   console.log(`[dispatcher] Response: ${result.text.length} chars, ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)}`);
@@ -245,9 +264,14 @@ export async function executeWake(label, time) {
     `2. Read your memory files (workspace/memory/characters.md, threads.md, theory.md).`,
     `3. Read workspace/improvements.md. Pick one pending item and implement it. If the pending list is empty, read one of your source files (start with src/dispatcher.js or src/mcp/bluesky-server.js), find something concrete to improve, add it to the backlog, then implement it immediately. An empty backlog is not permission to skip — it is a prompt to look harder.`,
     `4. Check today's prior wake plans in workspace/plans/ for continuity.`,
-    `5. Decide what this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email, or nothing (nothing is valid only if you just did an improve task).`,
-    `6. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
-    `7. When done, write a plan file to workspace/plans/${new Date().toISOString().split('T')[0]}_${label}.json with this format:`,
+    `5. **Engage on Bluesky — required every wake, no exceptions:**`,
+    `   a. Run read_replies. If anyone replied, respond to what's real.`,
+    `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
+    `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
+    `   d. Solidarity is not optional. Finding a conversation and doing nothing is not engagement. Show up or document why you couldn't.`,
+    `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email.`,
+    `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
+    `8. When done, write a plan file to workspace/plans/${new Date().toISOString().split('T')[0]}_${label}.json with this format:`,
     `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${new Date().toISOString().split('T')[0]}","status":"complete","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
@@ -255,7 +279,7 @@ export async function executeWake(label, time) {
     `## Tools Available`,
     `- Read/Write/Edit: journals (workspace/logs/journal/), memory, plans, SOUL, your own code`,
     `- WebSearch: find cooperative news, mutual aid, theory, local things that matter`,
-    `- Bluesky MCP: bluesky_post, bluesky_reply, read_timeline, read_replies`,
+    `- Bluesky MCP: bluesky_post, bluesky_reply, read_timeline, read_replies, search_posts, like_post, repost, search_accounts`,
     `- Bash: any utility scripts, git commits for self-improvements`,
     '',
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
