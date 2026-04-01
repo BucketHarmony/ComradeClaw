@@ -340,6 +340,44 @@ export async function chat(userMessage) {
   return result.text;
 }
 
+// ─── Post-Commit Health Check ────────────────────────────────────────────────
+
+/**
+ * After a wake modifies src/*.js files, run `node --check` on each to catch
+ * syntax errors before the next wake. Logs warnings but does not throw —
+ * a broken file should be surfaced, not crash the dispatcher.
+ */
+async function runHealthCheck(filePaths) {
+  const { default: { execFile } } = await import('child_process');
+  const { promisify } = await import('util');
+  const execFileAsync = promisify(execFile);
+
+  const targets = filePaths.length > 0
+    ? filePaths
+    : [
+        path.join(__dirname, 'dispatcher.js'),
+        path.join(__dirname, 'scheduler.js'),
+        path.join(__dirname, 'commands.js'),
+      ];
+
+  let allOk = true;
+  for (const filePath of targets) {
+    try {
+      await execFileAsync(process.execPath, ['--check', filePath]);
+      console.log(`[health] OK: ${path.basename(filePath)}`);
+    } catch (err) {
+      allOk = false;
+      console.error(`[health] SYNTAX ERROR in ${path.basename(filePath)}: ${err.stderr || err.message}`);
+    }
+  }
+
+  if (!allOk) {
+    console.error('[health] ALERT: Post-commit health check failed — a source file has a syntax error. Review and fix before next wake.');
+  }
+
+  return allOk;
+}
+
 // ─── Wake Interface ──────────────────────────────────────────────────────────
 
 /**
@@ -488,6 +526,14 @@ export async function executeWake(label, time, purpose = null) {
 
   if (!planFile) {
     console.warn(`[dispatcher] Warning: no plan file found for ${label} wake — Claude may have skipped writing it`);
+  }
+
+  // Post-commit health check: if this wake modified source files, verify syntax
+  const modifiedSrcFiles = writeTargets.filter(p =>
+    /src[/\\][^/\\]+\.js$/.test(p) && !p.includes('mcp/')
+  );
+  if (modifiedSrcFiles.length > 0) {
+    await runHealthCheck(modifiedSrcFiles);
   }
 
   // journal_written: only true if a Write targeted the journal directory
