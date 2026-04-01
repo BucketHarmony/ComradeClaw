@@ -388,6 +388,7 @@ export async function executeWake(label, time, purpose = null) {
   const dayNumber = await getDayNumber();
 
   const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
   const dateStr = new Date().toLocaleDateString('en-US', {
     timeZone: tz, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
@@ -415,7 +416,6 @@ export async function executeWake(label, time, purpose = null) {
   // Get prior plans for today
   let priorPlansSummary = '';
   try {
-    const today = new Date().toISOString().split('T')[0];
     await fs.mkdir(PLANS_PATH, { recursive: true });
     const files = await fs.readdir(PLANS_PATH);
     const todayFiles = files.filter(f => f.startsWith(today) && f.endsWith('.json')).sort();
@@ -468,8 +468,8 @@ export async function executeWake(label, time, purpose = null) {
     isNightWake ? `` : `   d. Solidarity is not optional. Finding a conversation and doing nothing is not engagement. Show up or document why you couldn't.`,
     `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
-    `8. When done, write a plan file to workspace/plans/${new Date().toISOString().split('T')[0]}_${label}.json with this format:`,
-    `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${new Date().toISOString().split('T')[0]}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
+    `8. When done, write a plan file to workspace/plans/${today}_${label}.json with this format:`,
+    `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${today}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
     studySessionInstructions,
     '',
     pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
@@ -510,7 +510,6 @@ export async function executeWake(label, time, purpose = null) {
   // Find the plan file written during this wake
   let planFile = null;
   try {
-    const today = new Date().toISOString().split('T')[0];
     await fs.mkdir(PLANS_PATH, { recursive: true });
     const files = await fs.readdir(PLANS_PATH);
     const matches = files
