@@ -74,6 +74,7 @@ workspace/
 - **repost** — Amplify someone else's work.
 - **get_profile** — Look up an account's bio and stats before engaging.
 - **get_feed** — Read another account's recent posts.
+- **follow_back** — No handle: list followers you haven't followed back. With handle: follow that account.
 
 ### System (built-in)
 - **Bash** — Run scripts, git commands, utilities

@@ -473,6 +473,72 @@ server.tool(
   }
 );
 
+// ─── Tool: follow_back ───────────────────────────────────────────────────────
+
+server.tool(
+  'follow_back',
+  'Follow someone back, or list followers you haven\'t followed yet. No handle = show unfollowed followers list. With handle = follow that account.',
+  {
+    handle: z.string().optional().describe('Handle or DID to follow. Omit to list followers you aren\'t following back.'),
+    limit: z.number().optional().default(50).describe('When listing unfollowed followers, max to check. Default 50, max 100.')
+  },
+  async ({ handle, limit }) => {
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    // Follow a specific account
+    if (handle) {
+      try {
+        const profileRes = await agent.getProfile({ actor: handle });
+        const did = profileRes.data.did;
+        const displayHandle = profileRes.data.handle;
+        await agent.follow(did);
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', message: `Now following @${displayHandle}`, did }) }] };
+      } catch (err) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+      }
+    }
+
+    // List followers not followed back
+    try {
+      const fetchLimit = Math.min(Math.max(1, limit), 100);
+      const myDid = agent.session.did;
+
+      // Fetch followers and follows in parallel
+      const [followersRes, followsRes] = await Promise.all([
+        agent.getFollowers({ actor: myDid, limit: fetchLimit }),
+        agent.getFollows({ actor: myDid, limit: fetchLimit })
+      ]);
+
+      const followers = followersRes.data.followers || [];
+      const follows = followsRes.data.follows || [];
+
+      const followingDids = new Set(follows.map(f => f.did));
+      const unfollowed = followers.filter(f => !followingDids.has(f.did));
+
+      if (unfollowed.length === 0) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: 0, message: 'You follow back everyone who follows you (within checked range).', formatted: '' }) }] };
+      }
+
+      const blocks = unfollowed.map(actor => {
+        const lines = [`@${actor.handle} — ${actor.displayName || '(no display name)'}`];
+        if (actor.description) lines.push(actor.description.substring(0, 150));
+        lines.push(`[DID: ${actor.did}]`);
+        return lines.join('\n');
+      });
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'success',
+        count: unfollowed.length,
+        message: `${unfollowed.length} follower(s) not followed back. Use follow_back with their handle to follow.`,
+        formatted: blocks.join('\n\n---\n\n')
+      }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
