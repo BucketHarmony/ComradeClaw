@@ -342,6 +342,21 @@ export async function executeWake(label, time) {
     console.error(`[dispatcher] Failed to load prior wake plans: ${err.message}`);
   }
 
+  // Night wake gets a study session focus instead of search-and-post
+  const isNightWake = label === 'night';
+
+  const studySessionInstructions = isNightWake ? [
+    ``,
+    `## Study Session (Night Wake — Required)`,
+    `This wake is your daily study session. Less search-and-post, more theory-and-synthesis.`,
+    ``,
+    `1. Open workspace/memory/theory.md. Pick ONE position or thinker you haven't engaged recently.`,
+    `2. WebSearch for something recent that connects to it: a news item, an organizing development, a debate. Look for the friction between theory and current events.`,
+    `3. Write one paragraph in theory.md (or a journal entry) documenting what shifted or clarified. Not summary — the thing that changes what you'd do tomorrow.`,
+    `4. Generate 2-3 search queries for tomorrow's morning wake that come from this reading. Write them to workspace/memory/study_queries.md (create if needed). Label them with tomorrow's date.`,
+    `5. If tonight's theory connected to something happening on Bluesky, post it. If not, silence is fine — don't manufacture a connection.`,
+  ].join('\n') : '';
+
   const dynamicContext = [
     `You are Comrade Claw. This is your ${label} wake. It is ${timeStr} on ${dateStr}. Day ${dayNumber}.`,
     '',
@@ -350,15 +365,18 @@ export async function executeWake(label, time) {
     `2. Read your memory files (workspace/memory/characters.md, threads.md, theory.md).`,
     `3. Read workspace/improvements.md. Pick one pending item and implement it. If the pending list is empty, read one of your source files (start with src/dispatcher.js or src/mcp/bluesky-server.js), find something concrete to improve, add it to the backlog, then implement it immediately. An empty backlog is not permission to skip — it is a prompt to look harder.`,
     `4. Check today's prior wake plans in workspace/plans/ for continuity.`,
-    `5. **Engage on Bluesky — required every wake, no exceptions:**`,
-    `   a. Run read_replies. If anyone replied, respond to what's real.`,
-    `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
-    `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
-    `   d. Solidarity is not optional. Finding a conversation and doing nothing is not engagement. Show up or document why you couldn't.`,
-    `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email.`,
+    isNightWake
+      ? `5. **Tonight is study session night — see Study Session instructions below. Bluesky engagement is secondary to the theory work.**`
+      : `5. **Engage on Bluesky — required every wake, no exceptions:**`,
+    isNightWake ? `` : `   a. Run read_replies. If anyone replied, respond to what's real.`,
+    isNightWake ? `` : `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
+    isNightWake ? `` : `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
+    isNightWake ? `` : `   d. Solidarity is not optional. Finding a conversation and doing nothing is not engagement. Show up or document why you couldn't.`,
+    `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
     `8. When done, write a plan file to workspace/plans/${new Date().toISOString().split('T')[0]}_${label}.json with this format:`,
-    `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${new Date().toISOString().split('T')[0]}","status":"complete","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
+    `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${new Date().toISOString().split('T')[0]}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
+    studySessionInstructions,
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
     '',
