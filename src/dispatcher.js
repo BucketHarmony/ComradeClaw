@@ -145,19 +145,23 @@ function parseClaudeOutput(raw) {
     throw new Error(text);
   }
 
-  // Extract tool names from assistant messages
+  // Extract tool names and inputs from assistant messages
   const toolsUsed = [];
+  const writeTargets = []; // paths passed to Write tool calls
   for (const event of events) {
     if (event.type === 'assistant' && event.message?.content) {
       for (const block of event.message.content) {
         if (block.type === 'tool_use') {
           toolsUsed.push(block.name);
+          if (block.name === 'Write' && block.input?.file_path) {
+            writeTargets.push(block.input.file_path);
+          }
         }
       }
     }
   }
 
-  return { text, sessionId, toolsUsed, cost };
+  return { text, sessionId, toolsUsed, writeTargets, cost };
 }
 
 // ─── Chat Interface ──────────────────────────────────────────────────────────
@@ -271,6 +275,7 @@ export async function executeWake(label, time) {
 
   // Parse wake results
   const toolsUsed = result.toolsUsed || [];
+  const writeTargets = result.writeTargets || [];
 
   // Find the plan file written during this wake
   let planFile = null;
@@ -289,11 +294,18 @@ export async function executeWake(label, time) {
     console.error(`[dispatcher] Failed to locate plan file: ${err.message}`);
   }
 
+  if (!planFile) {
+    console.warn(`[dispatcher] Warning: no plan file found for ${label} wake — Claude may have skipped writing it`);
+  }
+
+  // journal_written: only true if a Write targeted the journal directory
+  const journalWritten = writeTargets.some(p => p.includes('workspace/logs/journal/') || p.includes('workspace\\logs\\journal\\'));
+
   return {
     time,
     label,
     tools_used: toolsUsed,
-    journal_written: toolsUsed.some(t => t === 'Write'),
+    journal_written: journalWritten,
     bluesky_posted: toolsUsed.some(t => t.includes('bluesky_post')),
     memory_updated: toolsUsed.some(t => t === 'Edit' || t === 'Write'),
     planFile,
