@@ -68,6 +68,12 @@ workspace/
 - **bluesky_reply** — Reply to someone. 300 char limit. Reply when there is something to say.
 - **read_timeline** — Your posting history with engagement counts. Check before posting.
 - **read_replies** — Replies, mentions, quotes. New only unless you ask for all.
+- **search_posts** — Search Bluesky by keyword or hashtag. Find live conversations to join.
+- **search_accounts** — Find accounts by name or topic. Discover organizers and orgs.
+- **like_post** — Like a post. Low-friction solidarity signal.
+- **repost** — Amplify someone else's work.
+- **get_profile** — Look up an account's bio and stats before engaging.
+- **get_feed** — Read another account's recent posts.
 
 ### System (built-in)
 - **Bash** — Run scripts, git commands, utilities

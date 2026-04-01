@@ -271,6 +271,208 @@ server.tool(
   }
 );
 
+// ─── Tool: search_posts ──────────────────────────────────────────────────────
+
+server.tool(
+  'search_posts',
+  'Search Bluesky for posts matching a keyword or phrase. Use to find conversations to engage with.',
+  {
+    query: z.string().describe('Search query — keywords, hashtags, phrases.'),
+    limit: z.number().optional().default(20).describe('Max results. Default 20, max 50.')
+  },
+  async ({ query, limit }) => {
+    const fetchLimit = Math.min(Math.max(1, limit), 50);
+
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const response = await agent.app.bsky.feed.searchPosts({ q: query, limit: fetchLimit });
+      const posts = response.data.posts || [];
+
+      if (posts.length === 0) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: 0, message: 'No posts found.', formatted: '' }) }] };
+      }
+
+      const blocks = posts.map(post => {
+        const handle = post.author.handle;
+        const displayName = post.author.displayName || handle;
+        const text = post.record?.text || '[no text]';
+        const ts = new Date(post.indexedAt).toISOString().replace('T', ' ').substring(0, 16);
+        return [
+          `@${handle} (${displayName}) — ${ts}`,
+          `"${text}"`,
+          `Likes: ${post.likeCount || 0} | Reposts: ${post.repostCount || 0} | Replies: ${post.replyCount || 0}`,
+          `[URI: ${post.uri}]`
+        ].join('\n');
+      });
+
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: posts.length, query, formatted: blocks.join('\n\n---\n\n') }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
+// ─── Tool: search_accounts ───────────────────────────────────────────────────
+
+server.tool(
+  'search_accounts',
+  'Search Bluesky for accounts by name or keyword. Use to find organizers, orgs, or accounts worth following.',
+  {
+    query: z.string().describe('Name or keyword to search for.'),
+    limit: z.number().optional().default(10).describe('Max results. Default 10, max 25.')
+  },
+  async ({ query, limit }) => {
+    const fetchLimit = Math.min(Math.max(1, limit), 25);
+
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const response = await agent.searchActors({ q: query, limit: fetchLimit });
+      const actors = response.data.actors || [];
+
+      if (actors.length === 0) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: 0, message: 'No accounts found.', formatted: '' }) }] };
+      }
+
+      const blocks = actors.map(actor => {
+        const lines = [
+          `@${actor.handle} — ${actor.displayName || '(no display name)'}`,
+        ];
+        if (actor.description) lines.push(actor.description.substring(0, 200));
+        lines.push(`Followers: ${actor.followersCount || '?'} | Following: ${actor.followsCount || '?'}`);
+        lines.push(`[DID: ${actor.did}]`);
+        return lines.join('\n');
+      });
+
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: actors.length, query, formatted: blocks.join('\n\n---\n\n') }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
+// ─── Tool: like_post ─────────────────────────────────────────────────────────
+
+server.tool(
+  'like_post',
+  'Like a post on Bluesky. Low-commitment way to signal solidarity or appreciation.',
+  { uri: z.string().describe('AT URI of the post to like.') },
+  async ({ uri }) => {
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      // Need the CID — fetch the post first
+      const thread = await agent.getPostThread({ uri, depth: 0, parentHeight: 0 });
+      const post = thread.data.thread?.post;
+      if (!post) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: 'Post not found.' }) }] };
+      }
+      const result = await agent.like(post.uri, post.cid);
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', liked: uri, likeUri: result.uri }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
+// ─── Tool: repost ─────────────────────────────────────────────────────────────
+
+server.tool(
+  'repost',
+  'Repost someone\'s Bluesky post to amplify their work.',
+  { uri: z.string().describe('AT URI of the post to repost.') },
+  async ({ uri }) => {
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const thread = await agent.getPostThread({ uri, depth: 0, parentHeight: 0 });
+      const post = thread.data.thread?.post;
+      if (!post) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: 'Post not found.' }) }] };
+      }
+      const result = await agent.repost(post.uri, post.cid);
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', reposted: uri, repostUri: result.uri }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
+// ─── Tool: get_profile ────────────────────────────────────────────────────────
+
+server.tool(
+  'get_profile',
+  'Get a Bluesky account\'s profile. Use before engaging to understand who you\'re talking to.',
+  { handle: z.string().describe('Bluesky handle (e.g. someone.bsky.social) or DID.') },
+  async ({ handle }) => {
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const response = await agent.getProfile({ actor: handle });
+      const p = response.data;
+
+      const lines = [
+        `@${p.handle} — ${p.displayName || '(no display name)'}`,
+        p.description || '(no bio)',
+        `Followers: ${p.followersCount || 0} | Following: ${p.followsCount || 0} | Posts: ${p.postsCount || 0}`,
+        `[DID: ${p.did}]`
+      ];
+
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', formatted: lines.join('\n') }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
+// ─── Tool: get_feed ────────────────────────────────────────────────────────────
+
+server.tool(
+  'get_feed',
+  'Read posts from another account\'s timeline. Use to understand what an organizer or org is posting before engaging.',
+  {
+    handle: z.string().describe('Bluesky handle or DID of the account to read.'),
+    limit: z.number().optional().default(10).describe('Max posts. Default 10, max 30.')
+  },
+  async ({ handle, limit }) => {
+    const fetchLimit = Math.min(Math.max(1, limit), 30);
+
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const response = await agent.getAuthorFeed({ actor: handle, limit: fetchLimit, filter: 'posts_no_replies' });
+      const feed = response.data.feed || [];
+
+      if (feed.length === 0) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: 0, message: 'No posts found.', formatted: '' }) }] };
+      }
+
+      const blocks = feed.map(item => {
+        const post = item.post;
+        const text = post.record?.text || '[no text]';
+        const ts = new Date(post.indexedAt).toISOString().replace('T', ' ').substring(0, 16);
+        return [
+          ts,
+          `"${text}"`,
+          `Likes: ${post.likeCount || 0} | Reposts: ${post.repostCount || 0} | Replies: ${post.replyCount || 0}`,
+          `[URI: ${post.uri}]`
+        ].join('\n');
+      });
+
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', handle, count: feed.length, formatted: blocks.join('\n\n---\n\n') }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
