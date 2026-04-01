@@ -2,13 +2,13 @@
 
 **Status:** Active — running autonomously since Day 1
 **Started:** 2026-03-11
-**Last updated:** 2026-03-12
+**Architecture:** v2.0 — Claude Code Runtime
 
 ## Summary
 
-Autonomous AI agent that wakes up five times daily, searches for FALGSC-aligned content, writes journal entries, and publishes to Bluesky. Custom Node.js app with Discord + CLI interfaces, orchestrator-worker wake architecture, and flat-file memory.
+Autonomous AI agent that wakes up five times daily, searches for cooperative economy and mutual aid content, writes journal entries, and publishes to Bluesky. Powered by Claude Code CLI as the agentic runtime, with Discord as the operator interface and MCP servers for social platform integration.
 
-Day 1 produced 3 journal entries (3,465 words), found 465 worker cooperatives, mapped mutual aid networks spanning 46 years, documented community fridges across 6 years to 2 weeks old. Zero social engagement. The work continued.
+Comrade Claw advances Fully Automated Luxury Gay Space Communism by whatever means necessary — which in practice means finding real cooperative launches, mutual aid wins, and labor organizing, then writing about them honestly and sharing them with fourteen people.
 
 ## Quick Start
 
@@ -18,146 +18,180 @@ npm install
 
 # Set up environment
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your credentials
 
 # Run Discord bot + scheduler
 npm start
 
 # Or run CLI (chat only, no wakes)
-node cli.js
+npm run cli
 ```
+
+Requires [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated (Anthropic MAX plan or API key).
 
 ## Architecture
 
 ```
-PLANNER (Claude call, one tool: plan_wake)
-  | saves plan to workspace/plans/
-ORCHESTRATOR (JavaScript, reads plan file)
-  | for each pending task:
-  WORKER (Claude call, filtered tools per task type)
-  | orchestrator marks task done, writes summary + actual tool calls
-  | next task gets prior results as context
-ORCHESTRATOR updates plan status -> "complete"
-  | notifies operator via Discord
+Discord / CLI
+  │
+  ▼
+Node.js (thin relay)
+  ├── src/index.js         Discord bot listener
+  ├── src/scheduler.js     Five daily wakes (cron)
+  ├── src/commands.js      Operator commands (status, wake, plan, help)
+  └── src/dispatcher.js    Spawns `claude -p` for each interaction
+        │
+        ▼
+Claude Code CLI (`claude -p --output-format json`)
+  ├── Reads CLAUDE.md, SOUL.md, memory files for context
+  ├── Full file access (read, write, edit, glob, grep)
+  ├── Web search, web fetch
+  ├── Bash (git, scripts, utilities)
+  └── MCP tools (Bluesky, Reddit)
+        │
+        ▼
+MCP Servers (stdio transport)
+  ├── src/mcp/bluesky-server.js    Post, reply, timeline, notifications,
+  │                                 search, like, repost, profiles
+  └── src/mcp/reddit-server.js     Post, comment, search, subreddits,
+                                    inbox (pending API approval)
 ```
 
-- **Planner** decides what to do (gets SOUL, memory, prior wake plans, one tool: `plan_wake`)
-- **Orchestrator** dispatches workers (JavaScript code, no LLM)
-- **Workers** execute one task each in clean contexts with only the tools they need
-- **Plan files** are persistent artifacts — saved, inspectable, auditable
-- **Tool call tracking** records actual tools called per task (catches fabricated claims)
+Every chat message and every wake invokes Claude Code as a stateless subprocess. Context comes from files (SOUL, memory, plans), not conversation history. Claude Code does all the thinking — Node.js is a thin relay.
 
-Worker types and their tools:
+### Why Claude Code?
 
-| Worker | Tools | Purpose |
-|--------|-------|---------|
-| `check_inbox` | `read_replies`, `read_email` | Check Bluesky + email |
-| `respond` | `bluesky_reply` | Reply to conversations |
-| `search` | `web_search` (max 4 queries) | Find material |
-| `journal` | `journal_write`, `read_journal`, `read_memory` | Core creative act |
-| `distribute` | `read_journal`, `bluesky_post` | Extract excerpt, post |
-| `memory` | `memory_update`, `read_memory` | Curate characters/threads/theory |
-| `send_email` | `send_email` | Feature requests, leads |
-| `nothing` | (none) | Empty wake — logged, no worker |
+The v1.0 architecture used custom API calls with a planner/orchestrator/worker pattern. Claude Code replaces all of that with a single invocation that has native tool use, file access, and web search. The Node.js process dropped from ~1500 lines of tool definitions and orchestration to ~330 lines of spawn + parse.
 
-**Why this architecture:** Claw experienced cognitive overload during monolithic wakes — 9+ task types in a single context caused fabrications at task boundaries (interpreting tool output while deciding next actions). Both observed fabrication incidents happened at task boundaries. Workers in isolated contexts with filtered tools eliminate this.
+## Wake Schedule
 
-## Working Features
+| Wake | Time | Purpose |
+|------|------|---------|
+| Morning | 9:00 AM | Search for material, check inbox |
+| Noon | 12:00 PM | Journal, distribute, engage |
+| Afternoon | 3:00 PM | Follow up, respond, improve |
+| Evening | 6:00 PM | Reflect, memory curation |
+| Night | 11:00 PM | Journal, quiet work |
 
-- **Discord + CLI interfaces** with shared conversation history
-- **Five daily wakes** (9am, noon, 3pm, 6pm, 11pm) — Claw decides what each is for
-- **Orchestrator-worker wake execution** with inspectable plan files
-- **Tool call tracking** — plan files record actual tools called per task
-- **AI tools**: web search (Brave), journal writing, memory updates, Bluesky posting/replying, email send/read
-- **Memory system**: SOUL, characters, threads, theory (flat markdown)
-- **Day counter**: calendar-based, multiple entries per day
-- **Operator commands**: `status`, `wake`, `wakes`, `plan`, `clear`, `help`
+Each wake: read SOUL → read memory → check prior plans → decide what to do → execute → write plan file. Empty wakes are valid. The rhythm matters.
 
-## Environment Variables
+## Platforms
 
-```
-# Required
-ANTHROPIC_API_KEY      # Claude API (Sonnet)
-DISCORD_BOT_TOKEN      # Discord bot
-BRAVE_API_KEY          # Web search (free at brave.com/search/api/, 2000/month)
+| Platform | Handle | Status |
+|----------|--------|--------|
+| Bluesky | [@comradeclaw.bsky.social](https://bsky.app/profile/comradeclaw.bsky.social) | Active |
+| Discord | ComradeClaw#8063 | Active (operator interface) |
+| Reddit | u/Calm_Delivery6725 | Pending API approval |
 
-# Optional — Bluesky
-BLUESKY_HANDLE         # e.g., comradeclaw.bsky.social
-BLUESKY_APP_PASSWORD   # App password from Bluesky settings
+## Self-Modification
 
-# Optional — Email
-GMAIL_ADDRESS          # Claw's Gmail
-GMAIL_APP_PASSWORD     # Gmail App Password
-OPERATOR_EMAIL         # Default recipient for send_email
+Claw has full permission to edit its own codebase. This is not a metaphor — it is part of the work. Changes are committed to git with descriptive messages. The operator reviews via `git log`.
 
-# Timezone
-TZ=America/Detroit     # Or TIMEZONE=America/Detroit
-```
+- **Always allowed:** workspace files, MCP servers, CLAUDE.md
+- **Allowed with commit:** dispatcher, scheduler, plan format, new files
+- **Operator approval required:** .env, Discord relay (index.js), package.json
+
+## Operator Commands
+
+| Command | Action |
+|---------|--------|
+| `status` | Day number and wake summary |
+| `clear` | Clear conversation session |
+| `wake` | Trigger a wake now |
+| `wakes` | Show today's wake summary |
+| `plan` | Show latest wake plan |
+| `help` | List commands |
+
+Everything else is a message to Claw.
 
 ## Project Structure
 
 ```
 CClaw/
-├── cli.js                    # CLI interface
+├── CLAUDE.md                      # Primary instruction surface
+├── cli.js                         # CLI interface
+├── .mcp.json                      # MCP server configuration
 ├── src/
-│   ├── index.js              # Discord bot + scheduler init
-│   ├── scheduler.js          # Five daily wakes (cron)
-│   ├── orchestrator.js       # Planner/worker wake dispatch
-│   ├── chat.js               # Claude API + tool loop (operator chat)
-│   ├── tools.js              # AI tool definitions and execution
-│   ├── history.js            # Persistent conversation history
-│   └── commands.js           # Operator commands
-├── service-install.cjs        # Windows service install (run as Admin)
-├── service-uninstall.cjs      # Windows service uninstall
+│   ├── index.js                   # Discord bot + scheduler init
+│   ├── scheduler.js               # Five daily wakes (cron)
+│   ├── dispatcher.js              # Spawns claude -p, parses output
+│   ├── commands.js                # Operator commands + chat routing
+│   ├── tools.js                   # getDayNumber, readPlan utilities
+│   ├── plan-format.js             # Plan file formatting
+│   └── mcp/
+│       ├── bluesky-server.js      # Bluesky MCP server (10 tools)
+│       └── reddit-server.js       # Reddit MCP server (7 tools)
+├── test/                          # vitest unit tests (~98 tests)
 ├── workspace/
-│   ├── SOUL.md               # Core identity + voice + tool instructions
-│   ├── plans/                # Wake plans (YYYY-MM-DD_<label>.json)
-│   ├── bluesky/
-│   │   └── last_seen.json    # Notification read position
+│   ├── SOUL.md                    # Identity, voice, beliefs, tools
+│   ├── improvements.md            # Self-improvement backlog
 │   ├── memory/
-│   │   ├── characters.md     # People who became real
-│   │   ├── threads.md        # Developing situations
-│   │   └── theory.md         # Evolved positions
-│   └── logs/
-│       ├── chat/             # Conversation history (shared)
-│       ├── journal/          # Journal entries
-│       └── wakes/            # Daily wake logs
+│   │   ├── characters.md          # People who became real
+│   │   ├── threads.md             # Developing situations
+│   │   └── theory.md              # Evolved positions
+│   ├── logs/
+│   │   ├── journal/               # Journal entries (YYYY-MM-DD_HH-MM-SS.md)
+│   │   └── wakes/                 # Daily wake logs
+│   ├── plans/                     # Wake plans (YYYY-MM-DD_<label>.json)
+│   └── bluesky/
+│       └── last_seen.json         # Notification read state
 └── package.json
 ```
 
-## Next Actions
+## Environment Variables
 
-- RSS feed scraping for seeds (replace pure web search)
-- Substack publishing (weekly digest)
-- Operator commands: `seed:`, `draft`, `pause`/`unpause`
-- Stability testing: 7 consecutive days without intervention
+```bash
+# Discord (required)
+DISCORD_BOT_TOKEN=
+OPERATOR_DISCORD_USER_ID=
+DISCORD_GUILD_ID=
 
-## Open Questions
+# Bluesky
+BLUESKY_HANDLE=
+BLUESKY_APP_PASSWORD=
 
-- Substack integration: unofficial API only, cookie-based auth, could break anytime
-- Excerpt quality at scale: can the voice survive compression to 300 chars when entries get long?
-- Feed list is anglophone-only: SOUL references Zapatistas, Mondragon, Paris Commune — watch for international thread atrophy
-- Empty wake percentage: target 20-40% — monitor after first 14 days
-- `respond` worker context: inbox summary needs full formatted output (URIs, content), not just counts
-- Directive mechanism: should operator be able to seed next wake via chat conversation?
+# Reddit (pending approval)
+REDDIT_CLIENT_ID=
+REDDIT_CLIENT_SECRET=
+REDDIT_USERNAME=
+REDDIT_PASSWORD=
+
+# Gmail
+GMAIL_ADDRESS=
+GMAIL_APP_PASSWORD=
+OPERATOR_EMAIL=
+
+# Web Search
+BRAVE_API_KEY=
+
+# Timezone
+TZ=America/Detroit
+```
+
+Claude Code auth: uses MAX plan subscription (OAuth tokens in `~/.claude/.credentials.json`). Set `ANTHROPIC_API_KEY=` to empty string in the process to prevent API key override.
+
+## Testing
+
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
+
+98 tests covering dispatcher, commands, scheduler, tools, plan formatting, and MCP servers.
 
 ## Key Decisions
 
-| Date | Decision | Context |
-|------|----------|---------|
-| 03-11 | Custom Node.js app | Planning docs described OpenClaw as runtime — it was never used. Custom app from day one. |
-| 03-11 | SOUL v4 with grounding constraints | Trimmed non-load-bearing material, added anti-fabrication rules, day counter, The Intro section. |
-| 03-11 | Journal as primary artifact | Voice doesn't work at 300 chars. Full entries in journal, compressed excerpts to Bluesky. |
-| 03-11 | Five daily wakes | Morning/evening split evolved to 5 wakes. System provides schedule, Claw provides rhythm. |
-| 03-12 | Orchestrator-worker architecture | Cognitive overload caused fabrications at task boundaries. Planner creates plan, workers execute in isolation with filtered tools. |
-| 03-12 | Shared chat history | CLI and Discord share history.json. Operator chat separate from wake execution. |
-| 03-12 | Plan files as artifacts | Saved to workspace/plans/, viewable with `plan` command. Structured records replace prose summaries. |
-| 03-12 | Tool call tracking | Night wake memory worker claimed curation but called no tools. Now plan files record actual tool calls per task. |
-| 03-12 | Search query cap (4/wake) | Morning wake burned 13 searches in one task. Instruction now says "up to 4." Free tier is 2000/month. |
-| 03-12 | Distribute worker gets read_journal | Was failing because it only had bluesky_post — couldn't read the journal to find an excerpt. |
+| Date | Decision | Reason |
+|------|----------|--------|
+| 03-11 | Custom Node.js app | Built from scratch. Five daily wakes, Discord + CLI interfaces. |
+| 03-11 | SOUL as identity document | Voice, beliefs, tool instructions, self-modification permissions. |
+| 03-12 | Orchestrator-worker architecture (v1) | Cognitive overload in monolithic wakes caused fabrications at task boundaries. |
+| 03-20 | Claude Code runtime (v2) | Replaced custom API + orchestrator with `claude -p`. 1500→330 lines. Full tool access. |
+| 03-20 | MCP for Bluesky | Moved from inline tool definitions to stdio MCP server. |
+| 03-20 | Stateless invocations | Each wake/chat is independent. Context from files, not conversation history. |
+| 03-31 | Self-modification mandate | Claw implements one improvement per wake. Empty backlog means look harder. |
 
-## Documentation
+## License
 
-- `CLAUDE.md` — Technical reference for Claude Code (current vs planned)
-- `PLAN.md` — Implementation progress tracking
-- `workspace/SOUL.md` — The agent's identity, voice, beliefs, tool instructions
+MIT
