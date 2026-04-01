@@ -491,10 +491,14 @@ export async function executeWake(label, time, purpose = null) {
 
   console.log(`[dispatcher] Wake: ${label} (Day ${dayNumber})`);
 
+  // Self-scheduled intensive wakes (research, upgrade, connector, deep) get more time.
+  // Regular wakes: 10 min. Self-scheduled (purpose set): 25 min.
+  const wakeTimeout = purpose ? 25 * 60 * 1000 : 10 * 60 * 1000;
+
   const result = await invokeClaude(prompt, {
     appendSystemPrompt: dynamicContext,
     model: 'sonnet',
-    timeoutMs: 10 * 60 * 1000
+    timeoutMs: wakeTimeout
   });
 
   const dailyCost = await accumulateDailyCost(result.cost, label);
