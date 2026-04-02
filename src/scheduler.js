@@ -13,6 +13,7 @@ import { dirname } from 'path';
 import { getDayNumber } from './tools.js';
 import { executeWake as dispatchWake } from './dispatcher.js';
 import { formatPlan } from './plan-format.js';
+import { startDMPoller } from './bluesky-dm-poller.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -343,6 +344,9 @@ export function startScheduler() {
 
   // Start poller for self-scheduled wakes
   startSelfWakePoller();
+
+  // Start DM poller (fires a 'dm' wake when new messages arrive)
+  startDMPoller((label, purpose) => executeWake(label, getTimeString(), purpose));
 }
 
 /**
