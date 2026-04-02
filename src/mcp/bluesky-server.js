@@ -695,6 +695,126 @@ server.tool(
   }
 );
 
+// ─── Chat API Helper ──────────────────────────────────────────────────────────
+// Bluesky DMs route through the chat proxy service at api.bsky.chat.
+// All chat API calls require the atproto-proxy header.
+
+const CHAT_PROXY_HEADER = { 'atproto-proxy': 'did:web:api.bsky.chat#bsky_chat' };
+
+async function chatCall(agent, method, params = {}) {
+  // method: e.g. 'chat.bsky.convo.getConvoForMembers'
+  // Traverse agent.api using dot-split path
+  const parts = method.split('.');
+  let obj = agent.api;
+  for (const part of parts) {
+    obj = obj[part];
+    if (!obj) throw new Error(`Chat API method not found: ${method}`);
+  }
+  return obj(params, { headers: CHAT_PROXY_HEADER });
+}
+
+// ─── Tool: bluesky_dm ────────────────────────────────────────────────────────
+
+server.tool(
+  'bluesky_dm',
+  'Send a direct message to a Bluesky user. Use sparingly — only for genuine personal outreach, not broadcast.',
+  {
+    handle: z.string().describe('Bluesky handle (e.g. someone.bsky.social) or DID of the recipient.'),
+    text: z.string().max(1000).describe('Message text. Max 1000 characters.')
+  },
+  async ({ handle, text }) => {
+    if (text.length > 1000) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Exceeds 1000 char limit (${text.length} chars).` }) }] };
+    }
+
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      // Resolve handle to DID
+      const profileRes = await agent.getProfile({ actor: handle });
+      const did = profileRes.data.did;
+      const resolvedHandle = profileRes.data.handle;
+
+      // Get or create conversation
+      const convoRes = await chatCall(agent, 'chat.bsky.convo.getConvoForMembers', { members: [did] });
+      const convoId = convoRes.data.convo.id;
+
+      // Send message
+      const msgRes = await withRetry(() =>
+        chatCall(agent, 'chat.bsky.convo.sendMessage', {
+          convoId,
+          message: { text }
+        })
+      );
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'success',
+        to: resolvedHandle,
+        did,
+        convoId,
+        messageId: msgRes.data.id,
+        text,
+        charCount: text.length
+      }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
+// ─── Tool: read_dms ──────────────────────────────────────────────────────────
+
+server.tool(
+  'read_dms',
+  'Read your Bluesky DM inbox. Lists recent conversations with latest message from each.',
+  {
+    limit: z.coerce.number().optional().default(10).describe('Max conversations to list. Default 10, max 25.')
+  },
+  async ({ limit }) => {
+    const fetchLimit = Math.min(Math.max(1, limit), 25);
+
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const convosRes = await chatCall(agent, 'chat.bsky.convo.listConvos', { limit: fetchLimit });
+      const convos = convosRes.data.convos || [];
+
+      if (convos.length === 0) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: 0, message: 'No DM conversations found.', formatted: '' }) }] };
+      }
+
+      const myDid = agent.session.did;
+
+      const blocks = convos.map(convo => {
+        const others = (convo.members || []).filter(m => m.did !== myDid);
+        const names = others.map(m => `@${m.handle}`).join(', ') || '(unknown)';
+        const lastMsg = convo.lastMessage;
+        const lastText = lastMsg?.text || '[no text]';
+        const lastTs = lastMsg?.sentAt
+          ? new Date(lastMsg.sentAt).toISOString().replace('T', ' ').substring(0, 16)
+          : '(unknown time)';
+        const unread = convo.unreadCount > 0 ? ` [${convo.unreadCount} unread]` : '';
+
+        return [
+          `${names}${unread} — ${lastTs}`,
+          `"${lastText}"`,
+          `[convoId: ${convo.id}]`
+        ].join('\n');
+      });
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'success',
+        count: convos.length,
+        formatted: blocks.join('\n\n---\n\n')
+      }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
