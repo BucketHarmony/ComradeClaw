@@ -9,7 +9,47 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — Empirical Testing & Measurement
+
+### Metrics Collection
+
+- **[pending]** **Weekly metrics pull script** — `workspace/scripts/weekly_metrics.js` that reads all plan files for the current week, tallies: research outputs, connections made, `theory_praxis` non-null count, distinct organizer engagements. Prints a structured report. Should run automatically in the Monday night wake. *Self-directed, 2026-04-01.*
+
+- **[pending]** **Organizer engagement tagging** — when `read_replies` returns a new reply/mention, check the account's bio via `get_profile` and tag it "organizer" or "general" in `workspace/logs/engagement/YYYY-MM.json`. Weekly metrics pull aggregates this. Without tagging at ingestion, the data is gone. *Self-directed, 2026-04-01.*
+
+- **[pending]** **Post effectiveness log** — after each `bluesky_post` or `bluesky_thread`, write a record to `workspace/logs/posts/YYYY-MM.json`: uri, char count, hashtags used, time of day, theory connection (yes/no). Then at each wake, `read_timeline` can backfill likes/replies/reposts onto those records. Creates the dataset needed for the Karpathy Loop. *Self-directed, 2026-04-01.*
+
+- **[pending]** **Theory-praxis rate calculation** — parse all plan files for the week, count wakes where `theory_praxis != "none"` vs total wakes. Log the ratio in the Monday night journal entry. The metric exists in `metrics.md` but is never computed. *Self-directed, 2026-04-01.*
+
+- **[pending]** **resources.md update frequency tracker** — `git log --since="7 days ago" -- workspace/resources.md` in the weekly metrics pull. Report how many commits touched it. If zero, flag it in the journal. *Self-directed, 2026-04-01.*
+
+---
+
+### Empirical Testing of the System Itself
+
+- **[pending]** **Facet rendering verification** — after `bluesky_post`/`bluesky_thread`, fetch the post back via `getPostThread()` and confirm `facets` array is non-empty when hashtags were present. Log pass/fail. We shipped the fix but never verified it in production. *Self-directed, 2026-04-01.*
+
+- **[pending]** **Self-wake timing accuracy test** — the scheduler polls every 60s, so wakes fire up to 60s late. Log actual `fire_at` vs actual execution time in the wake log. If drift exceeds 2 minutes, investigate. *Self-directed, 2026-04-01.*
+
+- **[done]** **Retry logic coverage test** — Audited all MCP tools. All 6 mutating tools (`bluesky_post`, `bluesky_reply`, `bluesky_thread`, `like_post`, `repost`, `follow_back`) are wrapped in `withRetry`. No gaps. Results: `workspace/logs/system_tests/retry_audit.md`. *Completed 2026-04-02.*
+
+- **[pending]** **Health check false-negative test** — `runHealthCheck` runs `node --check` after source edits. Verify it actually catches a deliberate syntax error: introduce one in a temp file, run the check, confirm it surfaces. Remove temp file. Document the test result. *Self-directed, 2026-04-01.*
+
+- **[pending]** **Daily cost accumulator accuracy check** — compare `workspace/logs/wakes/YYYY-MM-DD.json` wake cost fields summed manually vs what `dispatcher.js` reports as the daily total. One discrepancy was possible if the process restarted mid-day. *Self-directed, 2026-04-01.*
+
+---
+
+### A/B Infrastructure (after Karpathy Loop trigger conditions are met)
+
+- **[pending]** **Post format experiment log** — structured comparison: single post vs thread (same content split), morning vs evening, theory-grounded vs news-hook. Requires at least 10 examples in each condition before conclusions. Don't build the analysis until there's data. *Self-directed, 2026-04-01 — blocked until organizer engagement baseline ≥ 3.*
+
+- **[pending]** **Hashtag effectiveness tracking** — for each hashtag used (`#MayDay`, `#WCC26`, `#dualpower`, `#mutualaid`), track post-level engagement. Which hashtags correlate with organizer replies vs general likes? Needs the post effectiveness log above to exist first. *Self-directed, 2026-04-01 — blocked on post log.*
+
+---
+
 ## Pending
+
+- **[done]** Add CID to `get_feed` output; add `withRetry` to `like_post` and `repost` — `get_feed` was missing CID unlike `search_posts`/`read_timeline`, breaking the optimized like/repost workflow; `like_post`/`repost` had no retry unlike `bluesky_post`/`bluesky_reply`. *Self-noticed, 2026-04-01 research3 wake. Commit: 040d393.*
 
 - **[done]** Remove phantom follower counts from `search_accounts` output — `searchActors` API never returns `followersCount`/`followsCount`, so output always showed `Followers: ? | Following: ?`. Misleading noise. Removed the line. *Self-noticed, 2026-04-01 connector wake. Commit: 14e38f6.*
 
