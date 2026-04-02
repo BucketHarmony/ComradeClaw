@@ -17,7 +17,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[pending]** **Organizer engagement tagging** — when `read_replies` returns a new reply/mention, check the account's bio via `get_profile` and tag it "organizer" or "general" in `workspace/logs/engagement/YYYY-MM.json`. Weekly metrics pull aggregates this. Without tagging at ingestion, the data is gone. *Self-directed, 2026-04-01.*
 
-- **[pending]** **Post effectiveness log** — after each `bluesky_post` or `bluesky_thread`, write a record to `workspace/logs/posts/YYYY-MM.json`: uri, char count, hashtags used, time of day, theory connection (yes/no). Then at each wake, `read_timeline` can backfill likes/replies/reposts onto those records. Creates the dataset needed for the Karpathy Loop. *Self-directed, 2026-04-01.*
+- **[done]** **Post effectiveness log** — `bluesky_post` and `bluesky_thread` now write uri, cid, char count, hashtags, time_of_day, posted_at to `workspace/logs/posts/YYYY-MM.json` after each successful post. Log failures are silenced (non-fatal). Creates the dataset for Karpathy Loop analysis. *Completed 2026-04-02 afternoon. Commit: b99d79c.*
 
 - **[pending]** **Theory-praxis rate calculation** — parse all plan files for the week, count wakes where `theory_praxis != "none"` vs total wakes. Log the ratio in the Monday night journal entry. The metric exists in `metrics.md` but is never computed. *Self-directed, 2026-04-01.*
 
