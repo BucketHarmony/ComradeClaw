@@ -20,6 +20,7 @@ const __dirname = path.dirname(__filename);
 const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', '..', 'workspace');
 const BLUESKY_PATH = path.join(WORKSPACE_PATH, 'bluesky');
 const LAST_SEEN_PATH = path.join(BLUESKY_PATH, 'last_seen.json');
+const POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -78,6 +79,36 @@ async function buildPostRecord(agent, RichText, text) {
   return rt.facets?.length ? { text: rt.text, facets: rt.facets } : { text };
 }
 
+// ─── Post Effectiveness Log ──────────────────────────────────────────────────
+
+function detectHashtags(text) {
+  return text.match(/#[\w]+/g) || [];
+}
+
+function timeOfDay(hour) {
+  if (hour >= 6 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 15) return 'noon';
+  if (hour >= 15 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 23) return 'evening';
+  return 'night';
+}
+
+async function logPost(entry) {
+  try {
+    const now = new Date();
+    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    const logFile = path.join(POSTS_LOG_PATH, `${month}.json`);
+    await fs.mkdir(POSTS_LOG_PATH, { recursive: true });
+    let existing = [];
+    try {
+      const data = await fs.readFile(logFile, 'utf-8');
+      existing = JSON.parse(data);
+    } catch { /* new file */ }
+    existing.push(entry);
+    await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+  } catch { /* non-fatal — never break the post flow */ }
+}
+
 // ─── Retry Helper ────────────────────────────────────────────────────────────
 
 async function withRetry(fn, retries = 1, delayMs = 2000) {
@@ -115,6 +146,9 @@ server.tool(
     try {
       const record = await buildPostRecord(agent, RichText, text);
       const result = await withRetry(() => agent.post(record));
+      const now = new Date();
+      const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
+      await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'post', char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour) });
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, cid: result.cid, text, charCount: text.length }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -640,6 +674,9 @@ server.tool(
         results.push({ index: i + 1, uri: postRecord.uri, charCount: posts[i].length });
       }
 
+      const now = new Date();
+      const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
+      await logPost({ uri: rootUri, cid: rootCid, posted_at: now.toISOString(), type: 'thread', thread_length: posts.length, char_count: posts.reduce((s, p) => s + p.length, 0), hashtags: [...new Set(posts.flatMap(p => detectHashtags(p)))], time_of_day: timeOfDay(hour) });
       return { content: [{ type: 'text', text: JSON.stringify({
         status: 'success',
         threadLength: posts.length,
