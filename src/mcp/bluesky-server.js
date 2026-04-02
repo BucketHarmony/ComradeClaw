@@ -550,7 +550,7 @@ server.tool(
         const profileRes = await agent.getProfile({ actor: handle });
         const did = profileRes.data.did;
         const displayHandle = profileRes.data.handle;
-        await agent.follow(did);
+        await withRetry(() => agent.follow(did));
         return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', message: `Now following @${displayHandle}`, did }) }] };
       } catch (err) {
         return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
