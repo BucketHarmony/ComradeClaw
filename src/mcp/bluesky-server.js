@@ -21,6 +21,7 @@ const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', 
 const BLUESKY_PATH = path.join(WORKSPACE_PATH, 'bluesky');
 const LAST_SEEN_PATH = path.join(BLUESKY_PATH, 'last_seen.json');
 const POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
+const ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -107,6 +108,22 @@ async function logPost(entry) {
     existing.push(entry);
     await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
   } catch { /* non-fatal — never break the post flow */ }
+}
+
+async function logEngagement(entry) {
+  try {
+    const now = new Date();
+    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    const logFile = path.join(ENGAGEMENT_LOG_PATH, `${month}.json`);
+    await fs.mkdir(ENGAGEMENT_LOG_PATH, { recursive: true });
+    let existing = [];
+    try {
+      const data = await fs.readFile(logFile, 'utf-8');
+      existing = JSON.parse(data);
+    } catch { /* new file */ }
+    existing.push(entry);
+    await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+  } catch { /* non-fatal */ }
 }
 
 // ─── Retry Helper ────────────────────────────────────────────────────────────
@@ -309,6 +326,17 @@ server.tool(
           `"${replyText}"`,
           `[Reply URI: ${notif.uri}]`
         ].filter(Boolean).join('\n'));
+
+        // Log engagement at ingestion time — data evaporates otherwise
+        logEngagement({
+          timestamp: notif.indexedAt,
+          handle,
+          display_name: displayName,
+          type: notif.reason,
+          text_snippet: replyText.length > 150 ? replyText.substring(0, 150) + '...' : replyText,
+          uri: notif.uri,
+          classified: false
+        });
       }
 
       if (newestTimestamp && !include_read) {
