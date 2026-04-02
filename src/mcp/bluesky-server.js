@@ -703,14 +703,16 @@ const CHAT_PROXY_HEADER = { 'atproto-proxy': 'did:web:api.bsky.chat#bsky_chat' }
 
 async function chatCall(agent, method, params = {}) {
   // method: e.g. 'chat.bsky.convo.getConvoForMembers'
-  // Traverse agent.api using dot-split path
+  // Traverse agent.api using dot-split path, tracking parent for correct `this` binding
   const parts = method.split('.');
   let obj = agent.api;
+  let parent = agent.api;
   for (const part of parts) {
+    parent = obj;
     obj = obj[part];
-    if (!obj) throw new Error(`Chat API method not found: ${method}`);
+    if (obj == null) throw new Error(`Chat API method not found: ${method}`);
   }
-  return obj(params, { headers: CHAT_PROXY_HEADER });
+  return obj.call(parent, params, { headers: CHAT_PROXY_HEADER });
 }
 
 // ─── Tool: bluesky_dm ────────────────────────────────────────────────────────
