@@ -264,7 +264,12 @@ async function pollSelfWakes() {
     const timeStr = new Date().toLocaleTimeString('en-US', {
       timeZone: getTimezone(), hour: '2-digit', minute: '2-digit', hour12: false
     });
-    executeWake(entry.label, timeStr, entry.purpose).catch(err => {
+    const actualFiredAt = new Date().toISOString();
+    const driftSeconds = (Date.now() - new Date(entry.fire_at).getTime()) / 1000;
+    if (driftSeconds > 120) {
+      console.warn(`[scheduler] Self-wake "${entry.label}" drift: ${driftSeconds.toFixed(1)}s (scheduled: ${entry.fire_at})`);
+    }
+    executeWake(entry.label, timeStr, entry.purpose, entry.fire_at, actualFiredAt).catch(err => {
       console.error(`[scheduler] Self-wake "${entry.label}" failed: ${err.message}`);
     });
   }
@@ -289,7 +294,7 @@ function startSelfWakePoller() {
 /**
  * Execute a wake using the orchestrator (planner + workers)
  */
-export async function executeWake(label, time, purpose = null) {
+export async function executeWake(label, time, purpose = null, scheduledAt = null, actualFiredAt = null) {
   // Queue if chat is active
   if (isProcessingChat) {
     console.log(`[scheduler] Chat active, queuing ${label} wake`);
@@ -302,6 +307,14 @@ export async function executeWake(label, time, purpose = null) {
   try {
     // Run wake via Claude Code dispatcher (single session)
     const wakeData = await dispatchWake(label, time, purpose);
+
+    // Attach timing data for self-wakes so drift is visible in the wake log
+    if (scheduledAt && actualFiredAt) {
+      const driftSeconds = (new Date(actualFiredAt).getTime() - new Date(scheduledAt).getTime()) / 1000;
+      wakeData.scheduled_at = scheduledAt;
+      wakeData.actual_fired_at = actualFiredAt;
+      wakeData.drift_seconds = Math.round(driftSeconds);
+    }
 
     // Log the wake
     await writeWakeLog(wakeData);
