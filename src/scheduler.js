@@ -11,7 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getDayNumber } from './tools.js';
-import { executeWake as dispatchWake } from './dispatcher.js';
+import { executeWake as dispatchWake, executeDreamWake } from './dispatcher.js';
 import { formatPlan } from './plan-format.js';
 import { startDMPoller } from './bluesky-dm-poller.js';
 
@@ -36,7 +36,7 @@ const WAKE_SCHEDULE = {
     label: 'solidarity',
     purpose: 'Solidarity Crawl — Sunday night systematic amplification. Search these 12 hashtags: #mutualaid, #MayDay, #dualpower, #cooperatives, #solidarity, #FALGSC, #laborunion, #tenantunion, #housingJustice, #debtStrike, #AIrights, #workerscontrol. For each: find top 3 resonant posts by engagement. Like and repost the most compelling ones. Log all actions to workspace/logs/solidarity/YYYY-MM.json (create if needed) with: date, hashtag, uri, action (like/repost), reason. This is systematic amplification, not passive drift.'
   },
-  // Dream wake: 1:30am daily — memory consolidation after the night wake
+  // Dream wake: 1:30am daily — memory consolidation (routed to executeDreamWake in dispatcher)
   dream: {
     cron: '30 1 * * *',
     time: '01:30',
@@ -348,8 +348,10 @@ export async function executeWake(label, time, purpose = null, scheduledAt = nul
   console.log(`[scheduler] Starting ${label} wake (${time})`);
 
   try {
-    // Run wake via Claude Code dispatcher (single session)
-    const wakeData = await dispatchWake(label, time, purpose);
+    // Route dream wakes to dedicated handler (focused prompt, pre-gathered material)
+    const wakeData = label === 'dream'
+      ? await executeDreamWake()
+      : await dispatchWake(label, time, purpose);
 
     // Attach timing data for self-wakes so drift is visible in the wake log
     if (scheduledAt && actualFiredAt) {

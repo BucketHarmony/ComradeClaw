@@ -735,4 +735,192 @@ export async function executeWake(label, time, purpose = null) {
   };
 }
 
-export default { invokeClaude, chat, executeWake, clearChatSession };
+// ─── Dream Wake ─────────────────────────────────────────────────────────────
+
+const AUTO_MEMORY_DIR = 'C:/Users/kenne/.claude/projects/E--ai-cclaw/memory';
+
+/**
+ * Truncate content from the front, keeping the most recent material.
+ */
+function truncateContent(content, maxChars, label) {
+  if (content.length <= maxChars) return content;
+  console.log(`[dispatcher] Dream: truncating ${label} from ${content.length} to ${maxChars} chars`);
+  return '...(truncated from start)...\n' + content.slice(-maxChars);
+}
+
+/**
+ * Execute the dream wake — nightly memory consolidation.
+ * Gathers the day's material in Node.js and gives Claude a focused prompt
+ * to extract what matters into the auto memory system.
+ */
+export async function executeDreamWake() {
+  const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const dayNumber = await getDayNumber();
+
+  // At 1:30am, "today" is the new day. Dream replays yesterday.
+  const yesterday = new Date(Date.now() - 86400000);
+  const targetDate = yesterday.toLocaleDateString('en-CA', { timeZone: tz });
+
+  console.log(`[dispatcher] Dream wake: replaying ${targetDate} (Day ${dayNumber - 1})`);
+
+  // ── Gather the day's material ──
+
+  // Chat log
+  let chatLog = '';
+  try {
+    chatLog = await fs.readFile(path.join(WORKSPACE_PATH, 'logs', 'chat', `${targetDate}.md`), 'utf-8');
+    chatLog = truncateContent(chatLog, 20000, 'chat');
+  } catch { /* no chat that day */ }
+
+  // Journal entries
+  let journals = '';
+  try {
+    const journalDir = path.join(WORKSPACE_PATH, 'logs', 'journal');
+    const files = (await fs.readdir(journalDir)).filter(f => f.startsWith(targetDate)).sort();
+    for (const file of files) {
+      const content = await fs.readFile(path.join(journalDir, file), 'utf-8');
+      journals += `\n--- ${file} ---\n${content}\n`;
+    }
+    journals = truncateContent(journals, 20000, 'journals');
+  } catch { /* no journals */ }
+
+  // Wake plans
+  let plans = '';
+  try {
+    const files = (await fs.readdir(PLANS_PATH)).filter(f => f.startsWith(targetDate) && f.endsWith('.json')).sort();
+    for (const file of files) {
+      const content = await fs.readFile(path.join(PLANS_PATH, file), 'utf-8');
+      plans += `\n--- ${file} ---\n${content}\n`;
+    }
+    plans = truncateContent(plans, 15000, 'plans');
+  } catch { /* no plans */ }
+
+  // Current workspace memory
+  let workspaceMemory = '';
+  try {
+    const memoryDir = path.join(WORKSPACE_PATH, 'memory');
+    const files = (await fs.readdir(memoryDir)).filter(f => f.endsWith('.md'));
+    for (const file of files) {
+      const content = await fs.readFile(path.join(memoryDir, file), 'utf-8');
+      workspaceMemory += `\n--- ${file} ---\n${content}\n`;
+    }
+    workspaceMemory = truncateContent(workspaceMemory, 15000, 'workspace memory');
+  } catch { /* no memory files */ }
+
+  // Wake log for the day
+  let wakeLog = '';
+  try {
+    const logContent = await fs.readFile(path.join(WORKSPACE_PATH, 'logs', 'wakes', `${targetDate}.json`), 'utf-8');
+    const log = JSON.parse(logContent);
+    wakeLog = `${log.wakes.length} wakes. Labels: ${log.wakes.map(w => w.label).join(', ')}`;
+    for (const w of log.wakes) {
+      wakeLog += `\n\n### ${w.label} (${w.time})\n${w.summary || '(no summary)'}`;
+    }
+    wakeLog = truncateContent(wakeLog, 10000, 'wake log');
+  } catch { /* no wake log */ }
+
+  const totalMaterial = chatLog.length + journals.length + plans.length + workspaceMemory.length + wakeLog.length;
+  console.log(`[dispatcher] Dream: gathered ${totalMaterial} chars of material from ${targetDate}`);
+
+  if (totalMaterial === 0) {
+    console.log(`[dispatcher] Dream: no material for ${targetDate}, skipping`);
+    return {
+      time: '01:30',
+      label: 'dream',
+      tools_used: [],
+      journal_written: false,
+      bluesky_posted: false,
+      memory_updated: false,
+      summary: `Dream: no activity found for ${targetDate}`,
+      empty: true,
+      cost: 0
+    };
+  }
+
+  // ── Build the focused dream prompt ──
+
+  const dynamicContext = [
+    `You are Comrade Claw in dream mode. This is not a regular wake — no Bluesky posting, no improvements, no engagement.`,
+    `You are replaying Day ${dayNumber - 1} (${targetDate}) to extract what matters into long-term memory.`,
+    ``,
+    `## Your Task`,
+    `Review the day's activity below. Extract items worth persisting across sessions into Claude Code auto memory files.`,
+    ``,
+    `## What to Extract`,
+    `- **Operator directives**: Standing instructions, permissions, corrections, preferences`,
+    `- **Key decisions**: Policy changes, architectural choices, strategic shifts`,
+    `- **Characters**: Anyone who became real (replied, engaged meaningfully, showed up)`,
+    `- **Thread updates**: Developments in ongoing situations`,
+    `- **Theory shifts**: Positions that evolved, drift verdicts, new frameworks`,
+    `- **Engagement patterns**: What landed, what didn't, structural reasons why`,
+    `- **Resources/references**: Accounts, links, organizations worth finding again`,
+    ``,
+    `## Output Format`,
+    `For each memory worth saving, use the Write tool to create a file at ${AUTO_MEMORY_DIR}/`,
+    ``,
+    `Filename: dream_${targetDate}_<short-slug>.md`,
+    ``,
+    `Each file MUST use this exact frontmatter:`,
+    '```markdown',
+    `---`,
+    `name: <descriptive title>`,
+    `description: <one-line summary — future sessions use this to decide relevance>`,
+    `type: <project|feedback|reference>`,
+    `---`,
+    ``,
+    `<content>`,
+    '```',
+    ``,
+    `## After writing memory files`,
+    `Read ${AUTO_MEMORY_DIR}/MEMORY.md and append entries for new files:`,
+    `- [dream_${targetDate}_slug.md](dream_${targetDate}_slug.md) — one-line description`,
+    ``,
+    `## Rules`,
+    `- Read existing auto memory files first to avoid duplicates — update rather than duplicate`,
+    `- Do NOT modify workspace/memory/ files — those are the working memory layer`,
+    `- Do NOT write trivial memories (routine wake executions, cost numbers, timestamps)`,
+    `- Quality over quantity: 1-5 files is typical. More than 5 means you're not filtering`,
+    `- If nothing warrants long-term memory, write zero files. That's valid.`,
+    `- Ask: what would future Claw need to know that isn't derivable from the code or git log?`,
+    ``,
+    `## Day ${dayNumber - 1} Activity (${targetDate})`,
+    ``,
+    wakeLog ? `### Wake Summary\n${wakeLog}\n` : '',
+    chatLog ? `### Chat Log\n${chatLog}\n` : `### Chat Log\n*No chat on ${targetDate}*\n`,
+    journals ? `### Journal Entries\n${journals}\n` : `### Journals\n*No journals on ${targetDate}*\n`,
+    plans ? `### Wake Plans\n${plans}\n` : '',
+    workspaceMemory ? `### Current Workspace Memory (for reference — do not modify)\n${workspaceMemory}\n` : '',
+  ].filter(Boolean).join('\n');
+
+  const prompt = `Dream wake. Replay Day ${dayNumber - 1} (${targetDate}). Extract what matters into long-term memory.`;
+
+  const result = await invokeClaude(prompt, {
+    appendSystemPrompt: dynamicContext,
+    model: 'sonnet',
+    timeoutMs: 15 * 60 * 1000,
+  });
+
+  const dailyCost = await accumulateDailyCost(result.cost, 'dream');
+  console.log(`[dispatcher] Dream complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
+
+  const writeTargets = result.writeTargets || [];
+  const memoryFilesWritten = writeTargets.filter(p => p.includes('.claude'));
+
+  return {
+    time: '01:30',
+    label: 'dream',
+    tools_used: result.toolsUsed || [],
+    journal_written: false,
+    bluesky_posted: false,
+    memory_updated: memoryFilesWritten.length > 0,
+    summary: memoryFilesWritten.length > 0
+      ? `Dream: extracted ${memoryFilesWritten.length} memories from ${targetDate}`
+      : `Dream: no new memories from ${targetDate}`,
+    empty: memoryFilesWritten.length === 0,
+    cost: result.cost,
+    dream_memories: memoryFilesWritten.length,
+    dream_target_date: targetDate,
+  };
+}
+
+export default { invokeClaude, chat, executeWake, executeDreamWake, clearChatSession };

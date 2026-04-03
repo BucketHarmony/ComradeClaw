@@ -72,7 +72,7 @@ export async function handleOperatorCommand(message, context) {
     const label = parts[1] || null;
 
     try {
-      const validLabels = ['morning', 'noon', 'afternoon', 'evening', 'night'];
+      const validLabels = ['morning', 'noon', 'afternoon', 'evening', 'night', 'dream'];
       if (label && !validLabels.includes(label)) {
         return `Unknown wake: ${label}. Valid: ${validLabels.join(', ')}`;
       }
