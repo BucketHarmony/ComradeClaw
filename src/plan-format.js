@@ -23,7 +23,7 @@ export function formatPlan(plan) {
     const detail = task.summary || task.reason;
     const toolInfo = task.toolCalls && task.toolCalls.length > 0
       ? ` (called: ${task.toolCalls.join(', ')})`
-      : task.status === 'done' ? ' (no tools called)' : '';
+      : '';
     output += `${icon} **${task.type}**: ${detail}${toolInfo}\n`;
   }
 
