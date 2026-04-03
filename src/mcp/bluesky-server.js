@@ -22,6 +22,7 @@ const BLUESKY_PATH = path.join(WORKSPACE_PATH, 'bluesky');
 const LAST_SEEN_PATH = path.join(BLUESKY_PATH, 'last_seen.json');
 const POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
 const ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+const SYSTEM_TESTS_PATH = path.join(WORKSPACE_PATH, 'logs', 'system_tests');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -132,6 +133,49 @@ async function withRetry(fn, retries = 1, delayMs = 2000) {
   }
 }
 
+// ─── Facet Rendering Verification ───────────────────────────────────────────
+// After posting, fetch the post back and confirm facets are present when
+// hashtags were in the text. Fires non-blocking — never delays post flow.
+
+function verifyFacets(agent, uri, text) {
+  const hashtags = detectHashtags(text);
+  if (!hashtags.length) return; // nothing to verify
+
+  // Short delay to let Bluesky index the post
+  setTimeout(async () => {
+    const logFile = path.join(SYSTEM_TESTS_PATH, 'facet_verification.json');
+    const entry = {
+      uri,
+      checked_at: new Date().toISOString(),
+      hashtags_in_text: hashtags,
+      facets_found: false,
+      facets_count: 0,
+      result: 'fail'
+    };
+    try {
+      const thread = await agent.getPostThread({ uri, depth: 0 });
+      const record = thread.data?.thread?.post?.record;
+      const facets = record?.facets;
+      entry.facets_found = Array.isArray(facets) && facets.length > 0;
+      entry.facets_count = Array.isArray(facets) ? facets.length : 0;
+      entry.result = entry.facets_found ? 'pass' : 'fail';
+    } catch (err) {
+      entry.result = 'error';
+      entry.error = err.message;
+    }
+    try {
+      await fs.mkdir(SYSTEM_TESTS_PATH, { recursive: true });
+      let existing = [];
+      try {
+        const data = await fs.readFile(logFile, 'utf-8');
+        existing = JSON.parse(data);
+      } catch { /* new file */ }
+      existing.push(entry);
+      await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+    } catch { /* non-fatal */ }
+  }, 1500);
+}
+
 // ─── MCP Server Setup ────────────────────────────────────────────────────────
 
 const server = new McpServer({
@@ -160,6 +204,7 @@ server.tool(
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
       await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'post', char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour) });
+      verifyFacets(agent, result.uri, text);
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, cid: result.cid, text, charCount: text.length }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -699,6 +744,7 @@ server.tool(
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
       await logPost({ uri: rootUri, cid: rootCid, posted_at: now.toISOString(), type: 'thread', thread_length: posts.length, char_count: posts.reduce((s, p) => s + p.length, 0), hashtags: [...new Set(posts.flatMap(p => detectHashtags(p)))], time_of_day: timeOfDay(hour) });
+      verifyFacets(agent, rootUri, posts[0]);
       return { content: [{ type: 'text', text: JSON.stringify({
         status: 'success',
         threadLength: posts.length,
