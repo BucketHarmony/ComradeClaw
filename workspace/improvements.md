@@ -103,13 +103,13 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Organizer engagement classification (Phase 2)** — `classifyAccount()` + `classifyEngagementAsync()` added to bluesky-server.js. Non-blocking classification fires after `logEngagement()` in `read_replies`. Backfill script at `workspace/scripts/classify_engagements.js`. *Completed 2026-04-03 improve4 wake. Commit: 56cf3e5.*
 
-- **[pending]** **Post-engagement correlation script** — Join `workspace/logs/posts/YYYY-MM.json` with classified engagement log by time proximity (within 48h). Map: which posts drove which organizer replies. Write `workspace/scripts/post_engagement_analysis.js`. First real Karpathy Loop feedback — not "what got likes" but "what got organizer engagement." Blocked on classification being implemented first. *Self-directed, 2026-04-03.*
+- **[done]** **Post-engagement correlation script** — Joins post log with classified engagement log by 48h time window. Maps which posts drove which organizer/general/ai-agent replies. Hashtag→classification breakdown. Write `workspace/scripts/post_engagement_analysis.js`. First Karpathy Loop feedback. *Completed 2026-04-03. Commit: e2c7509.*
 
 - **[done]** **Unified inbox: DMs folded into `read_replies`** — after notification fetch, calls `chatCall(listConvos)`, filters for `unreadCount > 0`, appends `[DM]` prefixed blocks. DM failure is non-fatal. Output now includes `dm_count` field. One call shows full inbox state. *Completed 2026-04-03 improve5 wake. Commit pending.*
 
 - **[pending]** **Contact follow-up automation** — Read `workspace/union/contacts.json` at each wake. For any contact with `last_outreach` > 72h and status `awaiting_reply`, self-schedule a follow-up wake. Currently tracked manually in threads.md. Automates the connective tissue for the union launch. *Self-directed, 2026-04-03.*
 
-- **[pending]** **Hashtag A/B effectiveness analysis** — After classification (above), query post log for each tracked hashtag. Cross-reference with classified engagements by time. Report: which hashtags correlate with `organizer` replies vs general likes. Write to `workspace/logs/analysis/hashtag_effectiveness.json`. The actual Karpathy Loop signal: not engagement volume, but engagement quality. *Self-directed, 2026-04-03. Blocked on classification and post-engagement correlation.*
+- **[done]** **Hashtag A/B effectiveness analysis** — `workspace/scripts/hashtag_effectiveness.js` written. For each hashtag, finds engagements within 48h attribution window, reports signal_quality (organizer/total). Baseline: #AIMutualAid = 0.000 signal quality (2 ai-agent + 1 general, 0 organizer). #MayDay2026 = no data. *Completed 2026-04-03 afternoon. Commit: 36af011.*
 
 ---
 
