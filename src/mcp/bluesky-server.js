@@ -394,14 +394,6 @@ server.tool(
         ? relevant.filter(n => new Date(n.indexedAt) > new Date(lastSeen))
         : relevant;
 
-      if (filtered.length === 0) {
-        return { content: [{ type: 'text', text: JSON.stringify({
-          status: 'success', count: 0,
-          message: include_read ? 'No replies, mentions, or quotes found.' : 'No new replies since last check.',
-          formatted: ''
-        }) }] };
-      }
-
       const blocks = [];
       let newestTimestamp = lastSeen;
 
@@ -486,6 +478,14 @@ server.tool(
       if (dmBlocks.length > 0) {
         allBlocks.push(`--- DMs (${dmBlocks.length} unread) ---`);
         allBlocks.push(...dmBlocks);
+      }
+
+      if (allBlocks.length === 0) {
+        return { content: [{ type: 'text', text: JSON.stringify({
+          status: 'success', count: 0, dm_count: 0,
+          message: include_read ? 'No replies, mentions, quotes, or unread DMs.' : 'No new replies or unread DMs since last check.',
+          formatted: ''
+        }) }] };
       }
 
       return { content: [{ type: 'text', text: JSON.stringify({
