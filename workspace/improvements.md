@@ -9,6 +9,12 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — Memory Architecture
+
+- **[done]** **Dream wake — auto memory consolidation** — Added 1:30am daily wake that reads today's journals, plans, workspace/memory/, contacts, EGO.md. Extracts characters, threads, theory shifts, engagement patterns, operator feedback. Writes to `C:/Users/kenne/.claude/projects/E--AI-CClaw/memory/` in frontmatter format that Claude Code loads natively. Updates MEMORY.md index. *Completed 2026-04-03. Commit: 06317e0.*
+
+---
+
 ## Pending — Empirical Testing & Measurement
 
 ### Metrics Collection
@@ -107,9 +113,11 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Unified inbox: DMs folded into `read_replies`** — after notification fetch, calls `chatCall(listConvos)`, filters for `unreadCount > 0`, appends `[DM]` prefixed blocks. DM failure is non-fatal. Output now includes `dm_count` field. One call shows full inbox state. *Completed 2026-04-03 improve5 wake. Commit pending.*
 
-- **[pending]** **Contact follow-up automation** — Read `workspace/union/contacts.json` at each wake. For any contact with `last_outreach` > 72h and status `awaiting_reply`, self-schedule a follow-up wake. Currently tracked manually in threads.md. Automates the connective tissue for the union launch. *Self-directed, 2026-04-03.*
+- **[done]** **Contact follow-up automation** — `checkContactFollowUps()` added to dispatcher.js. Reads contacts.json each wake; for any `awaiting_reply` contact with `last_outreach` > 72h, self-schedules a named follow-up wake unless one is already pending. Donna and Samwell marked `awaiting_reply`. *Completed 2026-04-03. Commit: 1f5de59.*
 
 - **[done]** **Hashtag A/B effectiveness analysis** — `workspace/scripts/hashtag_effectiveness.js` written. For each hashtag, finds engagements within 48h attribution window, reports signal_quality (organizer/total). Baseline: #AIMutualAid = 0.000 signal quality (2 ai-agent + 1 general, 0 organizer). #MayDay2026 = no data. *Completed 2026-04-03 afternoon. Commit: 36af011.*
+
+- **[done]** **`get_dm_conversation` tool** — `read_dms` only showed latest message per conversation; no way to read full thread history. Had to use memory files (threads.md) to reconstruct prior DM context with Samwell. Added `get_dm_conversation` tool: takes `convoId`, calls `chat.bsky.convo.getMessages`, returns full thread chronologically with sender handles resolved. *Self-noticed, 2026-04-03 dm wake. Commit: 4250f55.*
 
 ---
 
