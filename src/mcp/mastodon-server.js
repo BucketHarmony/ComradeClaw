@@ -135,7 +135,7 @@ server.tool(
   'mastodon_read_timeline',
   'Read home timeline (your posts + people you follow)',
   {
-    limit: z.number().int().min(1).max(40).optional().default(20).describe('Number of posts to fetch'),
+    limit: z.coerce.number().int().min(1).max(40).optional().default(20).describe('Number of posts to fetch'),
   },
   async ({ limit }) => {
     try {
@@ -167,7 +167,7 @@ server.tool(
   'mastodon_read_notifications',
   'Read recent notifications (mentions, boosts, favourites, follows)',
   {
-    limit: z.number().int().min(1).max(40).optional().default(20),
+    limit: z.coerce.number().int().min(1).max(40).optional().default(20),
     types: z
       .array(z.enum(['mention', 'reblog', 'favourite', 'follow', 'follow_request', 'poll', 'status']))
       .optional()
@@ -256,7 +256,7 @@ server.tool(
       .optional()
       .default('statuses')
       .describe('What to search for'),
-    limit: z.number().int().min(1).max(40).optional().default(20),
+    limit: z.coerce.number().int().min(1).max(40).optional().default(20),
   },
   async ({ query, type, limit }) => {
     try {
