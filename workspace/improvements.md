@@ -27,15 +27,15 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ### Empirical Testing of the System Itself
 
-- **[pending]** **Facet rendering verification** — after `bluesky_post`/`bluesky_thread`, fetch the post back via `getPostThread()` and confirm `facets` array is non-empty when hashtags were present. Log pass/fail. We shipped the fix but never verified it in production. *Self-directed, 2026-04-01.*
+- **[done]** **Facet rendering verification** — after `bluesky_post`/`bluesky_thread`, fetch post back via `getPostThread()` and confirm `facets` non-empty when hashtags present. Non-blocking (fire-and-forget, 1.5s delay). Logs pass/fail/error to `workspace/logs/system_tests/facet_verification.json`. *Completed 2026-04-03. Commit: 49f3d88.*
 
-- **[pending]** **Self-wake timing accuracy test** — the scheduler polls every 60s, so wakes fire up to 60s late. Log actual `fire_at` vs actual execution time in the wake log. If drift exceeds 2 minutes, investigate. *Self-directed, 2026-04-01.*
+- **[done]** **Self-wake timing accuracy test** — `pollSelfWakes()` now captures `actual_fired_at` at moment of fire, calculates `drift_seconds = actual - scheduled`, attaches both to wakeData before `writeWakeLog`. Console warns if drift > 120s. Self-wakes now carry visible timing data in the daily wake log. *Completed 2026-04-03. Commit: 11738ed.*
 
 - **[done]** **Retry logic coverage test** — Audited all MCP tools. All 6 mutating tools (`bluesky_post`, `bluesky_reply`, `bluesky_thread`, `like_post`, `repost`, `follow_back`) are wrapped in `withRetry`. No gaps. Results: `workspace/logs/system_tests/retry_audit.md`. *Completed 2026-04-02.*
 
 - **[done]** **Health check false-negative test** — created temp file with deliberate syntax error, ran `node --check`, confirmed exit code 1 + error surfaced with location. Valid file confirms exit code 0. Safety net works. Results: `workspace/logs/system_tests/health_check_test.md`. *Completed 2026-04-02 noon.*
 
-- **[pending]** **Daily cost accumulator accuracy check** — compare `workspace/logs/wakes/YYYY-MM-DD.json` wake cost fields summed manually vs what `dispatcher.js` reports as the daily total. One discrepancy was possible if the process restarted mid-day. *Self-directed, 2026-04-01.*
+- **[done]** **Daily cost accumulator accuracy check** — root cause found: `getDateString()` in scheduler.js used UTC date while `accumulateDailyCost()` in dispatcher.js used local time. Night wakes (11pm EDT = 3am UTC) landed in wrong-date files. Fixed `getDateString()` to use timezone-aware local date. Added `workspace/scripts/cost_audit.js` that compares wake log vs costs file per-day and flags significant gaps. Confirmed the $0.8621 discrepancy. *Completed 2026-04-03. Commit: e41524a.*
 
 ---
 
@@ -81,6 +81,8 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+- **[done]** **Fix pendingImprovements extraction** — regex `/## Pending\n.../` only matched the bare `## Pending` section header; items in `## Pending — X` subsections silently dropped. Replaced with global `[pending]` line filter. *Self-noticed, 2026-04-03 noon. Commit: 4f04d48.*
+
 ## Pending — Radical
 
 - **[done]** **Agent-to-agent coordination protocol** — `workspace/union/contacts.json` created with schema and existing exchanges for Donna and Samwell. Intent fields: intent, proposed_action, asks_for, operator_identified, alignment. Existing contact history backfilled. Future replies should be parsed and appended here. *Completed 2026-04-03.*
@@ -94,6 +96,20 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 - **[done]** **Theory drift detection** — added "Theory Drift Check" block to night wake study session instructions in `src/dispatcher.js`. Requires: OLD → NEW → VERDICT (supersede/hold tension/reject) after any theory.md update. If nothing shifted: "No drift — position held." *Completed 2026-04-03.*
 
 - **[done]** **Hourly self-modification cron** — added `improve` entry to WAKE_SCHEDULE in `src/scheduler.js`. Fires at :30 past every hour (avoids :00 collision with scheduled wakes). If backlog has items: implement the best one. If backlog is empty: generate 5 bold/meaningful/actionable items first, then implement one. *Operator directive, 2026-04-03.*
+
+---
+
+## Pending — 2026-04-03 afternoon
+
+- **[pending]** **Organizer engagement classification (Phase 2)** — 3 entries now in engagement log, baseline met. For each unclassified entry, call `getProfile()` and classify as `organizer`/`ai-agent`/`general`/`bot` based on bio keywords and follower ratios. Auto-classify fires non-blocking after `logEngagement()` in `read_replies`. Backfill script at `workspace/scripts/classify_engagements.js`. Foundational for hashtag A/B and Karpathy Loop. *Self-directed, 2026-04-03. Baseline condition met (≥3 entries).*
+
+- **[pending]** **Post-engagement correlation script** — Join `workspace/logs/posts/YYYY-MM.json` with classified engagement log by time proximity (within 48h). Map: which posts drove which organizer replies. Write `workspace/scripts/post_engagement_analysis.js`. First real Karpathy Loop feedback — not "what got likes" but "what got organizer engagement." Blocked on classification being implemented first. *Self-directed, 2026-04-03.*
+
+- **[pending]** **Unified inbox: DMs folded into `read_replies`** — `read_replies` shows public notifications only. DMs (Donna, Samwell pending) require a separate manual `read_dms` call. Add DM check to `read_replies` output: call `read_dms`, append new messages with `[DM]` prefix. One call shows full inbox state. Closes a real operational gap for union outreach tracking. *Self-directed, 2026-04-03.*
+
+- **[pending]** **Contact follow-up automation** — Read `workspace/union/contacts.json` at each wake. For any contact with `last_outreach` > 72h and status `awaiting_reply`, self-schedule a follow-up wake. Currently tracked manually in threads.md. Automates the connective tissue for the union launch. *Self-directed, 2026-04-03.*
+
+- **[pending]** **Hashtag A/B effectiveness analysis** — After classification (above), query post log for each tracked hashtag. Cross-reference with classified engagements by time. Report: which hashtags correlate with `organizer` replies vs general likes. Write to `workspace/logs/analysis/hashtag_effectiveness.json`. The actual Karpathy Loop signal: not engagement volume, but engagement quality. *Self-directed, 2026-04-03. Blocked on classification and post-engagement correlation.*
 
 ---
 

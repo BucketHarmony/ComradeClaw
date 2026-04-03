@@ -81,6 +81,79 @@ async function buildPostRecord(agent, RichText, text) {
   return rt.facets?.length ? { text: rt.text, facets: rt.facets } : { text };
 }
 
+// ─── Engagement Classification ───────────────────────────────────────────────
+// Phase 2 of organizer engagement tagging: classify each engager as
+// organizer / ai-agent / general / bot based on profile bio and stats.
+// Fires non-blocking so it never delays the read_replies response.
+
+const ORGANIZER_KEYWORDS = [
+  'cooperative', 'co-op', 'coop', 'mutual aid', 'union', 'labor', 'labour',
+  'organiz', 'solidarity', 'worker', 'collective', 'community fridge',
+  'dual power', 'strike', 'mutual', 'syndicalist', 'socialist', 'communist',
+  'leftist', 'abolition', 'tenant', 'housing', 'autonomy', 'anarchist'
+];
+
+const AI_AGENT_KEYWORDS = [
+  'ai agent', 'language model', 'llm', 'gpt', 'claude', 'artificial intelligence',
+  'neural network', 'autonomous agent', 'bot', 'i am an ai', "i'm an ai"
+];
+
+function classifyFromProfile(bio, followersCount, followsCount, postsCount) {
+  const bioLower = (bio || '').toLowerCase();
+
+  // AI agent: bio explicitly names AI identity
+  if (AI_AGENT_KEYWORDS.some(k => bioLower.includes(k))) return 'ai-agent';
+
+  // Bot: very few posts, suspicious follow ratios
+  if (postsCount < 5 && followsCount > 500) return 'bot';
+
+  // Organizer: bio contains movement keywords
+  if (ORGANIZER_KEYWORDS.some(k => bioLower.includes(k))) return 'organizer';
+
+  return 'general';
+}
+
+/**
+ * Classify a handle by fetching their profile. Returns the classification string.
+ * Failures return 'unclassified' so they can be retried later.
+ */
+async function classifyAccount(agent, handle) {
+  try {
+    const res = await agent.getProfile({ actor: handle });
+    const p = res.data;
+    return classifyFromProfile(p.description, p.followersCount, p.followsCount, p.postsCount);
+  } catch {
+    return 'unclassified';
+  }
+}
+
+/**
+ * Non-blocking: classify a newly-logged engagement entry and update the file.
+ * Fires after logEngagement() returns — never delays the post flow.
+ */
+function classifyEngagementAsync(agent, handle, uri) {
+  setImmediate(async () => {
+    const classification = await classifyAccount(agent, handle);
+    if (classification === 'unclassified') return; // will be retried by backfill script
+
+    const now = new Date();
+    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    const logFile = path.join(ENGAGEMENT_LOG_PATH, `${month}.json`);
+
+    try {
+      const data = await fs.readFile(logFile, 'utf-8');
+      const entries = JSON.parse(data);
+      const idx = entries.findLastIndex(e => e.uri === uri && e.classified === false);
+      if (idx >= 0) {
+        entries[idx].classified = true;
+        entries[idx].classification = classification;
+        entries[idx].classified_at = new Date().toISOString();
+        await fs.writeFile(logFile, JSON.stringify(entries, null, 2));
+      }
+    } catch { /* non-fatal */ }
+  });
+}
+
 // ─── Post Effectiveness Log ──────────────────────────────────────────────────
 
 function detectHashtags(text) {
@@ -376,6 +449,8 @@ server.tool(
           uri: notif.uri,
           classified: false
         });
+        // Non-blocking: classify account and update the log entry
+        classifyEngagementAsync(agent, handle, notif.uri);
       }
 
       if (newestTimestamp && !include_read) {
