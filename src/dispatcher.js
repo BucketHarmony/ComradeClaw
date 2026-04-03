@@ -118,6 +118,69 @@ async function checkOperatorAbsence() {
   }
 }
 
+// ─── Contact Follow-Up Automation ────────────────────────────────────────────
+
+const CONTACTS_FILE = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
+const CONTACT_FOLLOWUP_HOURS = 72;
+
+/**
+ * Check contacts.json for any awaiting_reply contacts whose last_outreach was
+ * more than CONTACT_FOLLOWUP_HOURS ago. For each, self-schedule a follow-up wake
+ * unless one is already pending.
+ */
+async function checkContactFollowUps() {
+  let contacts = [];
+  try {
+    const data = JSON.parse(await fs.readFile(CONTACTS_FILE, 'utf-8'));
+    contacts = data.contacts || [];
+  } catch {
+    return; // No contacts file — nothing to check
+  }
+
+  const now = Date.now();
+  const wakeQueueFile = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
+  let queue = [];
+  try { queue = JSON.parse(await fs.readFile(wakeQueueFile, 'utf-8')); } catch {}
+
+  for (const contact of contacts) {
+    if (contact.status !== 'awaiting_reply') continue;
+    if (!contact.last_outreach) continue;
+
+    const outreachMs = new Date(contact.last_outreach).getTime();
+    const hoursElapsed = (now - outreachMs) / (1000 * 60 * 60);
+    if (hoursElapsed < CONTACT_FOLLOWUP_HOURS) continue;
+
+    const wakeLabel = `followup-${contact.handle.split('.')[0]}`;
+    const hasExisting = queue.some(w => w.label === wakeLabel && w.status === 'pending');
+    if (hasExisting) {
+      console.log(`[dispatcher] Follow-up wake for ${contact.name} already pending — skipping`);
+      continue;
+    }
+
+    const lastExchange = (contact.exchanges || []).slice().reverse().find(e => e.direction === 'outbound');
+    const lastText = lastExchange?.text || '(no recorded message)';
+
+    queue.push({
+      id: `${Date.now()}-fu-${contact.handle.split('.')[0]}`,
+      label: wakeLabel,
+      purpose: `Follow-up: ${contact.name} (${contact.handle}) has not replied in ${Math.round(hoursElapsed)}h. Last outreach: "${lastText}". Check read_replies for any response. If still no reply, decide whether to send a gentle follow-up DM or note the silence in threads.md.`,
+      fire_at: new Date(now + 10 * 60 * 1000).toISOString(),
+      scheduled_by: 'self',
+      status: 'pending'
+    });
+
+    console.log(`[dispatcher] Follow-up wake scheduled for ${contact.name} (${Math.round(hoursElapsed)}h since last outreach)`);
+  }
+
+  if (queue.length > 0) {
+    try {
+      await fs.writeFile(wakeQueueFile, JSON.stringify(queue, null, 2));
+    } catch (err) {
+      console.error(`[dispatcher] Failed to write wake queue: ${err.message}`);
+    }
+  }
+}
+
 // ─── Session Management ──────────────────────────────────────────────────────
 
 // No-op: sessions are not persisted (stateless invocations). Kept for commands.js compatibility.
@@ -603,6 +666,9 @@ export async function executeWake(label, time, purpose = null) {
 
   // Check for operator absence — schedule welfare-check wake if needed
   await checkOperatorAbsence();
+
+  // Check for overdue contacts — schedule follow-up wakes if needed
+  await checkContactFollowUps();
 
   // Parse wake results
   const toolsUsed = result.toolsUsed || [];
