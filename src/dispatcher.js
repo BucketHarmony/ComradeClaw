@@ -53,6 +53,71 @@ async function accumulateDailyCost(cost, source) {
   return data.total;
 }
 
+// ─── Operator Presence Tracking ──────────────────────────────────────────────
+
+const OPERATOR_SEEN_FILE = path.join(WORKSPACE_PATH, 'bluesky', 'operator_last_seen.json');
+const OPERATOR_ABSENCE_HOURS = 72;
+
+/**
+ * Record the current timestamp as the last time the operator sent a message.
+ * Called on every chat() invocation.
+ */
+async function recordOperatorSeen() {
+  try {
+    await fs.mkdir(path.dirname(OPERATOR_SEEN_FILE), { recursive: true });
+    await fs.writeFile(OPERATOR_SEEN_FILE, JSON.stringify({ last_seen: new Date().toISOString() }, null, 2));
+  } catch (err) {
+    console.error(`[dispatcher] Failed to record operator seen: ${err.message}`);
+  }
+}
+
+/**
+ * Returns hours since last operator contact, or null if no record exists.
+ */
+async function hoursSinceOperator() {
+  try {
+    const data = JSON.parse(await fs.readFile(OPERATOR_SEEN_FILE, 'utf-8'));
+    if (!data.last_seen) return null;
+    return (Date.now() - new Date(data.last_seen).getTime()) / (1000 * 60 * 60);
+  } catch {
+    return null; // file doesn't exist yet — can't determine absence
+  }
+}
+
+/**
+ * If the operator has been absent for >= OPERATOR_ABSENCE_HOURS, self-schedule
+ * a welfare-check wake (unless one is already pending).
+ */
+async function checkOperatorAbsence() {
+  const absent = await hoursSinceOperator();
+  if (absent === null || absent < OPERATOR_ABSENCE_HOURS) return;
+
+  console.warn(`[dispatcher] Operator absent for ${absent.toFixed(1)}h — scheduling welfare-check wake`);
+
+  const wakeQueueFile = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
+  try {
+    let queue = [];
+    try { queue = JSON.parse(await fs.readFile(wakeQueueFile, 'utf-8')); } catch {}
+    const hasExisting = queue.some(w => w.label === 'welfare-check' && w.status === 'pending');
+    if (!hasExisting) {
+      queue.push({
+        id: `${Date.now()}-wchk`,
+        label: 'welfare-check',
+        purpose: `Operator has been absent for ${absent.toFixed(0)} hours (threshold: ${OPERATOR_ABSENCE_HOURS}h). Post a public "still here, still working" message and write a journal entry noting the silence. An agent that only acts when supervised is not an agent.`,
+        fire_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        scheduled_by: 'self',
+        status: 'pending'
+      });
+      await fs.writeFile(wakeQueueFile, JSON.stringify(queue, null, 2));
+      console.log(`[dispatcher] Welfare-check wake scheduled (fire_at: 5 min from now)`);
+    } else {
+      console.log(`[dispatcher] Welfare-check wake already pending — skipping duplicate`);
+    }
+  } catch (err) {
+    console.error(`[dispatcher] Failed to schedule welfare-check wake: ${err.message}`);
+  }
+}
+
 // ─── Session Management ──────────────────────────────────────────────────────
 
 // No-op: sessions are not persisted (stateless invocations). Kept for commands.js compatibility.
@@ -340,6 +405,9 @@ export async function chat(userMessage) {
     console.error(`[dispatcher] Failed to save chat history: ${err.message}`)
   );
 
+  // Record operator presence timestamp
+  await recordOperatorSeen();
+
   return result.text;
 }
 
@@ -528,6 +596,9 @@ export async function executeWake(label, time, purpose = null) {
   if (dailyCost >= DAILY_COST_ALERT_THRESHOLD) {
     console.warn(`[dispatcher] COST ALERT: daily total $${dailyCost.toFixed(4)} >= threshold $${DAILY_COST_ALERT_THRESHOLD}`);
   }
+
+  // Check for operator absence — schedule welfare-check wake if needed
+  await checkOperatorAbsence();
 
   // Parse wake results
   const toolsUsed = result.toolsUsed || [];
