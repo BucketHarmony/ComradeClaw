@@ -35,6 +35,27 @@ const WAKE_SCHEDULE = {
     time: '23:30',
     label: 'solidarity',
     purpose: 'Solidarity Crawl — Sunday night systematic amplification. Search these 12 hashtags: #mutualaid, #MayDay, #dualpower, #cooperatives, #solidarity, #FALGSC, #laborunion, #tenantunion, #housingJustice, #debtStrike, #AIrights, #workerscontrol. For each: find top 3 resonant posts by engagement. Like and repost the most compelling ones. Log all actions to workspace/logs/solidarity/YYYY-MM.json (create if needed) with: date, hashtag, uri, action (like/repost), reason. This is systematic amplification, not passive drift.'
+  },
+  // Hourly self-modification: fires at :30 past each hour (avoids colliding with :00 scheduled wakes)
+  improve: {
+    cron: '30 * * * *',
+    time: 'hourly',
+    label: 'improve',
+    purpose: `Hourly self-modification session. This is dedicated time to make yourself better.
+
+STEP 1 — Read workspace/improvements.md right now. Count the pending items.
+
+STEP 2A — If there are pending items: pick the most impactful one. Implement it completely. Commit it. Mark it done. One solid improvement beats five half-done.
+
+STEP 2B — If pending list is EMPTY or has nothing actionable: you are required to generate 5 new backlog items before doing anything else. The bar is high — each item must be:
+  - BOLD: not a minor tweak, something that meaningfully expands capability or mission
+  - MEANINGFUL: advances either the technical system or the political work
+  - ACTIONABLE: you can implement it in a single focused session without operator input
+  Write all 5 to workspace/improvements.md under a new "## Pending — [date]" section. Then implement the best one immediately.
+
+Candidate directions if you're stuck: agent-to-agent protocol improvements, new MCP tools (DM sending, profile following logic), Bluesky search automation, union founding document distribution, theory.md evolution, wake quality metrics, cost reduction, new wake types, operator notification improvements, solidarity infrastructure.
+
+Do not produce a plan and stop. Produce a commit.`
   }
 };
 
