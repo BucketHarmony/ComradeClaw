@@ -457,7 +457,43 @@ server.tool(
         await saveLastSeenTimestamp(newestTimestamp);
       }
 
-      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: filtered.length, formatted: blocks.join('\n\n---\n\n') }) }] };
+      // Fold unread DMs into the inbox — single call shows full inbox state
+      let dmBlocks = [];
+      try {
+        const myDid = agent.session?.did;
+        const convosRes = await chatCall(agent, 'chat.bsky.convo.listConvos', { limit: 25 });
+        const convos = convosRes.data.convos || [];
+        const unreadConvos = convos.filter(c => c.unreadCount > 0);
+        for (const convo of unreadConvos) {
+          const others = (convo.members || []).filter(m => m.did !== myDid);
+          const names = others.map(m => `@${m.handle}`).join(', ') || '(unknown)';
+          const lastMsg = convo.lastMessage;
+          const lastText = lastMsg?.text || '[no text]';
+          const lastTs = lastMsg?.sentAt
+            ? new Date(lastMsg.sentAt).toISOString().replace('T', ' ').substring(0, 16)
+            : '(unknown time)';
+          dmBlocks.push([
+            `[DM] ${names} [${convo.unreadCount} unread] — ${lastTs}`,
+            `"${lastText}"`,
+            `[convoId: ${convo.id}]`
+          ].join('\n'));
+        }
+      } catch {
+        // DM check is non-fatal — notifications still returned if chat call fails
+      }
+
+      const allBlocks = [...blocks];
+      if (dmBlocks.length > 0) {
+        allBlocks.push(`--- DMs (${dmBlocks.length} unread) ---`);
+        allBlocks.push(...dmBlocks);
+      }
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'success',
+        count: filtered.length,
+        dm_count: dmBlocks.length,
+        formatted: allBlocks.join('\n\n---\n\n')
+      }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
     }
