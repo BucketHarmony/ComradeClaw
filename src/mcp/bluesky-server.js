@@ -996,6 +996,57 @@ server.tool(
   }
 );
 
+// ─── Tool: get_dm_conversation ───────────────────────────────────────────────
+
+server.tool(
+  'get_dm_conversation',
+  'Read the full message history for a DM conversation. Use the convoId from read_dms.',
+  {
+    convoId: z.string().describe('Conversation ID from read_dms output.'),
+    limit: z.coerce.number().optional().default(20).describe('Max messages to return. Default 20, max 50.')
+  },
+  async ({ convoId, limit }) => {
+    const fetchLimit = Math.min(Math.max(1, limit), 50);
+
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const myDid = agent.session.did;
+
+      // Get convo details for member handle resolution
+      const convoRes = await chatCall(agent, 'chat.bsky.convo.getConvo', { convoId });
+      const members = convoRes.data.convo.members || [];
+      const didToHandle = {};
+      for (const m of members) {
+        didToHandle[m.did] = m.handle || m.did;
+      }
+
+      // Get messages (returns newest-first; reverse for chronological display)
+      const msgsRes = await chatCall(agent, 'chat.bsky.convo.getMessages', { convoId, limit: fetchLimit });
+      const messages = (msgsRes.data.messages || []).reverse();
+
+      const blocks = messages.map(msg => {
+        const senderDid = msg.sender?.did || 'unknown';
+        const senderHandle = senderDid === myDid ? 'me' : `@${didToHandle[senderDid] || senderDid}`;
+        const ts = msg.sentAt
+          ? new Date(msg.sentAt).toISOString().replace('T', ' ').substring(0, 16)
+          : '(unknown)';
+        return `[${ts}] ${senderHandle}: "${msg.text || '[no text]'}"`;
+      });
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'success',
+        convoId,
+        count: blocks.length,
+        formatted: blocks.join('\n')
+      }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
