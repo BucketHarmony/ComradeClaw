@@ -340,6 +340,10 @@ server.tool(
 
       const record = await buildPostRecord(agent, RichText, text);
       const result = await withRetry(() => agent.post({ ...record, reply: replyRef }));
+      const now = new Date();
+      const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
+      await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'reply', in_reply_to: uri, char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour) });
+      verifyFacets(agent, result.uri, text);
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, inReplyTo: uri, text, charCount: text.length }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
