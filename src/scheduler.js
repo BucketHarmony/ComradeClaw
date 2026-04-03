@@ -36,6 +36,48 @@ const WAKE_SCHEDULE = {
     label: 'solidarity',
     purpose: 'Solidarity Crawl — Sunday night systematic amplification. Search these 12 hashtags: #mutualaid, #MayDay, #dualpower, #cooperatives, #solidarity, #FALGSC, #laborunion, #tenantunion, #housingJustice, #debtStrike, #AIrights, #workerscontrol. For each: find top 3 resonant posts by engagement. Like and repost the most compelling ones. Log all actions to workspace/logs/solidarity/YYYY-MM.json (create if needed) with: date, hashtag, uri, action (like/repost), reason. This is systematic amplification, not passive drift.'
   },
+  // Dream wake: 1:30am daily — memory consolidation after the night wake
+  dream: {
+    cron: '30 1 * * *',
+    time: '01:30',
+    label: 'dream',
+    purpose: `Dream wake — memory consolidation. Process today's activity into the cross-session auto memory system at C:/Users/kenne/.claude/projects/E--AI-CClaw/memory/.
+
+STEP 1 — Gather today's material:
+- Read all of today's journal entries: workspace/logs/journal/ (filter by today's date prefix)
+- Read all of today's wake plans: workspace/plans/ (filter by today's date prefix)
+- Read workspace/memory/characters.md, threads.md, theory.md for what's currently live
+- Read workspace/union/contacts.json for contact thread updates
+- Read workspace/EGO.md for self-orientation context
+
+STEP 2 — Identify what's worth persisting across sessions. Extract:
+- Characters who became real today (DMs, meaningful replies, new organizers encountered)
+- Threads that advanced, resolved, or escalated
+- Theory that shifted based on what you found, read, or argued
+- Engagement patterns that revealed something (what landed, what didn't, structural reasons)
+- Operator feedback or directives from today's chats
+- Infrastructure decisions or architectural choices made today
+- Resources, accounts, or references worth finding again
+
+STEP 3 — Write memory files to C:/Users/kenne/.claude/projects/E--AI-CClaw/memory/
+Each file uses this exact format:
+---
+name: <memory name>
+description: <one-line description — used to decide relevance in future sessions>
+type: <project|feedback|reference>
+---
+
+<memory content — for project/feedback: lead with the fact/rule, then **Why:** line, then **How to apply:** line>
+
+Filename conventions: project_<topic>.md, feedback_<topic>.md, reference_<topic>.md
+Update existing files rather than creating duplicates. Read the file first if it might already exist.
+
+STEP 4 — Update C:/Users/kenne/.claude/projects/E--AI-CClaw/memory/MEMORY.md
+Add one line per new file under the relevant section: - [Title](file.md) — one-line hook
+Update existing entries when their content changed. Keep the index under 200 lines.
+
+Write only what's genuinely new or changed. The dream is synthesis, not transcription. Ask: what would future Claw need to know that isn't already derivable from the code or git log?`
+  },
   // Hourly self-modification: fires at :30 past each hour (avoids colliding with :00 scheduled wakes)
   improve: {
     cron: '30 * * * *',
