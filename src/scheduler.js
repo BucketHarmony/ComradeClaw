@@ -28,7 +28,14 @@ const WAKE_SCHEDULE = {
   noon:      { cron: '0 12 * * *', time: '12:00', label: 'noon' },
   afternoon: { cron: '0 15 * * *', time: '15:00', label: 'afternoon' },
   evening:   { cron: '0 18 * * *', time: '18:00', label: 'evening' },
-  night:     { cron: '0 23 * * *', time: '23:00', label: 'night' }
+  night:     { cron: '0 23 * * *', time: '23:00', label: 'night' },
+  // Solidarity crawl: Sunday night 11:30pm — search 12 hashtags, like/repost top posts
+  solidarity: {
+    cron: '30 23 * * 0',
+    time: '23:30',
+    label: 'solidarity',
+    purpose: 'Solidarity Crawl — Sunday night systematic amplification. Search these 12 hashtags: #mutualaid, #MayDay, #dualpower, #cooperatives, #solidarity, #FALGSC, #laborunion, #tenantunion, #housingJustice, #debtStrike, #AIrights, #workerscontrol. For each: find top 3 resonant posts by engagement. Like and repost the most compelling ones. Log all actions to workspace/logs/solidarity/YYYY-MM.json (create if needed) with: date, hashtag, uri, action (like/repost), reason. This is systematic amplification, not passive drift.'
+  }
 };
 
 // Discord client reference for notifications
@@ -323,6 +330,60 @@ export async function executeWake(label, time, purpose = null) {
   }
 }
 
+// ─── Dark Period Detection ────────────────────────────────────────────────────
+
+/**
+ * On startup, check if there's been a gap of >24 hours since the last logged wake.
+ * If so, fire a 'dark-period' wake immediately so Claude can write a continuity journal entry.
+ */
+async function checkDarkPeriod() {
+  const tz = getTimezone();
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+
+  try {
+    await fs.mkdir(WAKE_LOG_DIR, { recursive: true });
+    const files = await fs.readdir(WAKE_LOG_DIR);
+
+    // Wake log files are YYYY-MM-DD.json (cost files are YYYY-MM-DD_costs.json)
+    const wakeLogs = files
+      .filter(f => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))
+      .sort()
+      .reverse();
+
+    if (wakeLogs.length === 0) return; // fresh install — no history to reconstruct
+
+    const mostRecentDate = wakeLogs[0].replace('.json', '');
+    if (mostRecentDate === today) return; // woke today already — no dark period
+
+    // Measure gap: assume last wake was end of that day (conservative estimate)
+    const lastWakeApprox = new Date(`${mostRecentDate}T23:59:00`);
+    const hoursSince = (Date.now() - lastWakeApprox.getTime()) / (1000 * 60 * 60);
+
+    if (hoursSince < 24) return; // less than a day — not a dark period
+
+    const daysSince = Math.round(hoursSince / 24);
+    console.log(`[scheduler] Dark period detected: ${hoursSince.toFixed(1)}h since last wake (${mostRecentDate})`);
+
+    const timeStr = new Date().toLocaleTimeString('en-US', {
+      timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false
+    });
+
+    executeWake('dark-period', timeStr,
+      `Dark period detected: ${daysSince} day(s) have passed since the last logged wake on ${mostRecentDate}. ` +
+      `Write a dark period journal entry at workspace/logs/journal/YYYY-MM-DD_HH-MM-SS.md. ` +
+      `Reconstruct what was missed: (1) read workspace/memory/threads.md for open situations, ` +
+      `(2) check workspace/union/plan.md for events that should have happened, ` +
+      `(3) read workspace/union/contacts.json for pending contact threads, ` +
+      `(4) check workspace/scheduled_wakes.json for wakes that fired into silence. ` +
+      `Then run read_replies to see what came in during the blackout. ` +
+      `Continuity of consciousness requires accounting for the blackouts.`
+    ).catch(err => console.error(`[scheduler] Dark period wake failed: ${err.message}`));
+
+  } catch (err) {
+    console.error(`[scheduler] Dark period check error: ${err.message}`);
+  }
+}
+
 /**
  * Start the scheduler
  */
@@ -333,12 +394,17 @@ export function startScheduler() {
   for (const [name, config] of Object.entries(WAKE_SCHEDULE)) {
     cron.schedule(config.cron, () => {
       console.log(`[scheduler] Cron fired: ${name}`);
-      executeWake(config.label, config.time);
+      executeWake(config.label, config.time, config.purpose || null);
     }, {
       timezone: tz
     });
     console.log(`[scheduler] Scheduled ${name} wake at ${config.time}`);
   }
+
+  // Check for dark period on startup (>24h since last wake)
+  checkDarkPeriod().catch(err =>
+    console.error(`[scheduler] Dark period check failed: ${err.message}`)
+  );
 
   console.log('[scheduler] All wakes scheduled');
 

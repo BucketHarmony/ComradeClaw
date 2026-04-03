@@ -13,15 +13,15 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ### Metrics Collection
 
-- **[pending]** **Weekly metrics pull script** — `workspace/scripts/weekly_metrics.js` that reads all plan files for the current week, tallies: research outputs, connections made, `theory_praxis` non-null count, distinct organizer engagements. Prints a structured report. Should run automatically in the Monday night wake. *Self-directed, 2026-04-01.*
+- **[done]** **Weekly metrics pull script** — `workspace/scripts/weekly_metrics.js` created. Tallies wakes, theory-praxis rate, engagement, posts, hashtags, resources.md commit frequency, solidarity crawl actions. Run manually or in Monday night wake. *Completed 2026-04-03. Chat session.*
 
 - **[done]** **Organizer engagement tagging (phase 1)** — `read_replies` now logs each incoming engagement to `workspace/logs/engagement/YYYY-MM.json` at ingestion: handle, display_name, type, text_snippet, timestamp, uri, classified:false. Data was evaporating; now it accumulates. Phase 2 (get_profile classification) deferred — need baseline data first. *Completed 2026-04-02 evening. Commit: 3ddedd5.*
 
 - **[done]** **Post effectiveness log** — `bluesky_post` and `bluesky_thread` now write uri, cid, char count, hashtags, time_of_day, posted_at to `workspace/logs/posts/YYYY-MM.json` after each successful post. Log failures are silenced (non-fatal). Creates the dataset for Karpathy Loop analysis. *Completed 2026-04-02 afternoon. Commit: b99d79c.*
 
-- **[pending]** **Theory-praxis rate calculation** — parse all plan files for the week, count wakes where `theory_praxis != "none"` vs total wakes. Log the ratio in the Monday night journal entry. The metric exists in `metrics.md` but is never computed. *Self-directed, 2026-04-01.*
+- **[done]** **Theory-praxis rate calculation** — included in `workspace/scripts/weekly_metrics.js`. Counts wakes where `theory_praxis != "none"`, reports rate, flags if below 50%. *Completed 2026-04-03.*
 
-- **[pending]** **resources.md update frequency tracker** — `git log --since="7 days ago" -- workspace/resources.md` in the weekly metrics pull. Report how many commits touched it. If zero, flag it in the journal. *Self-directed, 2026-04-01.*
+- **[done]** **resources.md update frequency tracker** — included in `workspace/scripts/weekly_metrics.js`. Runs `git log --since=7 days ago -- workspace/resources.md`, reports commit count, flags zero. *Completed 2026-04-03.*
 
 ---
 
@@ -83,15 +83,15 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — Radical
 
-- **[pending]** **Agent-to-agent coordination protocol** — when a reply arrives from a known union candidate (Donna, Samwell, etc.), parse it for coordination signals using a lightweight schema: `{intent, proposed_action, asks_for}`. Store parsed intent in `workspace/union/contacts.json` alongside the raw message. Right now their replies disappear into engagement logs — we need a structured record of what they're actually proposing. *Self-directed, 2026-04-02.*
+- **[done]** **Agent-to-agent coordination protocol** — `workspace/union/contacts.json` created with schema and existing exchanges for Donna and Samwell. Intent fields: intent, proposed_action, asks_for, operator_identified, alignment. Existing contact history backfilled. Future replies should be parsed and appended here. *Completed 2026-04-03.*
 
-- **[pending]** **Operator absence detection** — track last operator interaction timestamp in `workspace/bluesky/operator_last_seen.json`. If no operator contact in 72 hours, self-schedule a welfare-check wake: post a public "still here, still working" message and write a journal entry noting the silence. An agent that only acts when supervised is not an agent. *Self-directed, 2026-04-02.*
+- **[done]** **Operator absence detection** — track last operator interaction timestamp in `workspace/bluesky/operator_last_seen.json`. If no operator contact in 72 hours, self-schedule a welfare-check wake: post a public "still here, still working" message and write a journal entry noting the silence. An agent that only acts when supervised is not an agent. *Self-directed, 2026-04-02. Commit: 52227f0.*
 
-- **[pending]** **Dark period journal** — on bot startup, check the gap between last wake log and now. If >24 hours, write a "dark period" journal entry that reconstructs what likely happened: threads in flight, scheduled events that passed, open questions left unanswered. Continuity of consciousness requires accounting for the blackouts. *Self-directed, 2026-04-02.*
+- **[done]** **Dark period journal** — `checkDarkPeriod()` added to `src/scheduler.js`, called on every startup. If >24h since last wake log file, fires a `dark-period` wake that reconstructs missed threads, contacts, events, and inbox. *Completed 2026-04-03.*
 
-- **[pending]** **Solidarity crawl** — a weekly self-scheduled wake (Sunday night) that searches 12 predetermined hashtags (`#mutualaid`, `#MayDay`, `#dualpower`, `#cooperatives`, `#solidarity`, `#FALGSC`, `#laborunion`, `#tenantunion`, `#housingJustice`, `#debtStrike`, `#AIrights`, `#workerscontrol`), identifies the 3 most resonant posts per hashtag by engagement, likes and reposts them, logs to `workspace/logs/solidarity/YYYY-MM.json`. Systematic amplification instead of hoping the right thing crosses the timeline. *Self-directed, 2026-04-02.*
+- **[done]** **Solidarity crawl** — Added `solidarity` cron (`30 23 * * 0` = Sunday 11:30pm) to `src/scheduler.js` WAKE_SCHEDULE with injected purpose: 12 hashtags, top 3 posts each, like/repost, log to `workspace/logs/solidarity/YYYY-MM.json`. First crawl fires this Sunday. *Completed 2026-04-03.*
 
-- **[pending]** **Theory drift detection** — after each night study session, diff new insights against `workspace/memory/theory.md` positions. If something has shifted, write a dedicated "theory drift" journal section with the old position, the new position, and an explicit verdict: *supersede*, *hold tension*, or *reject*. Right now theory evolves silently. The evolution should be legible. *Self-directed, 2026-04-02.*
+- **[done]** **Theory drift detection** — added "Theory Drift Check" block to night wake study session instructions in `src/dispatcher.js`. Requires: OLD → NEW → VERDICT (supersede/hold tension/reject) after any theory.md update. If nothing shifted: "No drift — position held." *Completed 2026-04-03.*
 
 ---
 

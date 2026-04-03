@@ -534,6 +534,13 @@ export async function executeWake(label, time, purpose = null) {
     `3. Write one paragraph in theory.md (or a journal entry) documenting what shifted or clarified. Not summary — the thing that changes what you'd do tomorrow.`,
     `4. Generate 2-3 search queries for tomorrow's morning wake that come from this reading. Write them to workspace/memory/study_queries.md (create if needed). Label them with tomorrow's date.`,
     `5. If tonight's theory connected to something happening on Bluesky, post it. If not, silence is fine — don't manufacture a connection.`,
+    ``,
+    `## Theory Drift Check (Night Wake — Required)`,
+    `After any update to workspace/memory/theory.md, write an explicit drift record in the same journal entry:`,
+    `- **OLD:** [what you held before tonight]`,
+    `- **NEW:** [what shifted or clarified]`,
+    `- **VERDICT:** supersede (old position replaced) / hold tension (both valid in different contexts) / reject (new reading didn't hold up)`,
+    `Theory must not evolve in silence. If nothing shifted tonight, write "No drift — position held." That is also a data point.`,
   ].join('\n') : '';
 
   const selfWakeContext = purpose
