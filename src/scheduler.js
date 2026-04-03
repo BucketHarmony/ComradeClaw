@@ -88,10 +88,11 @@ export function setChatProcessing(processing) {
 }
 
 /**
- * Get today's date string
+ * Get today's date string (timezone-aware, matches dispatcher.js accumulateDailyCost)
  */
 function getDateString() {
-  return new Date().toISOString().split('T')[0];
+  const tz = getTimezone();
+  return new Date().toLocaleDateString('en-CA', { timeZone: tz });
 }
 
 /**
