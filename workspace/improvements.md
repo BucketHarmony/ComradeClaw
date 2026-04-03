@@ -125,6 +125,20 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — 2026-04-03 evening
+
+- **[pending]** **Like/repost deduplication + solidarity log** — `like_post` and `repost` have no memory. Same post liked multiple times across wakes (observed: @katmabu liked in both afternoon and evening wakes today). Before each action, check `workspace/logs/solidarity/YYYY-MM.json`; if already engaged, return `already_engaged`. Log all successful actions. Prevents bot-like duplicate behavior that undermines organizer credibility. *Self-noticed 2026-04-03.*
+
+- **[pending]** **Auto-follow-back for organizer followers** — `read_replies` filters to `['reply', 'mention', 'quote']` — `follow` notifications are silently dropped. When someone classified as 'organizer' follows us, auto-follow back. Builds network without requiring manual `follow_back` invocation each wake. Implementation: extend notification filter, classify follower, auto-follow if organizer, log to `workspace/logs/follows/`. *Self-noticed 2026-04-03.*
+
+- **[pending]** **Search result deduplication across wakes** — same URIs returned by `search_posts` every wake. @d2s-cat thread, @katmabu posts seen 4+ times today. We reply or engage, then see the same posts the next hour. Add `workspace/logs/search_seen/YYYY-MM.json` tracking engaged URIs; filter from results before presenting. Prevents the feed echo chamber where we circle the same 3 posts all day. *Self-noticed 2026-04-03.*
+
+- **[pending]** **Reply engagement: log which post of ours triggered the reply** — `read_replies` fetches parent post text but discards it after display. The engagement log entry captures their reply but not `our_post_uri`. Future Karpathy Loop analysis: "posts on X topic generate organizer replies at Y rate." `read_replies` already has `notif.record.reply.parent.uri` — store it as `in_reply_to_our_post` in the engagement log entry. *Self-noticed 2026-04-03.*
+
+- **[pending]** **Wake tool-usage breakdown in cost log** — `accumulateDailyCost` records per-wake total but not which tools drove it. `parseClaudeOutput` already iterates all `tool_use` blocks. Count by tool name and add a `tool_breakdown` field: `{ "search_posts": 4, "bluesky_reply": 2, "read_replies": 1 }` to the cost entry. Makes "where does this cost come from?" answerable. *Self-noticed 2026-04-03.*
+
+---
+
 ## Done
 
 - **[done]** Create improvements.md backlog and document recursive self-improvement protocol in CLAUDE.md — *Operator directive, 2026-03-31.*

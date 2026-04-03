@@ -24,6 +24,7 @@ const POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
 const ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
 const SYSTEM_TESTS_PATH = path.join(WORKSPACE_PATH, 'logs', 'system_tests');
 const CONTACTS_PATH = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
+const SOLIDARITY_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'solidarity');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -228,6 +229,41 @@ async function logDMOutbound(handle, text) {
     if (contact.status === 'awaiting_reply') contact.status = 'in_conversation';
     await fs.writeFile(CONTACTS_PATH, JSON.stringify(data, null, 2));
   } catch { /* non-fatal */ }
+}
+
+// ─── Solidarity Action Log (like/repost deduplication) ───────────────────────
+
+/**
+ * Check if we've already performed this action on this URI this month.
+ * Reads current month's solidarity log. Non-fatal: returns false on any error.
+ */
+async function hasEngaged(type, uri) {
+  const month = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+  const logFile = path.join(SOLIDARITY_LOG_PATH, `${month}.json`);
+  try {
+    const data = await fs.readFile(logFile, 'utf-8');
+    const entries = JSON.parse(data);
+    return entries.some(e => e.type === type && e.uri === uri);
+  } catch {
+    return false; // no log yet = haven't engaged
+  }
+}
+
+/**
+ * Log a successful like or repost to the solidarity log (fire-and-forget).
+ */
+function logSolidarityAction(type, uri, cid) {
+  setImmediate(async () => {
+    try {
+      await fs.mkdir(SOLIDARITY_LOG_PATH, { recursive: true });
+      const month = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+      const logFile = path.join(SOLIDARITY_LOG_PATH, `${month}.json`);
+      let existing = [];
+      try { existing = JSON.parse(await fs.readFile(logFile, 'utf-8')); } catch { /* new file */ }
+      existing.push({ type, uri, cid: cid || null, at: new Date().toISOString() });
+      await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+    } catch { /* non-fatal */ }
+  });
 }
 
 // ─── Retry Helper ────────────────────────────────────────────────────────────
@@ -667,6 +703,11 @@ server.tool(
     const { agent, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
+    // Deduplication check — avoid liking the same post twice across wakes
+    if (await hasEngaged('like', uri)) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'already_engaged', message: `Already liked this post this month.`, uri }) }] };
+    }
+
     try {
       let postCid = cid;
       if (!postCid) {
@@ -679,6 +720,7 @@ server.tool(
         postCid = post.cid;
       }
       const result = await withRetry(() => agent.like(uri, postCid));
+      logSolidarityAction('like', uri, postCid);
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', liked: uri, likeUri: result.uri }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
@@ -699,6 +741,11 @@ server.tool(
     const { agent, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
+    // Deduplication check — avoid reposting the same post twice across wakes
+    if (await hasEngaged('repost', uri)) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'already_engaged', message: `Already reposted this post this month.`, uri }) }] };
+    }
+
     try {
       let postCid = cid;
       if (!postCid) {
@@ -711,6 +758,7 @@ server.tool(
         postCid = post.cid;
       }
       const result = await withRetry(() => agent.repost(uri, postCid));
+      logSolidarityAction('repost', uri, postCid);
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', reposted: uri, repostUri: result.uri }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
