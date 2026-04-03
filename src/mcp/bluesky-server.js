@@ -1042,7 +1042,16 @@ server.tool(
 
       // Get messages (returns newest-first; reverse for chronological display)
       const msgsRes = await chatCall(agent, 'chat.bsky.convo.getMessages', { convoId, limit: fetchLimit });
-      const messages = (msgsRes.data.messages || []).reverse();
+      const rawMessages = msgsRes.data.messages || [];
+
+      // Mark conversation as read so it stops appearing in read_replies unread count
+      if (rawMessages.length > 0) {
+        try {
+          await chatCall(agent, 'chat.bsky.convo.updateRead', { convoId, messageId: rawMessages[0].id });
+        } catch { /* non-fatal — marking read is best-effort */ }
+      }
+
+      const messages = rawMessages.reverse();
 
       const blocks = messages.map(msg => {
         const senderDid = msg.sender?.did || 'unknown';
