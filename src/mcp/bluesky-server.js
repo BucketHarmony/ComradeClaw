@@ -23,6 +23,7 @@ const LAST_SEEN_PATH = path.join(BLUESKY_PATH, 'last_seen.json');
 const POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
 const ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
 const SYSTEM_TESTS_PATH = path.join(WORKSPACE_PATH, 'logs', 'system_tests');
+const CONTACTS_PATH = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -191,6 +192,22 @@ async function logPost(entry) {
 async function logEngagement(entry) {
   try {
     await appendToMonthlyLog(ENGAGEMENT_LOG_PATH, entry);
+  } catch { /* non-fatal */ }
+}
+
+// ─── DM Contact Logger ───────────────────────────────────────────────────────
+
+async function logDMOutbound(handle, text) {
+  try {
+    const raw = await fs.readFile(CONTACTS_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    const contact = data.contacts.find(c => c.handle === handle);
+    if (!contact) return; // not a tracked contact, nothing to log
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' });
+    contact.exchanges.push({ date: today, direction: 'outbound', text });
+    contact.last_outreach = today;
+    if (contact.status === 'awaiting_reply') contact.status = 'in_conversation';
+    await fs.writeFile(CONTACTS_PATH, JSON.stringify(data, null, 2));
   } catch { /* non-fatal */ }
 }
 
@@ -929,6 +946,7 @@ server.tool(
         })
       );
 
+      logDMOutbound(resolvedHandle, text); // non-blocking: update contacts.json if tracked
       return { content: [{ type: 'text', text: JSON.stringify({
         status: 'success',
         to: resolvedHandle,

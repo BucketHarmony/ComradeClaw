@@ -226,9 +226,15 @@ export async function invokeClaude(prompt, options = {}) {
     args.push('--allowed-tools', ...allowedTools);
   }
 
-  args.push(prompt);
+  // Pipe prompt via stdin to avoid ENAMETOOLONG on Windows (32K arg limit)
+  // Do NOT append prompt to args — it goes through stdin instead
+  const totalArgLength = args.reduce((sum, a) => sum + a.length, 0) + prompt.length;
+  const useStdin = totalArgLength > 30000;
+  if (!useStdin) {
+    args.push(prompt);
+  }
 
-  console.log(`[dispatcher] Spawning: claude ${args.join(' ').substring(0, 100)}...`);
+  console.log(`[dispatcher] Spawning: claude ${args.join(' ').substring(0, 100)}... (stdin: ${useStdin})`);
 
   return new Promise((resolve, reject) => {
     let stdout = '';
@@ -250,7 +256,10 @@ export async function invokeClaude(prompt, options = {}) {
       timeout: timeoutMs
     });
 
-    // Close stdin so claude doesn't wait for piped input
+    // If prompt is too long for args, pipe it via stdin
+    if (useStdin) {
+      proc.stdin.write(prompt);
+    }
     proc.stdin.end();
 
     proc.stdout.on('data', (data) => {
@@ -394,9 +403,16 @@ async function loadChatHistory() {
 
   if (turns.length === 0) return '';
 
-  // Keep last N turns
-  const recent = turns.slice(-CHAT_HISTORY_TURNS);
-  const formatted = recent.map(t => `[${t.time}] ${t.speaker}: ${t.text.trim()}`).join('\n');
+  // Keep last N turns, but cap total size to avoid ENAMETOOLONG on Windows
+  const MAX_HISTORY_CHARS = 8000;
+  let recent = turns.slice(-CHAT_HISTORY_TURNS);
+  let formatted = recent.map(t => `[${t.time}] ${t.speaker}: ${t.text.trim()}`).join('\n');
+
+  // Trim from the front if too long
+  while (formatted.length > MAX_HISTORY_CHARS && recent.length > 2) {
+    recent = recent.slice(1);
+    formatted = recent.map(t => `[${t.time}] ${t.speaker}: ${t.text.trim()}`).join('\n');
+  }
   return `## Recent Conversation History\n${formatted}`;
 }
 
