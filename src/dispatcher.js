@@ -468,13 +468,10 @@ export async function executeWake(label, time, purpose = null) {
   try {
     const improvementsPath = path.join(WORKSPACE_PATH, 'improvements.md');
     const content = await fs.readFile(improvementsPath, 'utf-8');
-    // Extract only the ## Pending section
-    const match = content.match(/## Pending\n([\s\S]*?)(?=\n## |$)/);
-    if (match) {
-      const lines = match[1].split('\n').filter(l => l.includes('[pending]'));
-      if (lines.length > 0) {
-        pendingImprovements = `## Pending Improvements\n${lines.join('\n')}`;
-      }
+    // Collect all [pending] items regardless of which section they're in
+    const lines = content.split('\n').filter(l => l.includes('[pending]'));
+    if (lines.length > 0) {
+      pendingImprovements = `## Pending Improvements\n${lines.join('\n')}`;
     }
   } catch {
     // improvements.md missing — not fatal
