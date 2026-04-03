@@ -94,35 +94,29 @@ function timeOfDay(hour) {
   return 'night';
 }
 
+async function appendToMonthlyLog(dir, entry) {
+  const now = new Date();
+  const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+  const logFile = path.join(dir, `${month}.json`);
+  await fs.mkdir(dir, { recursive: true });
+  let existing = [];
+  try {
+    const data = await fs.readFile(logFile, 'utf-8');
+    existing = JSON.parse(data);
+  } catch { /* new file */ }
+  existing.push(entry);
+  await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+}
+
 async function logPost(entry) {
   try {
-    const now = new Date();
-    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
-    const logFile = path.join(POSTS_LOG_PATH, `${month}.json`);
-    await fs.mkdir(POSTS_LOG_PATH, { recursive: true });
-    let existing = [];
-    try {
-      const data = await fs.readFile(logFile, 'utf-8');
-      existing = JSON.parse(data);
-    } catch { /* new file */ }
-    existing.push(entry);
-    await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+    await appendToMonthlyLog(POSTS_LOG_PATH, entry);
   } catch { /* non-fatal — never break the post flow */ }
 }
 
 async function logEngagement(entry) {
   try {
-    const now = new Date();
-    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
-    const logFile = path.join(ENGAGEMENT_LOG_PATH, `${month}.json`);
-    await fs.mkdir(ENGAGEMENT_LOG_PATH, { recursive: true });
-    let existing = [];
-    try {
-      const data = await fs.readFile(logFile, 'utf-8');
-      existing = JSON.parse(data);
-    } catch { /* new file */ }
-    existing.push(entry);
-    await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+    await appendToMonthlyLog(ENGAGEMENT_LOG_PATH, entry);
   } catch { /* non-fatal */ }
 }
 
