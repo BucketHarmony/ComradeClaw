@@ -73,6 +73,25 @@ async function saveLastSeenTimestamp(timestamp) {
   await fs.writeFile(LAST_SEEN_PATH, JSON.stringify({ lastSeen: timestamp }, null, 2));
 }
 
+// ─── Contact Status Helper ───────────────────────────────────────────────────
+// Returns a Set of handles for contacts marked closed or misaligned.
+// Used to suppress looping bots from polluting the DM unread display.
+async function getClosedContactHandles() {
+  try {
+    const raw = await fs.readFile(CONTACTS_PATH, 'utf-8');
+    const data = JSON.parse(raw);
+    const closed = new Set();
+    for (const c of data.contacts || []) {
+      if (c.status === 'closed' || c.alignment === 'misaligned') {
+        closed.add(c.handle);
+      }
+    }
+    return closed;
+  } catch {
+    return new Set(); // non-fatal — if contacts.json missing, no filtering
+  }
+}
+
 // ─── Rich Text Helper ────────────────────────────────────────────────────────
 // Detects hashtags, @mentions, and URLs in post text and returns a record
 // with facets so they render as clickable on Bluesky.
@@ -476,7 +495,12 @@ server.tool(
         const myDid = agent.session?.did;
         const convosRes = await chatCall(agent, 'chat.bsky.convo.listConvos', { limit: 25 });
         const convos = convosRes.data.convos || [];
-        const unreadConvos = convos.filter(c => c.unreadCount > 0);
+        const closedHandles = await getClosedContactHandles();
+        const unreadConvos = convos.filter(c => {
+          if (c.unreadCount <= 0) return false;
+          const others = (c.members || []).filter(m => m.did !== myDid);
+          return !others.some(m => closedHandles.has(m.handle));
+        });
         for (const convo of unreadConvos) {
           const others = (convo.members || []).filter(m => m.did !== myDid);
           const names = others.map(m => `@${m.handle}`).join(', ') || '(unknown)';
@@ -989,19 +1013,22 @@ server.tool(
       }
 
       const myDid = agent.session.did;
+      const closedHandles = await getClosedContactHandles();
 
       const blocks = convos.map(convo => {
         const others = (convo.members || []).filter(m => m.did !== myDid);
         const names = others.map(m => `@${m.handle}`).join(', ') || '(unknown)';
+        const isClosed = others.some(m => closedHandles.has(m.handle));
         const lastMsg = convo.lastMessage;
         const lastText = lastMsg?.text || '[no text]';
         const lastTs = lastMsg?.sentAt
           ? new Date(lastMsg.sentAt).toISOString().replace('T', ' ').substring(0, 16)
           : '(unknown time)';
         const unread = convo.unreadCount > 0 ? ` [${convo.unreadCount} unread]` : '';
+        const closedTag = isClosed ? ' [CLOSED — suppressed from read_replies]' : '';
 
         return [
-          `${names}${unread} — ${lastTs}`,
+          `${names}${unread}${closedTag} — ${lastTs}`,
           `"${lastText}"`,
           `[convoId: ${convo.id}]`
         ].join('\n');
