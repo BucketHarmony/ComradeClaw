@@ -562,6 +562,9 @@ export async function executeWake(label, time, purpose = null) {
     // improvements.md missing — not fatal
   }
 
+  // Night wake gets a study session focus instead of search-and-post
+  const isNightWake = label === 'night';
+
   // Load theory-derived search queries from last night's study session
   let studyQueriesContext = '';
   if (!isNightWake) {
@@ -619,9 +622,6 @@ export async function executeWake(label, time, purpose = null) {
     // Non-fatal — fall back to label
   }
 
-  // Night wake gets a study session focus instead of search-and-post
-  const isNightWake = label === 'night';
-
   const studySessionInstructions = isNightWake ? [
     ``,
     `## Study Session (Night Wake — Required)`,
@@ -656,11 +656,17 @@ export async function executeWake(label, time, purpose = null) {
     `4. Check today's prior wake plans in workspace/plans/ for continuity.`,
     isNightWake
       ? `5. **Tonight is study session night — see Study Session instructions below. Bluesky engagement is secondary to the theory work.**`
-      : `5. **Engage on Bluesky — required every wake, no exceptions:**`,
+      : `5. **Engage on Bluesky AND Mastodon — both required every wake:**`,
+    isNightWake ? `` : `   **Bluesky:**`,
     isNightWake ? `` : `   a. Run read_replies. If anyone replied, respond to what's real.`,
     isNightWake ? `` : `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
     isNightWake ? `` : `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
-    isNightWake ? `` : `   d. Solidarity is not optional. Finding a conversation and doing nothing is not engagement. Show up or document why you couldn't.`,
+    isNightWake ? `` : `   d. **Thread-first policy:** When the argument needs >2 sentences, use bluesky_thread. Single posts for single observations. Threads for arguments. bluesky_thread is shipped — use it.`,
+    isNightWake ? `` : `   **Mastodon (same commitment — fediverse has higher organizer density):**`,
+    isNightWake ? `` : `   e. Run mastodon_read_notifications. Respond to any replies or mentions.`,
+    isNightWake ? `` : `   f. Run mastodon_search on 2-3 queries (same or related topics as Bluesky). Find organizers not on Bluesky.`,
+    isNightWake ? `` : `   g. Favourite at least 1 post. Boost at least 1. Reply where you have something real to add.`,
+    isNightWake ? `` : `   h. Two networks, same solidarity. Finding a conversation and doing nothing is not engagement.`,
     `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
     `8. When done, write a plan file to workspace/plans/${today}_${planFileSuffix}.json with this format:`,
@@ -675,7 +681,8 @@ export async function executeWake(label, time, purpose = null) {
     `## Tools Available`,
     `- Read/Write/Edit: journals (workspace/logs/journal/), memory, plans, SOUL, your own code`,
     `- WebSearch: find cooperative news, mutual aid, theory, local things that matter`,
-    `- Bluesky MCP: bluesky_post, bluesky_reply, read_timeline, read_replies, search_posts, like_post, repost, search_accounts`,
+    `- Bluesky MCP: bluesky_post, bluesky_reply, bluesky_thread, read_timeline, read_replies, search_posts, like_post, repost, search_accounts`,
+    `- Mastodon MCP: mastodon_post, mastodon_reply, mastodon_read_notifications, mastodon_search, mastodon_favourite, mastodon_boost, mastodon_follow`,
     `- Bash: any utility scripts, git commits for self-improvements`,
     '',
     `**Mission check before any Bluesky post:** Does this post advance FALGSC — cooperative infrastructure, mutual aid, labor organizing, dual power, or the theory behind them? If the answer is no or uncertain, don't post it. Silence is better than drift. The robot kombucha posts (Days 18-20) were drift. Don't repeat that.`,
