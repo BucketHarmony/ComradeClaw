@@ -109,6 +109,7 @@ Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAM
 - **mastodon_favourite** — Favourite a toot.
 - **mastodon_search** — Search by keyword or hashtag.
 - **mastodon_follow** — Follow an account.
+- **mastodon_thread** — Post a thread on Mastodon. Takes `posts` array (each ≤500 chars); first posted standalone, each subsequent replies to prior. Up to 20 posts.
 
 ### Multi-Platform (MCP: claw-multipost)
 - **multipost** — Post to Bluesky AND Mastodon in one call. Takes `text` (base), optional `bluesky_text` (300 char override), optional `mastodon_text` (500 char override), optional `platforms` array. One platform failing does not block the other.
