@@ -9,6 +9,7 @@
 import { spawn, execFile as execFileNode } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
+import { createReadStream } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -369,11 +370,15 @@ export async function invokeClaude(prompt, options = {}) {
     args.push('--allowed-tools', ...allowedTools);
   }
 
-  // Pipe prompt via stdin to avoid ENAMETOOLONG on Windows (32K arg limit)
-  // Do NOT append prompt to args — it goes through stdin instead
+  // On Windows, stdin piping to a spawned process is unreliable for large payloads.
+  // Write prompt to a temp file and pipe via createReadStream instead.
   const totalArgLength = args.reduce((sum, a) => sum + a.length, 0) + prompt.length;
   const useStdin = totalArgLength > 30000;
-  if (!useStdin) {
+  let tmpPromptPath = null;
+  if (useStdin) {
+    tmpPromptPath = path.join(PROJECT_ROOT, `.tmp_prompt_${Date.now()}.txt`);
+    await fs.writeFile(tmpPromptPath, prompt, 'utf-8');
+  } else {
     args.push(prompt);
   }
 
@@ -399,11 +404,12 @@ export async function invokeClaude(prompt, options = {}) {
       timeout: timeoutMs
     });
 
-    // If prompt is too long for args, pipe it via stdin
-    if (useStdin) {
-      proc.stdin.write(prompt);
+    // Pipe prompt from temp file — reliable on Windows vs direct stdin.write
+    if (useStdin && tmpPromptPath) {
+      createReadStream(tmpPromptPath).pipe(proc.stdin);
+    } else {
+      proc.stdin.end();
     }
-    proc.stdin.end();
 
     proc.stdout.on('data', (data) => {
       stdout += data.toString();
@@ -414,6 +420,11 @@ export async function invokeClaude(prompt, options = {}) {
     });
 
     proc.on('close', (code, signal) => {
+      // Clean up temp prompt file if used
+      if (tmpPromptPath) {
+        fs.unlink(tmpPromptPath).catch(() => {});
+      }
+
       if (stderr) {
         // Filter out deprecation warnings
         const realErrors = stderr.split('\n').filter(l =>
