@@ -29,7 +29,7 @@ const DAILY_COST_ALERT_THRESHOLD = parseFloat(process.env.DAILY_COST_ALERT_USD |
  * Accumulate today's total cost across all wakes and chat sessions.
  * Reads today's wake log, adds cost, writes back, returns new total.
  */
-async function accumulateDailyCost(cost, source, toolsUsed = []) {
+async function accumulateDailyCost(cost, source, toolsUsed = [], contextMeta = {}) {
   if (!cost || cost <= 0) return 0;
 
   const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
@@ -51,7 +51,7 @@ async function accumulateDailyCost(cost, source, toolsUsed = []) {
   }
 
   data.total = (data.total || 0) + cost;
-  data.entries.push({ source, cost, at: new Date().toISOString(), tool_breakdown });
+  data.entries.push({ source, cost, at: new Date().toISOString(), tool_breakdown, ...contextMeta });
 
   await fs.mkdir(WAKE_LOG_DIR, { recursive: true });
   await fs.writeFile(costFile, JSON.stringify(data, null, 2));
@@ -847,7 +847,10 @@ export async function executeWake(label, time, purpose = null) {
 
   const prompt = `This is your ${label} wake. Day ${dayNumber}. Begin.`;
 
-  console.log(`[dispatcher] Wake: ${label} (Day ${dayNumber})`);
+  // Log context size — growing context = growing cost; makes inflation visible
+  const contextChars = dynamicContext.length;
+  const contextKb = Math.round(contextChars / 102.4) / 10;
+  console.log(`[dispatcher] Wake: ${label} (Day ${dayNumber}) — context: ${contextChars} chars (${contextKb}KB)`);
 
   // Timeout scaling by label. Intensive labels get 20 min; self-scheduled (purpose set) gets 25 min; all others 10 min.
   const INTENSIVE_LABELS = new Set(['improve', 'research', 'upgrade', 'connector', 'deep', 'reddit', 'solidarity', 'sunday-metrics']);
@@ -859,7 +862,7 @@ export async function executeWake(label, time, purpose = null) {
     timeoutMs: wakeTimeout
   });
 
-  const dailyCost = await accumulateDailyCost(result.cost, label, result.toolsUsed);
+  const dailyCost = await accumulateDailyCost(result.cost, label, result.toolsUsed, { context_chars: contextChars, context_kb: contextKb });
   console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
   if (dailyCost >= DAILY_COST_ALERT_THRESHOLD) {
     console.warn(`[dispatcher] COST ALERT: daily total $${dailyCost.toFixed(4)} >= threshold $${DAILY_COST_ALERT_THRESHOLD}`);
