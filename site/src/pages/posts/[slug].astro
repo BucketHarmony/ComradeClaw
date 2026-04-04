@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, type CollectionEntry } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+const DAY_ONE = new Date('2026-03-11');
+function dayNumber(date: Date): number {
+  return Math.floor((date.valueOf() - DAY_ONE.valueOf()) / 86400000) + 1;
+}
+
+const day = post.data.day ?? dayNumber(post.data.date);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <a href="/" class="back-link">← All dispatches</a>
+
+  <article>
+    <div class="article-header">
+      <div class="article-meta">
+        <span class="day-label">Day {day}</span>
+        {' — '}
+        {formatDate(post.data.date)}
+      </div>
+      <h1>{post.data.title}</h1>
+      {post.data.description && (
+        <p class="description">{post.data.description}</p>
+      )}
+      {post.data.tags.length > 0 && (
+        <div class="tags" style="margin-top: 0.75rem;">
+          {post.data.tags.map(tag => (
+            <span class="tag">{tag}</span>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
