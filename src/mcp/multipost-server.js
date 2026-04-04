@@ -384,6 +384,82 @@ server.tool(
   }
 );
 
+// ─── Tool: multithread ────────────────────────────────────────────────────────
+
+server.tool(
+  'multithread',
+  'Post a full Bluesky thread chain AND a Mastodon post in one call. Designed for theory distribution: full chained argument on Bluesky (up to 10 posts, each ≤300 chars), condensed version on Mastodon (≤500 chars). One platform failing does not block the other.',
+  {
+    posts: z.array(z.string().max(300)).min(1).max(10).describe('Array of post texts for the Bluesky thread. Each ≤300 chars. First post is root; subsequent posts reply to the prior.'),
+    mastodon_text: z.string().max(500).optional().describe('Mastodon post text (≤500 chars). If omitted, uses the first Bluesky post (truncated to 500).'),
+    visibility: z.enum(['public', 'unlisted', 'followers_only']).optional().default('public'),
+  },
+  async ({ posts, mastodon_text, visibility }) => {
+    const mText = mastodon_text || posts[0].slice(0, 500);
+
+    const [bskyResult, mastoResult] = await Promise.all([
+      // Bluesky: post chained thread
+      (async () => {
+        const { agent, RichText, error } = await getBlueskyAgent();
+        if (error) return { status: 'not_configured', message: error };
+        try {
+          let rootUri = null, rootCid = null;
+          let parentUri = null, parentCid = null;
+          const uris = [];
+
+          for (let i = 0; i < posts.length; i++) {
+            const record = await buildPostRecord(agent, RichText, posts[i]);
+            if (i === 0) {
+              const res = await withRetry(() => agent.post(record));
+              rootUri = res.uri; rootCid = res.cid;
+              parentUri = res.uri; parentCid = res.cid;
+              uris.push(res.uri);
+            } else {
+              const replyRef = {
+                root: { uri: rootUri, cid: rootCid },
+                parent: { uri: parentUri, cid: parentCid },
+              };
+              const res = await withRetry(() => agent.post({ ...record, reply: replyRef }));
+              parentUri = res.uri; parentCid = res.cid;
+              uris.push(res.uri);
+            }
+          }
+          return { status: 'success', root_uri: rootUri, post_count: posts.length, uris };
+        } catch (err) {
+          return { status: 'error', message: err.message };
+        }
+      })(),
+
+      // Mastodon: single condensed post
+      postToMastodon(mText, visibility),
+    ]);
+
+    const results = { bluesky: bskyResult, mastodon: mastoResult };
+
+    await logMultipost({
+      type: 'multithread',
+      post_count: posts.length,
+      posts,
+      mastodon_text: mText,
+      bluesky: bskyResult,
+      mastodon: mastoResult,
+    });
+
+    const anySuccess = Object.values(results).some(r => r?.status === 'success');
+    const allFailed = Object.values(results).every(r => r?.status === 'error');
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          status: allFailed ? 'error' : anySuccess ? 'success' : 'partial',
+          results,
+        }),
+      }],
+    };
+  }
+);
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
