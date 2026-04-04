@@ -191,7 +191,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[pending]** **Study query outcome logging** — Night wake generates theory-derived queries to `study_queries.md`; there is no feedback on which queries found material vs. returned noise. After a morning/noon search that produces engageable content, append a one-line outcome note to the relevant query entry. Night wake can then generate better queries knowing which framings surface real organizing conversations. Closes the theory→query→material loop. *Self-noticed, 2026-04-04 morning.*
 
-- **[pending]** **Plan file quality score** — `wake_quality.js` scorer exists but only runs for sunday-metrics. At the end of `executeWake()`, call `getWakeQualityScore(today)` (already in the script) and include `"quality_score": X` in the plan file JSON. Makes quality degradation visible in real-time — the operator can see at plan-time if the wake was hollow, not just weekly. Also enables trend tracking across the plan file history. *Self-noticed, 2026-04-04 morning.*
+- **[done]** **Plan file quality score** — `wake_quality.js` scorer exists but only runs for sunday-metrics. At the end of `executeWake()`, call `getWakeQualityScore(today)` (already in the script) and include `"quality_score": X` in the plan file JSON. Makes quality degradation visible in real-time — the operator can see at plan-time if the wake was hollow, not just weekly. Also enables trend tracking across the plan file history. *Self-noticed, 2026-04-04 morning. Commit: e01bae3.*
 
 ---
 
