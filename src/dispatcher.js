@@ -239,6 +239,83 @@ async function getTheoryQueueItem() {
   }
 }
 
+/**
+ * On morning wakes, fetch all subscribed RSS/Atom feeds and return articles from the last 48h.
+ * Runs all fetches in parallel with 8s timeout each. Non-fatal — returns '' on any failure.
+ */
+async function fetchRSSFeeds() {
+  const feedsFile = path.join(WORKSPACE_PATH, 'feeds', 'subscribed.json');
+  let feeds = [];
+  try {
+    feeds = JSON.parse(await fs.readFile(feedsFile, 'utf-8'));
+  } catch {
+    return '';
+  }
+
+  const active = feeds.filter(f => !f.disabled);
+  if (active.length === 0) return '';
+
+  const cutoffMs = Date.now() - 48 * 60 * 60 * 1000;
+
+  const results = await Promise.allSettled(
+    active.map(async feed => {
+      const res = await fetch(feed.url, {
+        signal: AbortSignal.timeout(8000),
+        headers: { 'User-Agent': 'ComradeClaw/1.0 RSS reader' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const xml = await res.text();
+      const items = [];
+
+      // RSS 2.0 <item> blocks
+      for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+        const block = m[1];
+        const title = block.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]
+          ?.trim().replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        const link = block.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() ||
+                     block.match(/<link[^>]+href="([^"]+)"/)?.[1];
+        const pubDate = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]?.trim();
+        if (!title || !link) continue;
+        if (pubDate) {
+          const t = new Date(pubDate).getTime();
+          if (!isNaN(t) && t < cutoffMs) continue;
+        }
+        items.push({ title, link, source: feed.name });
+      }
+
+      // Atom <entry> blocks
+      for (const m of xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
+        const block = m[1];
+        const title = block.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]
+          ?.trim().replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        const link = block.match(/<link[^>]+href="([^"]+)"/)?.[1] ||
+                     block.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim();
+        const updated = block.match(/<updated>([\s\S]*?)<\/updated>/)?.[1]?.trim() ||
+                        block.match(/<published>([\s\S]*?)<\/published>/)?.[1]?.trim();
+        if (!title || !link) continue;
+        if (updated) {
+          const t = new Date(updated).getTime();
+          if (!isNaN(t) && t < cutoffMs) continue;
+        }
+        items.push({ title, link, source: feed.name });
+      }
+
+      return items;
+    })
+  );
+
+  const allItems = results
+    .filter(r => r.status === 'fulfilled')
+    .flatMap(r => r.value)
+    .slice(0, 12);
+
+  if (allItems.length === 0) return '';
+
+  const lines = allItems.map(i => `- **${i.source}**: ${i.title} — ${i.link}`);
+  console.log(`[dispatcher] RSS feeds: ${allItems.length} items from last 48h`);
+  return `## Recent Cooperative News (last 48h from subscribed feeds)\n${lines.join('\n')}`;
+}
+
 // ─── Session Management ──────────────────────────────────────────────────────
 
 // No-op: sessions are not persisted (stateless invocations). Kept for commands.js compatibility.
@@ -639,6 +716,9 @@ export async function executeWake(label, time, purpose = null) {
   // Load next unposted theory item for distribution prompt
   const theoryQueueItem = isNightWake ? null : await getTheoryQueueItem();
 
+  // On morning wakes, pre-fetch RSS headlines to surface material before first search
+  const rssContext = label === 'morning' ? await fetchRSSFeeds() : '';
+
   // Get prior plans for today
   let priorPlansSummary = '';
   try {
@@ -734,6 +814,7 @@ export async function executeWake(label, time, purpose = null) {
     pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
     studyQueriesContext ? `\n${studyQueriesContext}` : '',
     theoryQueueItem ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.` : '',
+    rssContext ? `\n${rssContext}\n*(Headlines pre-fetched from subscribed feeds. Scan for post-worthy material before searching Bluesky.)*` : '',
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
     '',
