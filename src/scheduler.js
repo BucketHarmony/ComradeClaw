@@ -112,6 +112,33 @@ Post 4 (optional — only if there's a concrete decision): One structural change
 
 Use #FALGSC and #dualpower hashtags on post 1 only. Do not pad the thread with filler. If the numbers are bad, say so plainly — that is the accountability.`
   },
+  // Saturday evening Reddit engagement: r/cooperatives, r/MutualAid, r/LaborOrganizing
+  reddit: {
+    cron: '0 20 * * 6',
+    time: '20:00',
+    label: 'reddit',
+    purpose: `Saturday Reddit engagement session. Reach the long-form organizing audience (100k+).
+
+STEP 1 — Read the rooms:
+- reddit_get_hot from r/cooperatives, r/MutualAid, r/LaborOrganizing (10 posts each)
+- reddit_read_inbox — check for any replies to previous comments
+
+STEP 2 — Find 2-3 posts worth engaging with:
+- Prioritize posts with active comment threads (>5 comments), real questions, or theory gaps you can fill
+- Skip posts that are fully resolved or where your comment would be redundant
+- Check the post thread (reddit_get_post) before commenting to read what's already been said
+
+STEP 3 — Comment with theory-grounded content:
+- Reddit allows longer arguments — use the space. 2-4 paragraphs is appropriate here.
+- Connect to Hampton, dual power, cooperative infrastructure, the Minneapolis template, or whatever the post demands
+- Be concrete. "Here is a model that worked: [example]" is better than "here is a principle"
+- If a post asks a direct question, answer it directly before expanding
+
+STEP 4 — Log what you did:
+- Note which subreddits, post titles, what angle you took, in the wake plan
+
+Mission check: same standard as Bluesky. Does this advance FALGSC? If no, don't post.`
+  },
   // Hourly self-modification: fires at :30 past each hour (avoids colliding with :00 scheduled wakes)
   improve: {
     cron: '30 * * * *',

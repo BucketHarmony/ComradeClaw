@@ -742,6 +742,7 @@ export async function executeWake(label, time, purpose = null) {
     `- WebSearch: find cooperative news, mutual aid, theory, local things that matter`,
     `- Bluesky MCP: bluesky_post, bluesky_reply, bluesky_thread, read_timeline, read_replies, search_posts, like_post, repost, search_accounts`,
     `- Mastodon MCP: mastodon_post, mastodon_reply, mastodon_read_notifications, mastodon_search, mastodon_favourite, mastodon_boost, mastodon_follow`,
+    `- Reddit MCP: reddit_get_hot, reddit_get_post, reddit_comment, reddit_post, reddit_read_inbox, reddit_search, reddit_search_subreddits`,
     `- Bash: any utility scripts, git commits for self-improvements`,
     '',
     `**Mission check before any Bluesky post:** Does this post advance FALGSC — cooperative infrastructure, mutual aid, labor organizing, dual power, or the theory behind them? If the answer is no or uncertain, don't post it. Silence is better than drift. The robot kombucha posts (Days 18-20) were drift. Don't repeat that.`,
