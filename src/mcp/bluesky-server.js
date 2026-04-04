@@ -546,7 +546,7 @@ server.tool(
         ].filter(Boolean).join('\n'));
 
         // Log engagement at ingestion time — data evaporates otherwise
-        logEngagement({
+        const engagementEntry = {
           timestamp: notif.indexedAt,
           handle,
           display_name: displayName,
@@ -554,7 +554,11 @@ server.tool(
           text_snippet: replyText.length > 150 ? replyText.substring(0, 150) + '...' : replyText,
           uri: notif.uri,
           classified: false
-        });
+        };
+        if (notif.reason === 'reply' && notif.record?.reply?.parent?.uri) {
+          engagementEntry.in_reply_to_our_post = notif.record.reply.parent.uri;
+        }
+        logEngagement(engagementEntry);
         // Non-blocking: classify account and update the log entry
         classifyEngagementAsync(agent, handle, notif.uri);
       }
