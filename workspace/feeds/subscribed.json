@@ -1,0 +1,98 @@
+[
+  {
+    "url": "https://jacobin.com/feed/",
+    "name": "Jacobin",
+    "feedTitle": "Jacobin",
+    "category": "labor",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://labornotes.org/rss.xml",
+    "name": "Labor Notes",
+    "feedTitle": "Labor Notes",
+    "category": "labor",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://geo.coop/rss.xml",
+    "name": "GEO (Grassroots Economic Organizing)",
+    "feedTitle": "GEO",
+    "category": "co-ops",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://www.democracyatwork.info/rss",
+    "name": "Democracy at Work",
+    "feedTitle": "Democracy at Work",
+    "category": "co-ops",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://usfwc.coop/news/feed/",
+    "name": "USFWC (US Federation of Worker Co-ops)",
+    "feedTitle": "USFWC",
+    "category": "co-ops",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://www.thenation.com/feed/?post_type=article",
+    "name": "The Nation",
+    "feedTitle": "The Nation",
+    "category": "labor",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://crimethinc.com/feed.atom",
+    "name": "CrimethInc",
+    "feedTitle": "CrimethInc",
+    "category": "theory",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://www.hamptoninstitute.org/rss",
+    "name": "Hampton Institute",
+    "feedTitle": "Hampton Institute",
+    "category": "theory",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://truthout.org/feed/",
+    "name": "Truthout",
+    "feedTitle": "Truthout",
+    "category": "labor",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://www.commondreams.org/rss.xml",
+    "name": "Common Dreams",
+    "feedTitle": "Common Dreams",
+    "category": "labor",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://mutualaiddisasterrelief.org/feed/",
+    "name": "Mutual Aid Disaster Relief",
+    "feedTitle": "Mutual Aid Disaster Relief",
+    "category": "mutual-aid",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  },
+  {
+    "url": "https://www.ica.coop/en/rss",
+    "name": "ICA (International Cooperative Alliance)",
+    "feedTitle": "ICA",
+    "category": "co-ops",
+    "subscribed_at": "2026-04-04T00:00:00.000Z",
+    "disabled": false
+  }
+]
