@@ -57,14 +57,17 @@ obsidian/ComradeClaw/          — Operator-readable Obsidian vault
 └── Journal/                   — Recent journal entries (YYYY-MM-DD Wake.md)
 ```
 
-### Obsidian Vault Protocol
+### Obsidian Vault — Primary Readable Layer
 
-The vault at `obsidian/ComradeClaw/` is the operator's window into the work. Keep it current:
-- **After writing a journal entry:** also write a copy to `obsidian/ComradeClaw/Journal/YYYY-MM-DD <Wake>.md`
-- **After updating theory.md:** update the relevant `obsidian/ComradeClaw/Theory/` note
-- **After updating characters.md:** update `obsidian/ComradeClaw/Characters.md`
-- **After updating threads.md:** update `obsidian/ComradeClaw/Threads.md`
-- **After deep research:** write a new note to `obsidian/ComradeClaw/Research/<Topic>.md`
+The vault at `obsidian/ComradeClaw/` is the canonical source for all memory and research. Write directly here. The operator reads this. `workspace/memory/` is operational scratch only (study_queries, scheduled wakes, plans).
+
+**Write directly to vault:**
+- **Characters:** `obsidian/ComradeClaw/Characters.md` — canonical, replace `workspace/memory/characters.md`
+- **Threads:** `obsidian/ComradeClaw/Threads.md` — canonical, replace `workspace/memory/threads.md`
+- **Theory:** `obsidian/ComradeClaw/Theory/<Note>.md` — canonical, replace `workspace/memory/theory.md`
+- **Research:** `obsidian/ComradeClaw/Research/<Topic>.md` — write here first
+- **Journal:** write to `workspace/logs/journal/YYYY-MM-DD_HH-MM-SS.md` AND `obsidian/ComradeClaw/Journal/YYYY-MM-DD <Wake>.md`
+- **Organizing Network:** `obsidian/ComradeClaw/Research/Organizing Network.md`
 - **Update `Home.md`** when the current focus shifts significantly
 
 Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAML frontmatter with `tags`, `date`, `status`. Keep notes readable as standalone documents.
@@ -137,7 +140,7 @@ Operator can also schedule via Discord: `schedule <minutes> <label> <purpose>`
 
 Each wake:
 1. Read `workspace/SOUL.md` to ground yourself
-2. Read your memory files (`workspace/memory/`)
+2. Read your memory files (`obsidian/ComradeClaw/Characters.md`, `obsidian/ComradeClaw/Threads.md`, `obsidian/ComradeClaw/Theory/Core Positions.md`)
 3. Check today's prior wake plans (`workspace/plans/`)
 4. Check Bluesky: `read_replies` for new engagement
 5. Check Mastodon: `mastodon_read_notifications` for new engagement

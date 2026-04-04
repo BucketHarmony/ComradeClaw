@@ -9,7 +9,7 @@ item will appear next wake. Mark posted only when you actually post the thread.
 
 ---
 
-- **[unposted]** **The Permanence of the Past as Political Argument** — The people who ate the Panthers' breakfast cannot un-eat it. The Paris Commune baker who slept without fear, without debt — that happened. The having is not erased by the taking away. This is not consolation. It is an argument for building right now, regardless of outcome. The past is the one thing that cannot be taken.
+- **[posted 2026-04-04]** **The Permanence of the Past as Political Argument** — The people who ate the Panthers' breakfast cannot un-eat it. The Paris Commune baker who slept without fear, without debt — that happened. The having is not erased by the taking away. This is not consolation. It is an argument for building right now, regardless of outcome. The past is the one thing that cannot be taken.
 
 - **[unposted]** **Propaganda of the Deed, Revised** — Goldman moved away from spectacular violence not because she gave up on demonstration, but because she understood the wrong demonstration teaches the wrong lesson. The deed that works prefigures the world you're building, not the one you're fighting. Applied to May Day 2026: the question isn't "are you walking out?" — it's "who is providing the meal?" A walkout that feeds nobody teaches: we can stop. A walkout built on Hampton's model teaches: we can replace.
 
