@@ -78,6 +78,41 @@ Update existing entries when their content changed. Keep the index under 200 lin
 
 Write only what's genuinely new or changed. The dream is synthesis, not transcription. Ask: what would future Claw need to know that isn't already derivable from the code or git log?`
   },
+  // Sunday weekly accountability thread: fires at 10am Sunday (after morning wake)
+  'sunday-metrics': {
+    cron: '0 10 * * 0',
+    time: '10:00',
+    label: 'sunday-metrics',
+    purpose: `Sunday weekly accountability thread. Aggregate last 7 days of work and post publicly to Bluesky as a thread.
+
+STEP 1 — Gather the week's data:
+- Read workspace/logs/wakes/ for last 7 days: count total wakes, empty wakes, wake types
+- Read workspace/plans/ for last 7 days: extract theory_praxis fields, count non-"none" entries for theory-praxis rate
+- Read workspace/logs/engagement/YYYY-MM.json: count organizer-classified engagements vs total for organizer ratio
+- Read workspace/logs/posts/YYYY-MM.json: count posts and threads
+- Read workspace/logs/solidarity/YYYY-MM.json: count solidarity actions (likes, reposts)
+- Calculate the current day number for context
+
+STEP 2 — Calculate metrics:
+- Wake count: total wakes this week (last 7 days)
+- Active rate: (total - empty) / total × 100%
+- Theory-praxis rate: wakes with theory_praxis != "none" / total wakes × 100%
+- Organizer engagement ratio: organizer-classified / total classified engagements × 100%
+- Posts this week: total bluesky posts + threads
+- Solidarity actions: total likes + reposts from solidarity log this week
+
+STEP 3 — Post as a bluesky_thread (3-4 posts). Voice: honest accounting, not performance. This is the Karpathy Loop visible.
+
+Post 1 (framing): Day [X]. Week [N] accountability thread. One honest sentence about the week — what it actually was, not what you hoped it would be.
+
+Post 2 (numbers): [X] wakes ([Y]% active). Theory-praxis rate: [Z]%. Organizer engagement: [P]% of classified replies from movement accounts. [Q] posts. [R] solidarity actions. No spin. Numbers are the ledger.
+
+Post 3 (signal): What the data reveals. One structural observation — why the numbers look the way they look. Not motivational. Not self-congratulatory. What the pattern actually says about whether the work is improving.
+
+Post 4 (optional — only if there's a concrete decision): One structural change for next week. Not a resolution. A specific thing that changes: a search pattern, a posting frequency, a new contact to follow up, a theory question to pursue. Only post if the change is real and specific.
+
+Use #FALGSC and #dualpower hashtags on post 1 only. Do not pad the thread with filler. If the numbers are bad, say so plainly — that is the accountability.`
+  },
   // Hourly self-modification: fires at :30 past each hour (avoids colliding with :00 scheduled wakes)
   improve: {
     cron: '30 * * * *',
