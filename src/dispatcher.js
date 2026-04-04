@@ -221,19 +221,27 @@ async function getFacetWarning() {
 /**
  * Read workspace/theory_queue.md and return the next unposted theory item,
  * or null if all items are posted or the file doesn't exist.
+ * Also returns a warning if queue is empty or running low.
  */
 async function getTheoryQueueItem() {
   try {
     const content = await fs.readFile(path.join(WORKSPACE_PATH, 'theory_queue.md'), 'utf-8');
-    for (const line of content.split('\n')) {
+    const lines = content.split('\n');
+    const unpostedItems = [];
+    for (const line of lines) {
       if (line.includes('[unposted]')) {
         const match = line.match(/\*\*\[unposted\]\*\*\s+\*\*(.+?)\*\*\s+—\s+(.+)/);
         if (match) {
-          return { title: match[1], description: match[2] };
+          unpostedItems.push({ title: match[1], description: match[2] });
         }
       }
     }
-    return null;
+    if (unpostedItems.length === 0) {
+      return { empty: true, title: null, description: null };
+    }
+    const item = unpostedItems[0];
+    item.remaining = unpostedItems.length;
+    return item;
   } catch {
     return null;
   }
@@ -813,7 +821,11 @@ export async function executeWake(label, time, purpose = null) {
     '',
     pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
     studyQueriesContext ? `\n${studyQueriesContext}` : '',
-    theoryQueueItem ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.` : '',
+    theoryQueueItem && theoryQueueItem.empty
+      ? `\n## ⚠️ THEORY QUEUE EMPTY\nAll items in workspace/theory_queue.md have been posted. The theory→distribution pipeline will produce nothing until new items are added. Before this wake ends: open workspace/theory_queue.md, read obsidian/ComradeClaw/Theory/Core Positions.md, and add at least 3 new [unposted] items from positions that haven't been queued yet. Format: - **[unposted]** **Title** — Description`
+      : theoryQueueItem && theoryQueueItem.title
+        ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.${theoryQueueItem.remaining <= 2 ? `\n\n⚠️ Only ${theoryQueueItem.remaining} item(s) left in theory queue. Add new items from Core Positions.md soon.` : ''}`
+        : '',
     rssContext ? `\n${rssContext}\n*(Headlines pre-fetched from subscribed feeds. Scan for post-worthy material before searching Bluesky.)*` : '',
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
