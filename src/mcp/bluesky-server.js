@@ -26,6 +26,7 @@ const SYSTEM_TESTS_PATH = path.join(WORKSPACE_PATH, 'logs', 'system_tests');
 const CONTACTS_PATH = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
 const SOLIDARITY_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'solidarity');
 const SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'search_seen');
+const FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -213,6 +214,19 @@ async function logPost(entry) {
 async function logEngagement(entry) {
   try {
     await appendToMonthlyLog(ENGAGEMENT_LOG_PATH, entry);
+  } catch { /* non-fatal */ }
+}
+
+async function logAutoFollow(handle, did, displayName, classification) {
+  try {
+    await appendToMonthlyLog(FOLLOWS_LOG_PATH, {
+      timestamp: new Date().toISOString(),
+      handle,
+      did,
+      display_name: displayName,
+      classification,
+      reason: 'auto-follow-back'
+    });
   } catch { /* non-fatal */ }
 }
 
@@ -507,6 +521,28 @@ server.tool(
       const filtered = lastSeen
         ? relevant.filter(n => new Date(n.indexedAt) > new Date(lastSeen))
         : relevant;
+
+      // Auto-follow-back: check new 'follow' notifications non-blocking
+      const newFollowers = notifications.filter(n =>
+        n.reason === 'follow' &&
+        (!lastSeen || new Date(n.indexedAt) > new Date(lastSeen))
+      );
+      if (newFollowers.length > 0) {
+        setImmediate(async () => {
+          for (const notif of newFollowers) {
+            try {
+              const handle = notif.author.handle;
+              const did = notif.author.did;
+              const displayName = notif.author.displayName || handle;
+              const classification = await classifyAccount(agent, handle);
+              if (classification === 'organizer') {
+                await withRetry(() => agent.follow(did));
+                logAutoFollow(handle, did, displayName, classification);
+              }
+            } catch { /* non-fatal — never block notifications */ }
+          }
+        });
+      }
 
       const blocks = [];
       let newestTimestamp = lastSeen;
