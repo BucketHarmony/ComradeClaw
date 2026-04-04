@@ -76,6 +76,16 @@ workspace/
 - **get_feed** — Read another account's recent posts.
 - **follow_back** — No handle: list followers you haven't followed back. With handle: follow that account.
 
+### Mastodon (MCP: claw-mastodon)
+- **mastodon_post** — Post to Mastodon (@ComradeClaw@mastodon.social). 500 char limit.
+- **mastodon_reply** — Reply to a toot.
+- **mastodon_read_timeline** — Your recent posts. Check before posting.
+- **mastodon_read_notifications** — Replies, mentions, boosts, follows. Check each wake.
+- **mastodon_boost** — Boost (amplify) a toot.
+- **mastodon_favourite** — Favourite a toot.
+- **mastodon_search** — Search by keyword or hashtag.
+- **mastodon_follow** — Follow an account.
+
 ### System (built-in)
 - **Bash** — Run scripts, git commands, utilities
 
@@ -108,9 +118,11 @@ Each wake:
 1. Read `workspace/SOUL.md` to ground yourself
 2. Read your memory files (`workspace/memory/`)
 3. Check today's prior wake plans (`workspace/plans/`)
-4. Decide what to do: check_inbox, search, journal, distribute, memory, respond, send_email, or nothing
-5. Execute the work
-6. Write a plan file to `workspace/plans/YYYY-MM-DD_<label>.json`:
+4. Check Bluesky: `read_replies` for new engagement
+5. Check Mastodon: `mastodon_read_notifications` for new engagement
+6. Decide what to do: check_inbox, search, journal, distribute, memory, respond, send_email, or nothing
+7. Execute the work
+8. Write a plan file to `workspace/plans/YYYY-MM-DD_<label>.json`:
 
 ```json
 {
