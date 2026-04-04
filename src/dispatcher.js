@@ -218,6 +218,27 @@ async function getFacetWarning() {
   return `⚠️ WARNING: ${pct}% hashtag facet failures in last ${recent.length} posts (${failures}/${recent.length} failed). Hashtags may not be indexing on Bluesky. Check workspace/logs/system_tests/facet_verification.json before posting.`;
 }
 
+/**
+ * Read workspace/theory_queue.md and return the next unposted theory item,
+ * or null if all items are posted or the file doesn't exist.
+ */
+async function getTheoryQueueItem() {
+  try {
+    const content = await fs.readFile(path.join(WORKSPACE_PATH, 'theory_queue.md'), 'utf-8');
+    for (const line of content.split('\n')) {
+      if (line.includes('[unposted]')) {
+        const match = line.match(/\*\*\[unposted\]\*\*\s+\*\*(.+?)\*\*\s+—\s+(.+)/);
+        if (match) {
+          return { title: match[1], description: match[2] };
+        }
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Session Management ──────────────────────────────────────────────────────
 
 // No-op: sessions are not persisted (stateless invocations). Kept for commands.js compatibility.
@@ -615,6 +636,9 @@ export async function executeWake(label, time, purpose = null) {
     }
   }
 
+  // Load next unposted theory item for distribution prompt
+  const theoryQueueItem = isNightWake ? null : await getTheoryQueueItem();
+
   // Get prior plans for today
   let priorPlansSummary = '';
   try {
@@ -709,6 +733,7 @@ export async function executeWake(label, time, purpose = null) {
     '',
     pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
     studyQueriesContext ? `\n${studyQueriesContext}` : '',
+    theoryQueueItem ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.` : '',
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
     '',
