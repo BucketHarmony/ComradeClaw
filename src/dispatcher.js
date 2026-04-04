@@ -373,8 +373,9 @@ export async function invokeClaude(prompt, options = {}) {
 
   // On Windows, stdin piping to a spawned process is unreliable for large payloads.
   // Write prompt to a temp file and pipe via createReadStream instead.
+  // Windows ENAMETOOLONG kicks in well below 32767 chars in practice — use 8000 as safe threshold.
   const totalArgLength = args.reduce((sum, a) => sum + a.length, 0) + prompt.length;
-  const useStdin = totalArgLength > 30000;
+  const useStdin = totalArgLength > 8000;
   let tmpPromptPath = null;
   if (useStdin) {
     tmpPromptPath = path.join(PROJECT_ROOT, `.tmp_prompt_${Date.now()}.txt`);
