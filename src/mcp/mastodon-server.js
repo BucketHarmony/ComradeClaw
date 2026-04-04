@@ -22,6 +22,7 @@ const __dirname = path.dirname(__filename);
 const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', '..', 'workspace');
 const MASTODON_ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
 const MASTODON_FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
+const MASTODON_SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'mastodon_search_seen');
 
 const INSTANCE = process.env.MASTODON_INSTANCE || 'https://mastodon.social';
 const TOKEN = process.env.MASTODON_ACCESS_TOKEN;
@@ -173,6 +174,42 @@ function autoFollowBackMastodonOrganizers(notifications) {
     } catch (err) {
       console.error(`[mastodon] Failed to write follows log: ${err.message}`);
     }
+  });
+}
+
+// ─── Search Seen Deduplication ───────────────────────────────────────────────
+
+/**
+ * Returns a Set of status URLs already returned by mastodon_search this month.
+ * Non-fatal: returns empty Set on any error.
+ */
+async function getMastodonSeenUrls() {
+  const month = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+  const logFile = path.join(MASTODON_SEARCH_SEEN_PATH, `${month}.json`);
+  try {
+    const data = await fs.readFile(logFile, 'utf-8');
+    const entries = JSON.parse(data);
+    return new Set(entries.map(e => e.url));
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * Log URLs returned by mastodon_search to the seen set (fire-and-forget).
+ */
+function markMastodonUrlsSeen(urls, query) {
+  setImmediate(async () => {
+    try {
+      const month = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+      const logFile = path.join(MASTODON_SEARCH_SEEN_PATH, `${month}.json`);
+      await fs.mkdir(MASTODON_SEARCH_SEEN_PATH, { recursive: true });
+      let existing = [];
+      try { existing = JSON.parse(await fs.readFile(logFile, 'utf-8')); } catch { /* new file */ }
+      const at = new Date().toISOString();
+      for (const url of urls) existing.push({ url, query, at });
+      await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+    } catch { /* non-fatal */ }
   });
 }
 
@@ -407,7 +444,7 @@ server.tool(
       const result = await masto(`/api/v2/search?${params}`);
       let items;
       if (type === 'statuses') {
-        items = (result.statuses || []).map((s) => ({
+        const allStatuses = (result.statuses || []).map((s) => ({
           id: s.id,
           account: s.account.acct,
           content: s.content.replace(/<[^>]*>/g, '').slice(0, 400),
@@ -416,6 +453,20 @@ server.tool(
           reblogs: s.reblogs_count,
           favourites: s.favourites_count,
         }));
+        // Deduplication: filter out URLs already seen this month
+        const seenUrls = await getMastodonSeenUrls();
+        items = allStatuses.filter(s => !seenUrls.has(s.url));
+        const filteredCount = allStatuses.length - items.length;
+        // Mark returned URLs as seen (fire-and-forget)
+        markMastodonUrlsSeen(items.map(s => s.url), query);
+        if (items.length === 0) {
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ status: 'ok', type, count: 0, filtered_count: filteredCount, items: [], note: 'All results already seen this month' }) }],
+          };
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ status: 'ok', type, count: items.length, filtered_count: filteredCount, items }) }],
+        };
       } else if (type === 'accounts') {
         items = (result.accounts || []).map((a) => ({
           id: a.id,
