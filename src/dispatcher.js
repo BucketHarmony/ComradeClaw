@@ -755,9 +755,9 @@ export async function executeWake(label, time, purpose = null) {
 
   console.log(`[dispatcher] Wake: ${label} (Day ${dayNumber})`);
 
-  // Self-scheduled intensive wakes (research, upgrade, connector, deep) get more time.
-  // Regular wakes: 10 min. Self-scheduled (purpose set): 25 min.
-  const wakeTimeout = purpose ? 25 * 60 * 1000 : 10 * 60 * 1000;
+  // Timeout scaling by label. Intensive labels get 20 min; self-scheduled (purpose set) gets 25 min; all others 10 min.
+  const INTENSIVE_LABELS = new Set(['improve', 'research', 'upgrade', 'connector', 'deep', 'reddit', 'solidarity', 'sunday-metrics']);
+  const wakeTimeout = purpose ? 25 * 60 * 1000 : INTENSIVE_LABELS.has(label) ? 20 * 60 * 1000 : 10 * 60 * 1000;
 
   const result = await invokeClaude(prompt, {
     appendSystemPrompt: dynamicContext,
