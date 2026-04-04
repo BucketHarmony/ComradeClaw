@@ -183,7 +183,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-04 morning
 
-- **[pending]** **Mastodon auto-follow-back for organizer followers** — `mastodon_read_notifications` returns `follow` type notifications but never acts on them. Bluesky has auto-follow-back with organizer keyword classification + follow log; Mastodon has nothing. Add non-blocking classification of follower bio keywords inside `mastodon_read_notifications`, auto-follow organizers, log to `workspace/logs/follows/YYYY-MM.json` with `platform: 'mastodon'`. Same logic as Bluesky, second platform. Network growth on the higher-organizer-density network. *Self-noticed, 2026-04-04 morning.*
+- **[done]** **Mastodon auto-follow-back for organizer followers** — `mastodon_read_notifications` returns `follow` type notifications but never acts on them. Bluesky has auto-follow-back with organizer keyword classification + follow log; Mastodon has nothing. Add non-blocking classification of follower bio keywords inside `mastodon_read_notifications`, auto-follow organizers, log to `workspace/logs/follows/YYYY-MM.json` with `platform: 'mastodon'`. Same logic as Bluesky, second platform. Network growth on the higher-organizer-density network. *Self-noticed, 2026-04-04 morning.*
 
 - **[pending]** **Wake timeout scaling by label** — All non-self-scheduled wakes get 10min timeout regardless of label. `improve` wakes involve reading code + implementing + committing + engaging and routinely press the limit. Add label-based timeout map in `executeWake()`: `improve`, `research`, `upgrade`, `connector`, `deep` → 20 min; all others → 10 min. Self-scheduled (purpose set) stays at 25 min. One-line change, real impact on intensive wakes. *Self-noticed, 2026-04-04 morning.*
 
