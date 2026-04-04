@@ -562,6 +562,22 @@ export async function executeWake(label, time, purpose = null) {
     // improvements.md missing — not fatal
   }
 
+  // Load theory-derived search queries from last night's study session
+  let studyQueriesContext = '';
+  if (!isNightWake) {
+    try {
+      const sqPath = path.join(WORKSPACE_PATH, 'memory', 'study_queries.md');
+      const sqContent = await fs.readFile(sqPath, 'utf-8');
+      // Split on section headers and find the most recent one
+      const sections = sqContent.split(/\n(?=## \d{4}-)/).filter(s => s.trim());
+      if (sections.length > 0) {
+        studyQueriesContext = `## Theory-Derived Search Queries (from last night's study)\n${sections[0].trim()}`;
+      }
+    } catch {
+      // No study_queries.md — not fatal
+    }
+  }
+
   // Get prior plans for today
   let priorPlansSummary = '';
   try {
@@ -652,6 +668,7 @@ export async function executeWake(label, time, purpose = null) {
     studySessionInstructions,
     '',
     pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
+    studyQueriesContext ? `\n${studyQueriesContext}` : '',
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
     '',

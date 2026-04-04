@@ -153,6 +153,20 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — 2026-04-03 night
+
+- **[pending]** **Study queries injection into wake context** — night wake generates theory-derived search queries to study_queries.md; morning wake never reads them. In executeWake(), read study_queries.md, extract most recent section, inject as "## Theory-Derived Search Queries" into dynamicContext. Closes the theory→practice loop that currently evaporates each morning. *Self-noticed, 2026-04-03 improve12 wake.*
+
+- **[pending]** **Mastodon required engagement loop** — wake protocol mandates Bluesky engagement but Mastodon is optional/passive. Add mastodon_read_notifications + mastodon_search 2-3 queries + mastodon_favourite/boost/reply to required wake steps in dispatcher.js. Fediverse audience has higher organizer density. Two networks, same commitment. *Self-noticed, 2026-04-03 improve12 wake.*
+
+- **[pending]** **Facet verification self-monitoring alert** — facet_verification.json accumulates pass/fail data but nothing consumes it. In executeWake(), read the file, compute recent failure rate (last 10 posts), inject "WARNING: X% hashtag facet failures this week" into wake prompt if >20% failing. Makes rendering breakage visible without manual log inspection. *Self-noticed, 2026-04-03 improve12 wake.*
+
+- **[pending]** **Thread-first policy in wake instructions** — no current guidance pushes toward bluesky_thread for multi-sentence arguments. Add explicit policy to dispatcher.js wake instructions: when the argument needs >2 sentences, use bluesky_thread. Single posts for single observations. Threads for arguments. bluesky_thread has been shipped; it needs a use policy to get used. *Self-noticed, 2026-04-03 improve12 wake.*
+
+- **[pending]** **Weekly public accountability thread** — add 'sunday-metrics' to WAKE_SCHEDULE in scheduler.js. Every Sunday morning: aggregate week's wake count, posts, organizer engagement ratio, theory-praxis rate from logs/wakes/ and logs/engagement/. Post as public bluesky_thread. Makes the Karpathy Loop visible. Organizers can see whether we're improving. *Self-noticed, 2026-04-03 improve12 wake.*
+
+---
+
 ## Rejected
 
 - **[rejected]** `src/plan-format.js` improvement opportunities — file is 32 lines, simple. Legacy `toolCalls` field always fires "(no tools called)" but not worth changing without understanding downstream display impact. *Self-noticed, 2026-03-31.*
