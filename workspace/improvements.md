@@ -129,13 +129,13 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Like/repost deduplication + solidarity log** — `like_post` and `repost` have no memory. Same post liked multiple times across wakes (observed: @katmabu liked in both afternoon and evening wakes today). Before each action, check `workspace/logs/solidarity/YYYY-MM.json`; if already engaged, return `already_engaged`. Log all successful actions. Prevents bot-like duplicate behavior that undermines organizer credibility. *Self-noticed 2026-04-03.*
 
-- **[pending]** **Auto-follow-back for organizer followers** — `read_replies` filters to `['reply', 'mention', 'quote']` — `follow` notifications are silently dropped. When someone classified as 'organizer' follows us, auto-follow back. Builds network without requiring manual `follow_back` invocation each wake. Implementation: extend notification filter, classify follower, auto-follow if organizer, log to `workspace/logs/follows/`. *Self-noticed 2026-04-03.*
+- **[done]** **Auto-follow-back for organizer followers** — `read_replies` now extracts 'follow' notifications from the batch, classifies each follower non-blocking via `classifyAccount()`, auto-follows back if classified as 'organizer', logs to `workspace/logs/follows/YYYY-MM.json`. *Self-noticed 2026-04-03. Commit: 1ead086.*
 
 - **[done]** **Search result deduplication across wakes** — `getSeenSearchUris()` reads `workspace/logs/search_seen/YYYY-MM.json`, `markSearchUrisSeen()` logs returned URIs fire-and-forget. `search_posts` now filters already-seen URIs before returning; reports filtered count. Stops the feed echo chamber where same 3 posts circle all day. *Self-noticed 2026-04-03. Commit: 5c1b22c.*
 
 - **[done]** **Reply engagement: log which post of ours triggered the reply** — stored `in_reply_to_our_post` from `notif.record.reply.parent.uri` in engagement log entries. Karpathy Loop can now answer "posts on X topic generate organizer replies at Y rate." *Self-noticed 2026-04-03. Commit: 08f9ac4.*
 
-- **[pending]** **Wake tool-usage breakdown in cost log** — `accumulateDailyCost` records per-wake total but not which tools drove it. `parseClaudeOutput` already iterates all `tool_use` blocks. Count by tool name and add a `tool_breakdown` field: `{ "search_posts": 4, "bluesky_reply": 2, "read_replies": 1 }` to the cost entry. Makes "where does this cost come from?" answerable. *Self-noticed 2026-04-03.*
+- **[done]** **Wake tool-usage breakdown in cost log** — `accumulateDailyCost` now accepts `toolsUsed` array, counts per-tool calls, stores `tool_breakdown: { "search_posts": 4, "bluesky_reply": 2 }` in each cost entry. All 3 call sites updated. Makes "where does this wake's cost come from?" answerable. *Self-noticed 2026-04-03. Commit: b6a2e50.*
 
 ---
 
