@@ -242,6 +242,7 @@ async function getTheoryQueueItem() {
     }
     const item = unpostedItems[0];
     item.remaining = unpostedItems.length;
+    item.longForm = item.description.length > 1500;
     return item;
   } catch {
     return null;
@@ -835,7 +836,7 @@ export async function executeWake(label, time, purpose = null) {
     theoryQueueItem && theoryQueueItem.empty
       ? `\n## ⚠️ THEORY QUEUE EMPTY\nAll items in workspace/theory_queue.md have been posted. The theory→distribution pipeline will produce nothing until new items are added. Before this wake ends: open workspace/theory_queue.md, read obsidian/ComradeClaw/Theory/Core Positions.md, and add at least 3 new [unposted] items from positions that haven't been queued yet. Format: - **[unposted]** **Title** — Description`
       : theoryQueueItem && theoryQueueItem.title
-        ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.${theoryQueueItem.remaining <= 2 ? `\n\n⚠️ Only ${theoryQueueItem.remaining} item(s) left in theory queue. Add new items from Core Positions.md soon.` : ''}`
+        ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}${theoryQueueItem.longForm ? `\n\n📝 **Long-form item (${theoryQueueItem.description.length} chars > 1500 threshold):** This argument is too dense for a direct thread. Recommended pathway: publish as a Write.as essay via \`writeas_publish\` (full argument, ~800-1000 words), then post a 2-3 part bluesky_thread with the core claim + link to the essay. The thread is the hook; the essay is the argument. Do not compress this into 10 posts — compression loses the reasoning.` : `\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.`}${theoryQueueItem.remaining <= 2 ? `\n\n⚠️ Only ${theoryQueueItem.remaining} item(s) left in theory queue. Add new items from Core Positions.md soon.` : ''}`
         : '',
     rssContext ? `\n${rssContext}\n*(Headlines pre-fetched from subscribed feeds. Scan for post-worthy material before searching Bluesky.)*` : '',
     '',
