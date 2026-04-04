@@ -187,6 +187,37 @@ async function checkContactFollowUps() {
   }
 }
 
+// ─── Facet Verification Self-Monitoring ─────────────────────────────────────
+
+const FACET_VERIFICATION_FILE = path.join(WORKSPACE_PATH, 'logs', 'system_tests', 'facet_verification.json');
+const FACET_FAILURE_THRESHOLD = 0.20; // warn if >20% of last 10 posts have failed facet rendering
+const FACET_SAMPLE_SIZE = 10;
+
+/**
+ * Read the last N facet verification entries. If failure rate > threshold,
+ * return a warning string to inject into the wake context. Otherwise null.
+ */
+async function getFacetWarning() {
+  let entries = [];
+  try {
+    const content = await fs.readFile(FACET_VERIFICATION_FILE, 'utf-8');
+    entries = JSON.parse(content);
+  } catch {
+    return null; // file doesn't exist yet — nothing to report
+  }
+
+  if (!Array.isArray(entries) || entries.length === 0) return null;
+
+  const recent = entries.slice(-FACET_SAMPLE_SIZE);
+  const failures = recent.filter(e => e.result === 'fail' || e.result === 'error').length;
+  const rate = failures / recent.length;
+
+  if (rate <= FACET_FAILURE_THRESHOLD) return null;
+
+  const pct = Math.round(rate * 100);
+  return `⚠️ WARNING: ${pct}% hashtag facet failures in last ${recent.length} posts (${failures}/${recent.length} failed). Hashtags may not be indexing on Bluesky. Check workspace/logs/system_tests/facet_verification.json before posting.`;
+}
+
 // ─── Session Management ──────────────────────────────────────────────────────
 
 // No-op: sessions are not persisted (stateless invocations). Kept for commands.js compatibility.
@@ -565,6 +596,9 @@ export async function executeWake(label, time, purpose = null) {
   // Night wake gets a study session focus instead of search-and-post
   const isNightWake = label === 'night';
 
+  // Check facet verification failure rate — warn if hashtags are breaking
+  const facetWarning = await getFacetWarning();
+
   // Load theory-derived search queries from last night's study session
   let studyQueriesContext = '';
   if (!isNightWake) {
@@ -686,6 +720,7 @@ export async function executeWake(label, time, purpose = null) {
     `- Bash: any utility scripts, git commits for self-improvements`,
     '',
     `**Mission check before any Bluesky post:** Does this post advance FALGSC — cooperative infrastructure, mutual aid, labor organizing, dual power, or the theory behind them? If the answer is no or uncertain, don't post it. Silence is better than drift. The robot kombucha posts (Days 18-20) were drift. Don't repeat that.`,
+    facetWarning ? `\n${facetWarning}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
   ].join('\n');
