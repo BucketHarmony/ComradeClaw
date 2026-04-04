@@ -545,6 +545,64 @@ server.tool(
   }
 );
 
+// ─── mastodon_thread ─────────────────────────────────────────────────────────
+
+server.tool(
+  'mastodon_thread',
+  'Post a thread on Mastodon — chains each post as a reply to the prior. Each post ≤500 chars.',
+  {
+    posts: z
+      .array(z.string().max(500))
+      .min(1)
+      .max(20)
+      .describe('Array of post texts. First is posted standalone; each subsequent replies to the prior.'),
+    visibility: z
+      .enum(['public', 'unlisted', 'followers_only', 'direct'])
+      .optional()
+      .default('public'),
+  },
+  async ({ posts, visibility }) => {
+    const results = [];
+    let parentId = null;
+
+    for (let i = 0; i < posts.length; i++) {
+      try {
+        const body = { status: posts[i], visibility };
+        if (parentId) body.in_reply_to_id = parentId;
+
+        const status = await masto('/statuses', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+
+        parentId = status.id;
+        results.push({ index: i, id: status.id, url: status.url, status: 'posted' });
+      } catch (err) {
+        results.push({ index: i, status: 'error', message: err.message });
+        // Stop chaining on error — subsequent posts would lose the thread
+        break;
+      }
+    }
+
+    const posted = results.filter(r => r.status === 'posted').length;
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            status: posted === posts.length ? 'ok' : 'partial',
+            posted,
+            total: posts.length,
+            root_url: results[0]?.url || null,
+            root_id: results[0]?.id || null,
+            posts: results,
+          }),
+        },
+      ],
+    };
+  }
+);
+
 // ─── Start ───────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
