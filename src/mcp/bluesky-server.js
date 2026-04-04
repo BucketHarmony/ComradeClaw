@@ -27,6 +27,7 @@ const CONTACTS_PATH = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
 const SOLIDARITY_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'solidarity');
 const SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'search_seen');
 const FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
+const SCHEDULED_WAKES_PATH = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -217,6 +218,25 @@ async function logEngagement(entry) {
   } catch { /* non-fatal */ }
 }
 
+async function scheduleRetrospectiveWake(uri, type) {
+  try {
+    const fireAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    const id = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const entry = {
+      id,
+      label: 'retrospective',
+      purpose: `Post retrospective: ${uri} (${type}) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).`,
+      fire_at: fireAt,
+      scheduled_by: 'self',
+      status: 'pending'
+    };
+    let queue = [];
+    try { queue = JSON.parse(await fs.readFile(SCHEDULED_WAKES_PATH, 'utf-8')); } catch {}
+    queue.push(entry);
+    await fs.writeFile(SCHEDULED_WAKES_PATH, JSON.stringify(queue, null, 2));
+  } catch { /* non-fatal — never block the post flow */ }
+}
+
 async function logAutoFollow(handle, did, displayName, classification) {
   try {
     await appendToMonthlyLog(FOLLOWS_LOG_PATH, {
@@ -401,6 +421,7 @@ server.tool(
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
       await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'post', char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour) });
+      scheduleRetrospectiveWake(result.uri, 'post');
       verifyFacets(agent, result.uri, text);
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, cid: result.cid, text, charCount: text.length }) }] };
     } catch (err) {
@@ -1039,6 +1060,7 @@ server.tool(
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
       await logPost({ uri: rootUri, cid: rootCid, posted_at: now.toISOString(), type: 'thread', thread_length: posts.length, char_count: posts.reduce((s, p) => s + p.length, 0), hashtags: [...new Set(posts.flatMap(p => detectHashtags(p)))], time_of_day: timeOfDay(hour) });
+      scheduleRetrospectiveWake(rootUri, 'thread');
       verifyFacets(agent, rootUri, posts[0]);
       return { content: [{ type: 'text', text: JSON.stringify({
         status: 'success',
