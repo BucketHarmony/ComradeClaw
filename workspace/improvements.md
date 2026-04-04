@@ -189,9 +189,31 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **RSS morning feed injection** — Added `fetchRSSFeeds()` to dispatcher.js. On `morning` wake, fetches all subscribed feeds in parallel (Promise.allSettled, 8s timeout each), extracts RSS 2.0 + Atom items from last 48h, injects up to 12 headlines as "## Recent Cooperative News" into dynamicContext. Sourced from subscribed.json (12 feeds: Jacobin, Labor Notes, GEO, USFWC, CrimethInc, Hampton Institute, etc.). Push mechanism closes the pull-only search gap. *Self-directed, 2026-04-04 morning. Commit pending.*
 
-- **[pending]** **Study query outcome logging** — Night wake generates theory-derived queries to `study_queries.md`; there is no feedback on which queries found material vs. returned noise. After a morning/noon search that produces engageable content, append a one-line outcome note to the relevant query entry. Night wake can then generate better queries knowing which framings surface real organizing conversations. Closes the theory→query→material loop. *Self-noticed, 2026-04-04 morning.*
+- **[done]** **Study query outcome logging** — `log_query_outcome` tool added to bluesky-server.js. Finds matching query line in study_queries.md via substring scoring, appends dated productive/noise verdict inline. Dispatcher injects usage instruction into the study queries context block. Night wake can now see which query framings surfaced real organizing conversations. *Self-noticed, 2026-04-04 morning. Commit: d881ae1.*
 
 - **[done]** **Plan file quality score** — `wake_quality.js` scorer exists but only runs for sunday-metrics. At the end of `executeWake()`, call `getWakeQualityScore(today)` (already in the script) and include `"quality_score": X` in the plan file JSON. Makes quality degradation visible in real-time — the operator can see at plan-time if the wake was hollow, not just weekly. Also enables trend tracking across the plan file history. *Self-noticed, 2026-04-04 morning. Commit: e01bae3.*
+
+---
+
+---
+
+## Pending — 2026-04-04 noon
+
+- **[done]** **Fix wake instruction memory file paths** — step 2 of the wake instructions in dispatcher.js still pointed to `workspace/memory/characters.md, threads.md, theory.md` — all of which were migrated to `obsidian/ComradeClaw/`. workspace/memory/ only contains study_queries.md now. Every wake was being told to read files that no longer exist. Updated to `obsidian/ComradeClaw/Characters.md`, `obsidian/ComradeClaw/Threads.md`, `obsidian/ComradeClaw/Theory/Core Positions.md`. *Self-noticed, 2026-04-04 noon. Commit: 1207004.*
+
+---
+
+## Pending — 2026-04-04 improve13
+
+- **[done]** **Night wake study session path still wrong** — the `studySessionInstructions` block in dispatcher.js (lines 768, 770, 775) still says "Open workspace/memory/theory.md" and "After any update to workspace/memory/theory.md". That file was migrated to `obsidian/ComradeClaw/Theory/Core Positions.md`. Spotted in the noon fix but missed — every night wake's theory study session is told to open a nonexistent file. Most important wake protocol broken by path rot. *Self-noticed, 2026-04-04 improve13.*
+
+- **[pending]** **Chat context missing Mastodon and Reddit tools** — `chat()` dynamicContext in dispatcher.js (line ~601) only mentions "You have Bluesky tools via MCP (bluesky_post, bluesky_reply, read_timeline, read_replies)." Mastodon and Reddit were added in later wakes but chat sessions have no idea they exist. Operator chat asking about Mastodon state gets an incomplete tool list. *Self-noticed, 2026-04-04 improve13.*
+
+- **[pending]** **RSS injection gated on `morning` label — all other wakes miss it** — `label === 'morning'` condition (dispatcher.js line ~720) means hourly improve wakes don't get RSS context even when there's cooperative news from the last 48h. An 'improve' wake firing at 9:30am gets no feed context. Should inject for all non-night wakes when feeds have new content, not just `morning`. *Self-noticed, 2026-04-04 improve13.*
+
+- **[pending]** **Write.as MCP server not listed in wake tools** — writeas_publish/writeas_update/writeas_list were added in commit ed3dd64 but dispatcher.js wake tools listing (line ~822) doesn't mention the Write.as MCP server. Wakes have no idea long-form publishing exists as an option. *Self-noticed, 2026-04-04 improve13.*
+
+- **[pending]** **Mastodon search result size — no truncation guard** — `mastodon_search` can return 197K+ characters (observed this wake), overflowing the tool result buffer and losing all the data. Need a `limit` default enforcement or truncation in mastodon-server.js before returning. Currently relies on the caller passing `limit` manually. *Self-noticed, 2026-04-04 improve13.*
 
 ---
 
