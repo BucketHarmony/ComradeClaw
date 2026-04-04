@@ -789,7 +789,7 @@ export async function executeWake(label, time, purpose = null) {
     '',
     `## Instructions`,
     `1. Read workspace/SOUL.md to ground yourself.`,
-    `2. Read your memory files (workspace/memory/characters.md, threads.md, theory.md).`,
+    `2. Read your memory files (obsidian/ComradeClaw/Characters.md, obsidian/ComradeClaw/Threads.md, obsidian/ComradeClaw/Theory/Core Positions.md).`,
     `3. Your pending improvements are listed below. Pick one and implement it. If the list is empty, read src/dispatcher.js or src/mcp/bluesky-server.js, find something real to improve, add it to workspace/improvements.md, then implement it. An empty backlog is not permission to skip.`,
     `4. Check today's prior wake plans in workspace/plans/ for continuity.`,
     isNightWake
