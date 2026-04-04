@@ -13,6 +13,14 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', '..', 'workspace');
+const MASTODON_ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
 
 const INSTANCE = process.env.MASTODON_INSTANCE || 'https://mastodon.social';
 const TOKEN = process.env.MASTODON_ACCESS_TOKEN;
@@ -36,6 +44,41 @@ async function masto(path, options = {}) {
     throw new Error(`Mastodon API ${res.status}: ${text}`);
   }
   return res.json();
+}
+
+// ─── Engagement Logging ──────────────────────────────────────────────────────
+
+async function appendToMonthlyLog(dir, entry) {
+  const now = new Date();
+  const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+  const logFile = path.join(dir, `mastodon-${month}.json`);
+  await fs.mkdir(dir, { recursive: true });
+  let existing = [];
+  try {
+    const data = await fs.readFile(logFile, 'utf-8');
+    existing = JSON.parse(data);
+  } catch { /* new file */ }
+  existing.push(entry);
+  await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+}
+
+async function logMastodonNotifications(notifications) {
+  // Log new mentions and reblogs (high-signal); skip favourites and follows (low-signal noise)
+  const highSignal = notifications.filter(n => n.type === 'mention' || n.type === 'reblog');
+  for (const n of highSignal) {
+    try {
+      await appendToMonthlyLog(MASTODON_ENGAGEMENT_LOG_PATH, {
+        platform: 'mastodon',
+        timestamp: n.created_at,
+        handle: n.account,
+        type: n.type,
+        status_id: n.status_id,
+        text_snippet: n.status_content ? n.status_content.substring(0, 150) : null,
+        status_url: n.status_url,
+        logged_at: new Date().toISOString(),
+      });
+    } catch { /* non-fatal */ }
+  }
 }
 
 // ─── Server ──────────────────────────────────────────────────────────────────
@@ -189,6 +232,8 @@ server.tool(
         status_content: n.status?.content?.replace(/<[^>]*>/g, ''),
         status_url: n.status?.url,
       }));
+      // Log high-signal notifications (mentions, reblogs) for Karpathy Loop visibility
+      await logMastodonNotifications(items).catch(() => {});
       return {
         content: [{ type: 'text', text: JSON.stringify({ status: 'ok', count: items.length, notifications: items }) }],
       };
