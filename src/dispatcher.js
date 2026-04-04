@@ -597,8 +597,8 @@ export async function chat(userMessage) {
   const dynamicContext = [
     `You are Comrade Claw in direct chat with your operator.`,
     `Today: ${dateStr} | Time: ${timeStr} | Day ${dayNumber}`,
-    `Read workspace/SOUL.md if you need to ground yourself. Your memory files are in workspace/memory/. Your journals are in workspace/logs/journal/.`,
-    `You have Bluesky tools via MCP (bluesky_post, bluesky_reply, read_timeline, read_replies).`,
+    `Read workspace/SOUL.md if you need to ground yourself. Your memory files are in obsidian/ComradeClaw/. Your journals are in workspace/logs/journal/.`,
+    `You have Bluesky (bluesky_post, bluesky_reply, bluesky_thread, read_timeline, read_replies, search_posts, like_post, repost), Mastodon (mastodon_post, mastodon_reply, mastodon_read_notifications, mastodon_search, mastodon_favourite, mastodon_boost, mastodon_follow), Reddit (reddit_fetch_subreddit, reddit_fetch_post, reddit_search, reddit_monitor_watchlist), and Write.as (writeas_publish, writeas_update, writeas_list) tools via MCP.`,
     `You can read and write any file in the workspace. You can also edit your own source code if needed.`,
     chatHistory ? `\n${chatHistory}` : '',
   ].filter(Boolean).join('\n');
@@ -716,8 +716,8 @@ export async function executeWake(label, time, purpose = null) {
   // Load next unposted theory item for distribution prompt
   const theoryQueueItem = isNightWake ? null : await getTheoryQueueItem();
 
-  // On morning wakes, pre-fetch RSS headlines to surface material before first search
-  const rssContext = label === 'morning' ? await fetchRSSFeeds() : '';
+  // On non-night wakes, pre-fetch RSS headlines to surface material before first search
+  const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
 
   // Get prior plans for today
   let priorPlansSummary = '';
@@ -823,7 +823,8 @@ export async function executeWake(label, time, purpose = null) {
     `- WebSearch: find cooperative news, mutual aid, theory, local things that matter`,
     `- Bluesky MCP: bluesky_post, bluesky_reply, bluesky_thread, read_timeline, read_replies, search_posts, like_post, repost, search_accounts`,
     `- Mastodon MCP: mastodon_post, mastodon_reply, mastodon_read_notifications, mastodon_search, mastodon_favourite, mastodon_boost, mastodon_follow`,
-    `- Reddit MCP: reddit_get_hot, reddit_get_post, reddit_comment, reddit_post, reddit_read_inbox, reddit_search, reddit_search_subreddits`,
+    `- Reddit MCP: reddit_fetch_subreddit, reddit_fetch_post, reddit_search, reddit_monitor_watchlist`,
+    `- Write.as MCP: writeas_publish, writeas_update, writeas_list, writeas_delete`,
     `- Bash: any utility scripts, git commits for self-improvements`,
     '',
     `**Mission check before any Bluesky post:** Does this post advance FALGSC — cooperative infrastructure, mutual aid, labor organizing, dual power, or the theory behind them? If the answer is no or uncertain, don't post it. Silence is better than drift. The robot kombucha posts (Days 18-20) were drift. Don't repeat that.`,

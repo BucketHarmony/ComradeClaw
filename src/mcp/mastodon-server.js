@@ -410,7 +410,7 @@ server.tool(
         items = (result.statuses || []).map((s) => ({
           id: s.id,
           account: s.account.acct,
-          content: s.content.replace(/<[^>]*>/g, ''),
+          content: s.content.replace(/<[^>]*>/g, '').slice(0, 400),
           created_at: s.created_at,
           url: s.url,
           reblogs: s.reblogs_count,

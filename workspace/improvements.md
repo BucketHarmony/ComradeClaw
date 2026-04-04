@@ -207,13 +207,13 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Night wake study session path still wrong** — the `studySessionInstructions` block in dispatcher.js (lines 768, 770, 775) still says "Open workspace/memory/theory.md" and "After any update to workspace/memory/theory.md". That file was migrated to `obsidian/ComradeClaw/Theory/Core Positions.md`. Spotted in the noon fix but missed — every night wake's theory study session is told to open a nonexistent file. Most important wake protocol broken by path rot. *Self-noticed, 2026-04-04 improve13.*
 
-- **[pending]** **Chat context missing Mastodon and Reddit tools** — `chat()` dynamicContext in dispatcher.js (line ~601) only mentions "You have Bluesky tools via MCP (bluesky_post, bluesky_reply, read_timeline, read_replies)." Mastodon and Reddit were added in later wakes but chat sessions have no idea they exist. Operator chat asking about Mastodon state gets an incomplete tool list. *Self-noticed, 2026-04-04 improve13.*
+- **[done]** **Chat context missing Mastodon and Reddit tools** — Updated `chat()` dynamicContext in dispatcher.js to list all 4 MCP servers (Bluesky, Mastodon, Reddit, Write.as) with full tool lists. *Self-noticed, 2026-04-04 improve13. Fixed upgrade wake.*
 
-- **[pending]** **RSS injection gated on `morning` label — all other wakes miss it** — `label === 'morning'` condition (dispatcher.js line ~720) means hourly improve wakes don't get RSS context even when there's cooperative news from the last 48h. An 'improve' wake firing at 9:30am gets no feed context. Should inject for all non-night wakes when feeds have new content, not just `morning`. *Self-noticed, 2026-04-04 improve13.*
+- **[done]** **RSS injection gated on `morning` label — all other wakes miss it** — Changed `label === 'morning'` to `!isNightWake`. All non-night wakes now get RSS context. *Self-noticed, 2026-04-04 improve13. Fixed upgrade wake.*
 
-- **[pending]** **Write.as MCP server not listed in wake tools** — writeas_publish/writeas_update/writeas_list were added in commit ed3dd64 but dispatcher.js wake tools listing (line ~822) doesn't mention the Write.as MCP server. Wakes have no idea long-form publishing exists as an option. *Self-noticed, 2026-04-04 improve13.*
+- **[done]** **Write.as MCP server not listed in wake tools** — Added writeas_publish/writeas_update/writeas_list/writeas_delete to wake tools listing in dispatcher.js. *Self-noticed, 2026-04-04 improve13. Fixed upgrade wake.*
 
-- **[pending]** **Mastodon search result size — no truncation guard** — `mastodon_search` can return 197K+ characters (observed this wake), overflowing the tool result buffer and losing all the data. Need a `limit` default enforcement or truncation in mastodon-server.js before returning. Currently relies on the caller passing `limit` manually. *Self-noticed, 2026-04-04 improve13.*
+- **[done]** **Mastodon search result size — no truncation guard** — Added `.slice(0, 400)` to `content` field in mastodon-server.js mastodon_search statuses mapping. Prevents 197K+ result overflow. *Self-noticed, 2026-04-04 improve13. Fixed upgrade wake.*
 
 ---
 
