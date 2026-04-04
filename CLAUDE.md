@@ -132,6 +132,11 @@ Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAM
 - **reddit_search** — Search posts by keyword, optionally within a subreddit.
 - **reddit_monitor_watchlist** — Check all watched subreddits for new posts since last check. Watchlist: `workspace/reddit/watchlist.json`.
 
+### Knowledge Graph (MCP: claw-memory)
+- **cognify** — Feed text into the knowledge graph. Used during dream wakes to build semantic connections across days.
+- **search** — Semantic search across all past activity, characters, theory, operator directives. Query your knowledge graph.
+- **prune** — Reset the graph. Requires operator approval.
+
 ### System (built-in)
 - **Bash** — Run scripts, git commands, utilities
 
