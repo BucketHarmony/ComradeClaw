@@ -25,6 +25,7 @@ const ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
 const SYSTEM_TESTS_PATH = path.join(WORKSPACE_PATH, 'logs', 'system_tests');
 const CONTACTS_PATH = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
 const SOLIDARITY_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'solidarity');
+const SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'search_seen');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -261,6 +262,43 @@ function logSolidarityAction(type, uri, cid) {
       let existing = [];
       try { existing = JSON.parse(await fs.readFile(logFile, 'utf-8')); } catch { /* new file */ }
       existing.push({ type, uri, cid: cid || null, at: new Date().toISOString() });
+      await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+    } catch { /* non-fatal */ }
+  });
+}
+
+// ─── Search Seen Deduplication ───────────────────────────────────────────────
+
+/**
+ * Returns a Set of URIs already returned by search_posts this month.
+ * Non-fatal: returns empty Set on any error.
+ */
+async function getSeenSearchUris() {
+  const month = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+  const logFile = path.join(SEARCH_SEEN_PATH, `${month}.json`);
+  try {
+    const data = await fs.readFile(logFile, 'utf-8');
+    const entries = JSON.parse(data);
+    return new Set(entries.map(e => e.uri));
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * Log URIs returned by search_posts to the seen set (fire-and-forget).
+ * Also records query and timestamp for future analysis.
+ */
+function markSearchUrisSeen(uris, query) {
+  setImmediate(async () => {
+    try {
+      const month = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+      const logFile = path.join(SEARCH_SEEN_PATH, `${month}.json`);
+      await fs.mkdir(SEARCH_SEEN_PATH, { recursive: true });
+      let existing = [];
+      try { existing = JSON.parse(await fs.readFile(logFile, 'utf-8')); } catch { /* new file */ }
+      const at = new Date().toISOString();
+      for (const uri of uris) existing.push({ uri, query, at });
       await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
     } catch { /* non-fatal */ }
   });
@@ -625,11 +663,23 @@ server.tool(
       const params = { q: query, limit: fetchLimit };
       if (since) params.since = since;
       const response = await agent.app.bsky.feed.searchPosts(params);
-      const posts = response.data.posts || [];
+      const allPosts = response.data.posts || [];
 
-      if (posts.length === 0) {
+      if (allPosts.length === 0) {
         return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: 0, message: 'No posts found.', formatted: '' }) }] };
       }
+
+      // Deduplication: filter out URIs already seen this month
+      const seenUris = await getSeenSearchUris();
+      const posts = allPosts.filter(post => !seenUris.has(post.uri));
+      const filteredCount = allPosts.length - posts.length;
+
+      if (posts.length === 0) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: 0, filtered: filteredCount, message: `All ${filteredCount} results already seen this month. Feed exhausted for this query.`, formatted: '' }) }] };
+      }
+
+      // Mark returned URIs as seen (fire-and-forget)
+      markSearchUrisSeen(posts.map(p => p.uri), query);
 
       const blocks = posts.map(post => {
         const handle = post.author.handle;
@@ -644,7 +694,8 @@ server.tool(
         ].join('\n');
       });
 
-      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: posts.length, query, formatted: blocks.join('\n\n---\n\n') }) }] };
+      const meta = filteredCount > 0 ? ` (${filteredCount} already-seen filtered out)` : '';
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', count: posts.length, filtered: filteredCount, query, formatted: blocks.join('\n\n---\n\n') + (meta ? `\n\n[${filteredCount} duplicate(s) suppressed]` : '') }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
     }
