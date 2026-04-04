@@ -706,7 +706,7 @@ export async function executeWake(label, time, purpose = null) {
       // Split on section headers and find the most recent one
       const sections = sqContent.split(/\n(?=## \d{4}-)/).filter(s => s.trim());
       if (sections.length > 0) {
-        studyQueriesContext = `## Theory-Derived Search Queries (from last night's study)\n${sections[0].trim()}`;
+        studyQueriesContext = `## Theory-Derived Search Queries (from last night's study)\n${sections[0].trim()}\n\n*After searching with any of these queries, call \`log_query_outcome\` with the query text, outcome ("productive"/"noise"), and a one-line note. This closes the theory→query→material feedback loop.*`;
       }
     } catch {
       // No study_queries.md — not fatal

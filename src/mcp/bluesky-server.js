@@ -1266,6 +1266,81 @@ server.tool(
   }
 );
 
+// ─── Log Study Query Outcome ─────────────────────────────────────────────────
+
+server.tool(
+  'log_query_outcome',
+  'After searching with a theory-derived query from study_queries.md, log whether it was productive or noise. Finds the matching query line and appends the outcome note inline. Call this after any search that used a query from the Theory-Derived Search Queries context block.',
+  {
+    query: z.string().describe('The search query that was used. Does not need to be exact — a distinctive substring is enough to find the matching line.'),
+    outcome: z.enum(['productive', 'noise']).describe('"productive" if the search returned engageable content; "noise" if nothing useful came back.'),
+    note: z.string().optional().describe('Optional one-line note: what was found (productive) or why it returned nothing (noise). E.g. "Hampton meal framing active thread" or "only repost chains, no discussion".')
+  },
+  async ({ query, outcome, note }) => {
+    const sqPath = path.join(WORKSPACE_PATH, 'memory', 'study_queries.md');
+    try {
+      const content = await fs.readFile(sqPath, 'utf-8');
+      const lines = content.split('\n');
+
+      // Find the line that best matches the query (longest common substring match)
+      const queryLower = query.toLowerCase();
+      let bestIdx = -1;
+      let bestScore = 0;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Only look at lines that contain backtick-quoted queries or numbered list items
+        if (!line.match(/^\d+\.|`/)) continue;
+        const lineLower = line.toLowerCase();
+        // Score: length of the longest shared segment
+        let score = 0;
+        for (let len = Math.min(queryLower.length, lineLower.length); len >= 6; len--) {
+          for (let start = 0; start <= queryLower.length - len; start++) {
+            if (lineLower.includes(queryLower.slice(start, start + len))) {
+              score = len;
+              break;
+            }
+          }
+          if (score > 0) break;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+
+      if (bestIdx === -1) {
+        // No match — append to bottom of file as fallback
+        const timestamp = new Date().toISOString().substring(0, 10);
+        const outcomeTag = outcome === 'productive' ? '✓' : '✗';
+        const append = `\n*[${timestamp}] Unmatched outcome log — ${outcomeTag} ${outcome}${note ? ': ' + note : ''} — query: "${query.substring(0, 80)}"*`;
+        await fs.appendFile(sqPath, append);
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'appended_unmatched', message: 'No matching query line found; outcome appended at end of file.' }) }] };
+      }
+
+      // Append outcome to the end of the matched line (if not already logged today)
+      const timestamp = new Date().toISOString().substring(0, 10);
+      const outcomeTag = outcome === 'productive' ? '✓' : '✗';
+      const outcomeStr = ` **[${timestamp} ${outcomeTag} ${outcome}${note ? ': ' + note : ''}]**`;
+
+      // Don't double-log same-date outcomes
+      if (lines[bestIdx].includes(`[${timestamp}`)) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'already_logged', message: `Outcome already logged today for this query.`, line: lines[bestIdx] }) }] };
+      }
+
+      lines[bestIdx] = lines[bestIdx] + outcomeStr;
+      await fs.writeFile(sqPath, lines.join('\n'), 'utf-8');
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'logged',
+        line_number: bestIdx + 1,
+        updated_line: lines[bestIdx]
+      }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
