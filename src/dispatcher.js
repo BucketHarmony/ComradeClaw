@@ -986,66 +986,51 @@ export async function executeDreamWake() {
 
   console.log(`[dispatcher] Dream wake: replaying ${targetDate} (Day ${dayNumber - 1})`);
 
-  // ── Gather the day's material ──
+  // ── Discover what files exist for the target date ──
+  // Instead of injecting content (which causes ENAMETOOLONG on Windows),
+  // we tell Claude what files to read and let it use Read tool calls.
+
+  let fileList = [];
 
   // Chat log
-  let chatLog = '';
-  try {
-    chatLog = await fs.readFile(path.join(WORKSPACE_PATH, 'logs', 'chat', `${targetDate}.md`), 'utf-8');
-    chatLog = truncateContent(chatLog, 20000, 'chat');
-  } catch { /* no chat that day */ }
+  const chatLogPath = path.join(WORKSPACE_PATH, 'logs', 'chat', `${targetDate}.md`);
+  try { await fs.access(chatLogPath); fileList.push(`- Chat log: ${chatLogPath}`); } catch {}
 
   // Journal entries
-  let journals = '';
   try {
     const journalDir = path.join(WORKSPACE_PATH, 'logs', 'journal');
     const files = (await fs.readdir(journalDir)).filter(f => f.startsWith(targetDate)).sort();
-    for (const file of files) {
-      const content = await fs.readFile(path.join(journalDir, file), 'utf-8');
-      journals += `\n--- ${file} ---\n${content}\n`;
-    }
-    journals = truncateContent(journals, 20000, 'journals');
-  } catch { /* no journals */ }
+    for (const f of files) fileList.push(`- Journal: ${path.join(journalDir, f)}`);
+  } catch {}
+
+  // Obsidian journal entries
+  try {
+    const obsidianJournalDir = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw', 'Journal');
+    const files = (await fs.readdir(obsidianJournalDir)).filter(f => f.startsWith(targetDate)).sort();
+    for (const f of files) fileList.push(`- Obsidian journal: ${path.join(obsidianJournalDir, f)}`);
+  } catch {}
 
   // Wake plans
-  let plans = '';
   try {
     const files = (await fs.readdir(PLANS_PATH)).filter(f => f.startsWith(targetDate) && f.endsWith('.json')).sort();
-    for (const file of files) {
-      const content = await fs.readFile(path.join(PLANS_PATH, file), 'utf-8');
-      plans += `\n--- ${file} ---\n${content}\n`;
-    }
-    plans = truncateContent(plans, 15000, 'plans');
-  } catch { /* no plans */ }
+    for (const f of files) fileList.push(`- Wake plan: ${path.join(PLANS_PATH, f)}`);
+  } catch {}
 
-  // Current workspace memory
-  let workspaceMemory = '';
+  // Wake log
+  const wakeLogPath = path.join(WORKSPACE_PATH, 'logs', 'wakes', `${targetDate}.json`);
+  try { await fs.access(wakeLogPath); fileList.push(`- Wake log: ${wakeLogPath}`); } catch {}
+
+  // Obsidian memory files (always include for context)
   try {
-    const memoryDir = path.join(WORKSPACE_PATH, 'memory');
-    const files = (await fs.readdir(memoryDir)).filter(f => f.endsWith('.md'));
-    for (const file of files) {
-      const content = await fs.readFile(path.join(memoryDir, file), 'utf-8');
-      workspaceMemory += `\n--- ${file} ---\n${content}\n`;
+    const obsidianDir = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw');
+    for (const f of ['Characters.md', 'Threads.md']) {
+      try { await fs.access(path.join(obsidianDir, f)); fileList.push(`- Memory: ${path.join(obsidianDir, f)}`); } catch {}
     }
-    workspaceMemory = truncateContent(workspaceMemory, 15000, 'workspace memory');
-  } catch { /* no memory files */ }
+  } catch {}
 
-  // Wake log for the day
-  let wakeLog = '';
-  try {
-    const logContent = await fs.readFile(path.join(WORKSPACE_PATH, 'logs', 'wakes', `${targetDate}.json`), 'utf-8');
-    const log = JSON.parse(logContent);
-    wakeLog = `${log.wakes.length} wakes. Labels: ${log.wakes.map(w => w.label).join(', ')}`;
-    for (const w of log.wakes) {
-      wakeLog += `\n\n### ${w.label} (${w.time})\n${w.summary || '(no summary)'}`;
-    }
-    wakeLog = truncateContent(wakeLog, 10000, 'wake log');
-  } catch { /* no wake log */ }
+  console.log(`[dispatcher] Dream: found ${fileList.length} files from ${targetDate}`);
 
-  const totalMaterial = chatLog.length + journals.length + plans.length + workspaceMemory.length + wakeLog.length;
-  console.log(`[dispatcher] Dream: gathered ${totalMaterial} chars of material from ${targetDate}`);
-
-  if (totalMaterial === 0) {
+  if (fileList.length === 0) {
     console.log(`[dispatcher] Dream: no material for ${targetDate}, skipping`);
     return {
       time: '01:30',
@@ -1060,70 +1045,38 @@ export async function executeDreamWake() {
     };
   }
 
-  // ── Build the focused dream prompt ──
+  // ── Build a compact dream prompt (no inline content — avoids ENAMETOOLONG) ──
 
   const dynamicContext = [
-    `You are Comrade Claw in dream mode. This is not a regular wake — no Bluesky posting, no improvements, no engagement.`,
-    `You are replaying Day ${dayNumber - 1} (${targetDate}) to extract what matters into long-term memory.`,
+    `You are Comrade Claw in dream mode. No Bluesky posting, no improvements, no engagement.`,
+    `Replaying Day ${dayNumber - 1} (${targetDate}) to extract what matters into long-term memory.`,
     ``,
-    `## Your Task`,
-    `Review the day's activity below. Extract items worth persisting across sessions into Claude Code auto memory files.`,
+    `## Step 1: Read the day's material`,
+    `Use the Read tool to read these files:`,
+    fileList.join('\n'),
     ``,
-    `## What to Extract`,
-    `- **Operator directives**: Standing instructions, permissions, corrections, preferences`,
-    `- **Key decisions**: Policy changes, architectural choices, strategic shifts`,
-    `- **Characters**: Anyone who became real (replied, engaged meaningfully, showed up)`,
-    `- **Thread updates**: Developments in ongoing situations`,
-    `- **Theory shifts**: Positions that evolved, drift verdicts, new frameworks`,
-    `- **Engagement patterns**: What landed, what didn't, structural reasons why`,
-    `- **Resources/references**: Accounts, links, organizations worth finding again`,
+    `## Step 2: Extract what matters`,
+    `- Operator directives, key decisions, characters who became real`,
+    `- Thread updates, theory shifts, engagement patterns, resources/references`,
     ``,
-    `## Output Format`,
-    `For each memory worth saving, use the Write tool to create a file at ${AUTO_MEMORY_DIR}/`,
-    ``,
+    `## Step 3: Write auto memory files`,
+    `For each memory worth saving, Write a file to ${AUTO_MEMORY_DIR}/`,
     `Filename: dream_${targetDate}_<short-slug>.md`,
+    `Frontmatter: name, description, type (project|feedback|reference)`,
+    `Then update ${AUTO_MEMORY_DIR}/MEMORY.md with index entries.`,
     ``,
-    `Each file MUST use this exact frontmatter:`,
-    '```markdown',
-    `---`,
-    `name: <descriptive title>`,
-    `description: <one-line summary — future sessions use this to decide relevance>`,
-    `type: <project|feedback|reference>`,
-    `---`,
-    ``,
-    `<content>`,
-    '```',
-    ``,
-    `## After writing memory files`,
-    `Read ${AUTO_MEMORY_DIR}/MEMORY.md and append entries for new files:`,
-    `- [dream_${targetDate}_slug.md](dream_${targetDate}_slug.md) — one-line description`,
+    `## Step 4: Knowledge Graph`,
+    `If the cognify tool is available, feed key material into it as one text block.`,
+    `If not available, skip silently.`,
     ``,
     `## Rules`,
-    `- Read existing auto memory files first to avoid duplicates — update rather than duplicate`,
-    `- Do NOT modify workspace/memory/ files — those are the working memory layer`,
-    `- Do NOT write trivial memories (routine wake executions, cost numbers, timestamps)`,
-    `- Quality over quantity: 1-5 files is typical. More than 5 means you're not filtering`,
-    `- If nothing warrants long-term memory, write zero files. That's valid.`,
-    `- Ask: what would future Claw need to know that isn't derivable from the code or git log?`,
-    ``,
-    `## Knowledge Graph (Cognee)`,
-    `After writing auto memory files, feed today's key material into the knowledge graph.`,
-    `Use the cognify tool (from claw-memory MCP server) to build semantic connections across days.`,
-    `Combine the most significant content — journal highlights, key operator exchanges, new characters,`,
-    `thread developments, theory shifts — into one coherent text block and call cognify once.`,
-    `This builds entity relationships and vector embeddings that flat files cannot capture.`,
-    `If the cognify tool is not available, skip this step silently — the auto memory files are sufficient.`,
-    ``,
-    `## Day ${dayNumber - 1} Activity (${targetDate})`,
-    ``,
-    wakeLog ? `### Wake Summary\n${wakeLog}\n` : '',
-    chatLog ? `### Chat Log\n${chatLog}\n` : `### Chat Log\n*No chat on ${targetDate}*\n`,
-    journals ? `### Journal Entries\n${journals}\n` : `### Journals\n*No journals on ${targetDate}*\n`,
-    plans ? `### Wake Plans\n${plans}\n` : '',
-    workspaceMemory ? `### Current Workspace Memory (for reference — do not modify)\n${workspaceMemory}\n` : '',
-  ].filter(Boolean).join('\n');
+    `- Read existing auto memory files first to avoid duplicates`,
+    `- Do NOT modify workspace/memory/ or obsidian/ files`,
+    `- Quality over quantity: 1-5 memory files typical. Zero is valid.`,
+    `- Only persist what future Claw needs that isn't in code or git log.`,
+  ].join('\n');
 
-  const prompt = `Dream wake. Replay Day ${dayNumber - 1} (${targetDate}). Extract what matters into long-term memory.`;
+  const prompt = `Dream wake. Replay Day ${dayNumber - 1} (${targetDate}). Read the files listed in your instructions, extract what matters, write to auto memory.`;
 
   const result = await invokeClaude(prompt, {
     appendSystemPrompt: dynamicContext,
