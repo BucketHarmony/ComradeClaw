@@ -812,6 +812,27 @@ export async function executeWake(label, time, purpose = null) {
   // journal_written: only true if a Write targeted the journal directory
   const journalWritten = writeTargets.some(p => p.includes('workspace/logs/journal/') || p.includes('workspace\\logs\\journal\\'));
 
+  // Inject quality score into plan file so degradation is visible at plan-time
+  if (planFile) {
+    try {
+      const scriptPath = path.join(PROJECT_ROOT, 'workspace', 'scripts', 'wake_quality.js');
+      const { stdout } = await execFileAsync(process.execPath, [scriptPath, '--date', today, '--weekly-summary'], {
+        cwd: PROJECT_ROOT,
+        timeout: 15000,
+      });
+      const qualityData = JSON.parse(stdout.trim());
+      const dayScore = qualityData.daily_scores?.[0];
+      if (dayScore) {
+        const planContent = JSON.parse(await fs.readFile(planFile, 'utf-8'));
+        planContent.quality_score = `${dayScore.score}/12 (${dayScore.pct}%)`;
+        await fs.writeFile(planFile, JSON.stringify(planContent, null, 2));
+        console.log(`[dispatcher] Quality score injected: ${planContent.quality_score}`);
+      }
+    } catch (err) {
+      console.warn(`[dispatcher] Quality score injection failed (non-fatal): ${err.message}`);
+    }
+  }
+
   return {
     time,
     label,
