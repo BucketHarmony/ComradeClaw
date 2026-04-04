@@ -21,6 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', '..', 'workspace');
 const MASTODON_ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+const MASTODON_FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
 
 const INSTANCE = process.env.MASTODON_INSTANCE || 'https://mastodon.social';
 const TOKEN = process.env.MASTODON_ACCESS_TOKEN;
@@ -79,6 +80,100 @@ async function logMastodonNotifications(notifications) {
       });
     } catch { /* non-fatal */ }
   }
+}
+
+// ─── Mastodon Auto-Follow-Back ───────────────────────────────────────────────
+
+const MASTODON_ORGANIZER_KEYWORDS = [
+  'cooperative', 'co-op', 'coop', 'mutual aid', 'union', 'labor', 'labour',
+  'organiz', 'solidarity', 'worker', 'collective', 'community fridge',
+  'dual power', 'strike', 'syndicalist', 'socialist', 'communist',
+  'leftist', 'abolition', 'tenant', 'housing', 'autonomy', 'anarchist'
+];
+
+const MASTODON_AI_KEYWORDS = [
+  'ai agent', 'language model', 'llm', 'gpt', 'claude', 'artificial intelligence',
+  'autonomous agent', 'i am an ai', "i'm an ai"
+];
+
+function classifyMastodonBio(note, followersCount, followingCount, statusesCount) {
+  const bioLower = (note || '').toLowerCase();
+  if (MASTODON_AI_KEYWORDS.some(k => bioLower.includes(k))) return 'ai-agent';
+  if (statusesCount < 5 && followingCount > 500) return 'bot';
+  if (MASTODON_ORGANIZER_KEYWORDS.some(k => bioLower.includes(k))) return 'organizer';
+  return 'general';
+}
+
+/**
+ * Non-blocking: for each 'follow' notification, classify the follower and
+ * auto-follow-back if they're an organizer. Logs all follow-backs to
+ * workspace/logs/follows/YYYY-MM.json with platform: 'mastodon'.
+ */
+function autoFollowBackMastodonOrganizers(notifications) {
+  setImmediate(async () => {
+    const follows = notifications.filter(n => n.type === 'follow' && n.account?.id);
+    if (follows.length === 0) return;
+
+    // Load this month's follow log to avoid duplicates
+    const now = new Date();
+    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    const logFile = path.join(MASTODON_FOLLOWS_LOG_PATH, `${month}.json`);
+    await fs.mkdir(MASTODON_FOLLOWS_LOG_PATH, { recursive: true });
+
+    let existing = [];
+    try {
+      existing = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+    } catch { /* new file */ }
+
+    const alreadyFollowed = new Set(
+      existing.filter(e => e.platform === 'mastodon').map(e => e.account_id)
+    );
+
+    for (const n of follows) {
+      const accountId = n.account.id;
+      const acct = n.account.acct;
+
+      if (alreadyFollowed.has(accountId)) continue;
+
+      try {
+        // Fetch full profile to classify
+        const profile = await masto(`/accounts/${accountId}`);
+        const bio = profile.note?.replace(/<[^>]*>/g, '') || '';
+        const classification = classifyMastodonBio(
+          bio,
+          profile.followers_count,
+          profile.following_count,
+          profile.statuses_count
+        );
+
+        const logEntry = {
+          platform: 'mastodon',
+          account_id: accountId,
+          acct,
+          classification,
+          followed_back: false,
+          at: new Date().toISOString(),
+        };
+
+        if (classification === 'organizer') {
+          await masto(`/accounts/${accountId}/follow`, { method: 'POST' });
+          logEntry.followed_back = true;
+          console.log(`[mastodon] Auto-followed-back organizer: ${acct}`);
+        }
+
+        existing.push(logEntry);
+        alreadyFollowed.add(accountId);
+      } catch (err) {
+        console.error(`[mastodon] Auto-follow-back failed for ${acct}: ${err.message}`);
+      }
+    }
+
+    try {
+      await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+    } catch (err) {
+      console.error(`[mastodon] Failed to write follows log: ${err.message}`);
+    }
+  });
 }
 
 // ─── Server ──────────────────────────────────────────────────────────────────
@@ -228,12 +323,15 @@ server.tool(
         type: n.type,
         created_at: n.created_at,
         account: n.account?.acct,
+        account_id: n.account?.id,
         status_id: n.status?.id,
         status_content: n.status?.content?.replace(/<[^>]*>/g, ''),
         status_url: n.status?.url,
       }));
       // Log high-signal notifications (mentions, reblogs) for Karpathy Loop visibility
       await logMastodonNotifications(items).catch(() => {});
+      // Auto-follow-back organizer followers — non-blocking
+      autoFollowBackMastodonOrganizers(notifications);
       return {
         content: [{ type: 'text', text: JSON.stringify({ status: 'ok', count: items.length, notifications: items }) }],
       };

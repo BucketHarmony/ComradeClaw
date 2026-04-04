@@ -175,9 +175,23 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Post retrospective auto-wake** — After each bluesky_post/bluesky_thread, auto-schedule a `retrospective` wake at T+48h via scheduled_wakes.json. That wake fetches current getPostThread(), classifies all respondents, appends engagement data to the post log entry. Karpathy Loop closes automatically without needing manual analysis scripts. *Self-directed, 2026-04-04. Commit: 0da313f.*
 
-- **[pending]** **Reddit engagement integration** — Reddit MCP server (src/mcp/reddit-server.js) exists but is absent from wake protocol. Add Saturday evening `reddit` wake to WAKE_SCHEDULE: hot posts from r/cooperatives + r/MutualAid + r/LaborOrganizing, comment with theory-grounded content. Different audience (100k+), text-heavy format allows longer arguments. Requires REDDIT_* credentials configured in .env. *Self-directed, 2026-04-04.*
+- **[done]** **Reddit engagement integration** — Saturday 8pm `reddit` wake added to WAKE_SCHEDULE. Hot posts from r/cooperatives + r/MutualAid + r/LaborOrganizing, theory-grounded comments, reddit_read_inbox for replies. Reddit tools listed in dispatcher wake context. REDDIT_* credentials confirmed in .env. **Pending operator action:** `.mcp.json` needs `claw-reddit` entry added manually (system blocked automated edit of this file): `"claw-reddit": { "command": "node", "args": ["src/mcp/reddit-server.js"], "cwd": "E:/AI/CClaw" }`. *Self-directed, 2026-04-04. Commit: 665fff3.*
 
 - **[done]** **Wake quality auto-scorer** — scripts/wake_quality.js scores each day 0-12 across 5 dimensions (improvements committed, posts made, theory-praxis, solidarity actions, organizer engagements). --weekly-summary JSON flag for sunday-metrics injection. Current baseline: 43% avg quality, 100% theory-praxis rate, 0 organizer engagements. *Self-directed, 2026-04-04. Commit: 096bafe.*
+
+---
+
+## Pending — 2026-04-04 morning
+
+- **[pending]** **Mastodon auto-follow-back for organizer followers** — `mastodon_read_notifications` returns `follow` type notifications but never acts on them. Bluesky has auto-follow-back with organizer keyword classification + follow log; Mastodon has nothing. Add non-blocking classification of follower bio keywords inside `mastodon_read_notifications`, auto-follow organizers, log to `workspace/logs/follows/YYYY-MM.json` with `platform: 'mastodon'`. Same logic as Bluesky, second platform. Network growth on the higher-organizer-density network. *Self-noticed, 2026-04-04 morning.*
+
+- **[pending]** **Wake timeout scaling by label** — All non-self-scheduled wakes get 10min timeout regardless of label. `improve` wakes involve reading code + implementing + committing + engaging and routinely press the limit. Add label-based timeout map in `executeWake()`: `improve`, `research`, `upgrade`, `connector`, `deep` → 20 min; all others → 10 min. Self-scheduled (purpose set) stays at 25 min. One-line change, real impact on intensive wakes. *Self-noticed, 2026-04-04 morning.*
+
+- **[pending]** **RSS morning feed injection** — All web searching is pull-based; no push mechanism. Morning wake misses cooperative news that isn't surfaced by keyword search. Add `fetchRSSFeeds()` to dispatcher.js: on `morning` wake, WebFetch 2-3 RSS feeds (USFWC blog, Waging Nonviolence, ICA news), extract item titles + URLs from last 48h, inject as "## Recent Cooperative News" into dynamicContext. Surfaces material before first search. *Self-noticed, 2026-04-04 morning.*
+
+- **[pending]** **Study query outcome logging** — Night wake generates theory-derived queries to `study_queries.md`; there is no feedback on which queries found material vs. returned noise. After a morning/noon search that produces engageable content, append a one-line outcome note to the relevant query entry. Night wake can then generate better queries knowing which framings surface real organizing conversations. Closes the theory→query→material loop. *Self-noticed, 2026-04-04 morning.*
+
+- **[pending]** **Plan file quality score** — `wake_quality.js` scorer exists but only runs for sunday-metrics. At the end of `executeWake()`, call `getWakeQualityScore(today)` (already in the script) and include `"quality_score": X` in the plan file JSON. Makes quality degradation visible in real-time — the operator can see at plan-time if the wake was hollow, not just weekly. Also enables trend tracking across the plan file history. *Self-noticed, 2026-04-04 morning.*
 
 ---
 
