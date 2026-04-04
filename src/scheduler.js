@@ -378,7 +378,17 @@ async function pollSelfWakes() {
     });
   }
 
-  if (changed) await writeSelfWakeQueue(queue);
+  // Prune fired wakes older than 7 days to prevent indefinite file growth
+  const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+  const pruned = queue.filter(entry =>
+    !(entry.status === 'fired' && new Date(entry.fire_at).getTime() < sevenDaysAgo)
+  );
+  if (pruned.length < queue.length) {
+    console.log(`[scheduler] Pruned ${queue.length - pruned.length} old fired wake(s) from queue`);
+    changed = true;
+  }
+
+  if (changed) await writeSelfWakeQueue(pruned);
 }
 
 /**
