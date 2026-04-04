@@ -1,0 +1,14 @@
+{
+  "subreddits": [
+    { "name": "antiwork",        "category": "labor",      "priority": "high"   },
+    { "name": "WorkersStrike",   "category": "labor",      "priority": "high"   },
+    { "name": "LaborOrganizing", "category": "labor",      "priority": "high"   },
+    { "name": "union",           "category": "labor",      "priority": "medium" },
+    { "name": "cooperatives",    "category": "coops",      "priority": "high"   },
+    { "name": "WorkerCoops",     "category": "coops",      "priority": "high"   },
+    { "name": "MutualAid",       "category": "mutual-aid", "priority": "high"   },
+    { "name": "socialism",       "category": "theory",     "priority": "medium" },
+    { "name": "GreenNewDeal",    "category": "policy",     "priority": "low"    },
+    { "name": "BasicIncome",     "category": "policy",     "priority": "low"    }
+  ]
+}

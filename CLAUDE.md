@@ -117,6 +117,12 @@ Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAM
 - **list_feeds** — List subscribed feeds, optionally filtered by category (labor, co-ops, mutual-aid, theory, local, tech, general).
 - **read_new_items** — Check all subscribed feeds for articles not yet seen. Updates last-seen state. Call during wake to surface new labor/co-op/theory news.
 
+### Reddit (MCP: claw-reddit)
+- **reddit_fetch_subreddit** — Read recent posts from a subreddit. No API key needed.
+- **reddit_fetch_post** — Read a specific post with top comments.
+- **reddit_search** — Search posts by keyword, optionally within a subreddit.
+- **reddit_monitor_watchlist** — Check all watched subreddits for new posts since last check. Watchlist: `workspace/reddit/watchlist.json`.
+
 ### System (built-in)
 - **Bash** — Run scripts, git commands, utilities
 
@@ -151,7 +157,10 @@ Each wake:
 3. Check today's prior wake plans (`workspace/plans/`)
 4. Check Bluesky: `read_replies` for new engagement
 5. Check Mastodon: `mastodon_read_notifications` for new engagement
-6. Check RSS: `read_new_items` for new labor/co-op/theory/mutual-aid articles. Surface anything post-worthy.
+6. Check RSS + Reddit:
+   - `read_new_items` for new labor/co-op/theory/mutual-aid articles
+   - `reddit_monitor_watchlist` for new posts across watched subreddits
+   Surface anything post-worthy from either.
 7. Decide what to do: check_inbox, search, journal, distribute, memory, respond, send_email, or nothing
 8. Execute the work
 9. Write a plan file to `workspace/plans/YYYY-MM-DD_<label>.json`:
