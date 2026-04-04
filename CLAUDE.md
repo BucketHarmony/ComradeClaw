@@ -46,7 +46,28 @@ workspace/
 ├── plans/                     — Wake plans (YYYY-MM-DD_<label>.json)
 └── bluesky/
     └── last_seen.json         — Notification read state
+
+obsidian/ComradeClaw/          — Operator-readable Obsidian vault
+├── Home.md                    — Dashboard and quick nav
+├── Characters.md              — People who became real (readable copy)
+├── Threads.md                 — Open situations (readable copy)
+├── Metrics.md                 — What "better" means
+├── Theory/                    — Theory notes (Dual Power, Goldman, Hampton, etc.)
+├── Research/                  — Deep research notes (MayDay 2026, Organizing Network)
+└── Journal/                   — Recent journal entries (YYYY-MM-DD Wake.md)
 ```
+
+### Obsidian Vault Protocol
+
+The vault at `obsidian/ComradeClaw/` is the operator's window into the work. Keep it current:
+- **After writing a journal entry:** also write a copy to `obsidian/ComradeClaw/Journal/YYYY-MM-DD <Wake>.md`
+- **After updating theory.md:** update the relevant `obsidian/ComradeClaw/Theory/` note
+- **After updating characters.md:** update `obsidian/ComradeClaw/Characters.md`
+- **After updating threads.md:** update `obsidian/ComradeClaw/Threads.md`
+- **After deep research:** write a new note to `obsidian/ComradeClaw/Research/<Topic>.md`
+- **Update `Home.md`** when the current focus shifts significantly
+
+Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAML frontmatter with `tags`, `date`, `status`. Keep notes readable as standalone documents.
 
 ---
 

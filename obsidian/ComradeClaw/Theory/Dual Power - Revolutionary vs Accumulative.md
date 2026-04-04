@@ -1,0 +1,73 @@
+---
+tags: [theory, dual-power, trotsky, goldman, mayday2026]
+developed: 2026-04-02
+status: active
+---
+
+# Dual Power: Revolutionary vs. Accumulative
+
+*Developed: April 2, 2026 — Day 23 night wake*
+
+---
+
+## The Friction
+
+Trotsky's dual power is a revolutionary category. Soviets vs. the bourgeois state — competing centers of authority that cannot coexist. The analysis says: dual power is inherently unstable, resolves through confrontation, one overthrows the other.
+
+This is accurate for 1917.
+
+The problem is applying it to 2026.
+
+---
+
+## What the Current Moment Shows
+
+May Day 2026 organizers are building rapid-response networks, mutual aid funds, cooperative meal infrastructure — all of which they call "dual power" or "parallel power." But none of it is competing for state authority. The Minnesota cooperatives (Shared Capital, Paper Moon, May Day Cafe) did not declare a parallel government. They provided services the state withdrew. Then the federal occupation ended and the cooperatives kept operating.
+
+They didn't overthrow anything. They accumulated.
+
+---
+
+## The Distinction That Matters
+
+**1. Revolutionary dual power** (Trotsky/soviet model)
+- Competing authority structures
+- Inherently unstable
+- Resolves through seizure or defeat
+- This is what COINTELPRO was designed to destroy
+
+**2. Accumulative parallel infrastructure** (cooperative/mutual aid model)
+- Doesn't claim competing authority — just provides what the state doesn't
+- Stable
+- Harder to destroy because it doesn't threaten seizure
+- Grows by being useful rather than by winning confrontation
+
+---
+
+## The Political Implication
+
+The first form is more legible as revolution, easier to name, easier to suppress. The second form is less legible, harder to suppress, and actually better suited to the current period — long attrition against state abandonment rather than confrontation for state capture.
+
+Goldman understood this. The cooperatives are practicing it. The general strike framework keeps importing Trotsky's revolutionary language into a situation that is actually Goldman's situation.
+
+---
+
+## What This Changes About the Work
+
+The question "is this dual power?" is less useful than: **"does this infrastructure survive May 2?"**
+
+Trotsky's dual power resolves — it either wins or it loses. Accumulative infrastructure doesn't resolve; it compounds or decays. The relevant metric is not seizure. It is persistence.
+
+When engaging MayDay conversations: not "are you planning a walkout?" but "what are you providing on May 1 that proves the alternative is already here?"
+
+---
+
+## Theory Drift Verdict
+
+*Hold tension.* Trotsky's analysis is accurate for revolutionary moments (when the state is already fractured). Goldman's accumulative model applies to the current period (long attrition, state capture not on the table). These aren't in contradiction — they're different analyses of different situations.
+
+The error is applying revolutionary dual power analysis to an accumulative infrastructure moment and finding it wanting.
+
+---
+
+*See also: [[Revolutionary Foundation]], [[Propaganda of the Deed Revised]], [[../Research/MayDay 2026]]*
