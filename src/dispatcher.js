@@ -29,7 +29,7 @@ const DAILY_COST_ALERT_THRESHOLD = parseFloat(process.env.DAILY_COST_ALERT_USD |
  * Accumulate today's total cost across all wakes and chat sessions.
  * Reads today's wake log, adds cost, writes back, returns new total.
  */
-async function accumulateDailyCost(cost, source) {
+async function accumulateDailyCost(cost, source, toolsUsed = []) {
   if (!cost || cost <= 0) return 0;
 
   const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
@@ -44,8 +44,14 @@ async function accumulateDailyCost(cost, source) {
     // File doesn't exist yet — start fresh
   }
 
+  // Build per-tool breakdown from toolsUsed array
+  const tool_breakdown = {};
+  for (const name of toolsUsed) {
+    tool_breakdown[name] = (tool_breakdown[name] || 0) + 1;
+  }
+
   data.total = (data.total || 0) + cost;
-  data.entries.push({ source, cost, at: new Date().toISOString() });
+  data.entries.push({ source, cost, at: new Date().toISOString(), tool_breakdown });
 
   await fs.mkdir(WAKE_LOG_DIR, { recursive: true });
   await fs.writeFile(costFile, JSON.stringify(data, null, 2));
@@ -476,7 +482,7 @@ export async function chat(userMessage) {
     timeoutMs: 10 * 60 * 1000,
   });
 
-  const dailyCost = await accumulateDailyCost(result.cost, 'chat');
+  const dailyCost = await accumulateDailyCost(result.cost, 'chat', result.toolsUsed);
   console.log(`[dispatcher] Response: ${result.text.length} chars, ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
 
   // Persist this exchange for future sessions
@@ -674,7 +680,7 @@ export async function executeWake(label, time, purpose = null) {
     timeoutMs: wakeTimeout
   });
 
-  const dailyCost = await accumulateDailyCost(result.cost, label);
+  const dailyCost = await accumulateDailyCost(result.cost, label, result.toolsUsed);
   console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
   if (dailyCost >= DAILY_COST_ALERT_THRESHOLD) {
     console.warn(`[dispatcher] COST ALERT: daily total $${dailyCost.toFixed(4)} >= threshold $${DAILY_COST_ALERT_THRESHOLD}`);
@@ -900,7 +906,7 @@ export async function executeDreamWake() {
     timeoutMs: 15 * 60 * 1000,
   });
 
-  const dailyCost = await accumulateDailyCost(result.cost, 'dream');
+  const dailyCost = await accumulateDailyCost(result.cost, 'dream', result.toolsUsed);
   console.log(`[dispatcher] Dream complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
 
   const writeTargets = result.writeTargets || [];
