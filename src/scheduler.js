@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getDayNumber } from './tools.js';
 import { executeWake as dispatchWake, executeDreamWake } from './dispatcher.js';
-import { formatPlan, formatPlanCompact } from './plan-format.js';
+import { formatPlan, formatPlanCompact, computeEffectivenessScore } from './plan-format.js';
 import { startDMPoller } from './bluesky-dm-poller.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -445,6 +445,9 @@ export async function executeWake(label, time, purpose = null, scheduledAt = nul
     if (wakeData.planFile) {
       try {
         const plan = JSON.parse(await fs.readFile(wakeData.planFile, 'utf-8'));
+        // Compute effectiveness score and persist it back to the plan file
+        plan.effectiveness = computeEffectivenessScore(plan);
+        await fs.writeFile(wakeData.planFile, JSON.stringify(plan, null, 2));
         notification = `${emoji} ` + formatPlanCompact(plan);
       } catch {
         notification = `${emoji} ${label.charAt(0).toUpperCase() + label.slice(1)} wake — ${wakeData.summary}`;

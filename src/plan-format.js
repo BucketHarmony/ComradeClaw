@@ -38,7 +38,8 @@ export function formatPlan(plan) {
 export function formatPlanCompact(plan) {
   const wakeLabel = plan.wake.charAt(0).toUpperCase() + plan.wake.slice(1);
   const quality = plan.quality_score ? ` | Q: ${plan.quality_score}` : '';
-  const line1 = `**${wakeLabel} Wake** — Day ${plan.day} — ${plan.time}${quality}`;
+  const effectiveness = plan.effectiveness ? ` | E: ${plan.effectiveness.score}/${plan.effectiveness.max}` : '';
+  const line1 = `**${wakeLabel} Wake** — Day ${plan.day} — ${plan.time}${quality}${effectiveness}`;
 
   const topTask = (plan.tasks || []).find(t => t.status === 'done') || plan.tasks?.[0];
   const taskSummary = topTask ? (topTask.summary || topTask.reason || topTask.type) : 'no tasks';
@@ -52,4 +53,45 @@ export function formatPlanCompact(plan) {
   return `${line1}\n${line2}`;
 }
 
-export default { formatPlan, formatPlanCompact };
+/**
+ * Compute wake effectiveness score (0-10).
+ * Dimensions: engagement checked (1), improvement done (2), theory distributed (2),
+ * organizer engaged (2), new follow made (1), journal written (2).
+ */
+export function computeEffectivenessScore(plan) {
+  const tasks = plan.tasks || [];
+  const taskDone = (type) => tasks.some(t => t.status === 'done' && t.type === type);
+  const anyTaskDone = (...types) => tasks.some(t => t.status === 'done' && types.includes(t.type));
+  const summaryContains = (...words) => tasks.some(t =>
+    t.status === 'done' && words.some(w => (t.summary || '').toLowerCase().includes(w.toLowerCase()))
+  );
+
+  const breakdown = {};
+
+  // 1pt — engagement checked (checked replies or notifications)
+  breakdown.engagement_checked = anyTaskDone('respond', 'engage', 'check') ? 1 : 0;
+
+  // 2pt — improvement implemented
+  breakdown.improvement_done = taskDone('improve') ? 2 : 0;
+
+  // 2pt — theory distributed
+  breakdown.theory_distributed = (plan.theory_praxis && plan.theory_praxis !== 'none') ? 2 : 0;
+
+  // 2pt — organizer engaged (respond task done, summary not just "0 new")
+  breakdown.organizer_engaged = tasks.some(t =>
+    t.status === 'done' &&
+    ['respond', 'engage', 'reply'].includes(t.type) &&
+    !/0 new|no new|no replies|nothing new/i.test(t.summary || '')
+  ) ? 2 : 0;
+
+  // 1pt — new follow made
+  breakdown.new_follow = summaryContains('follow', 'followed') ? 1 : 0;
+
+  // 2pt — journal written
+  breakdown.journal_written = taskDone('journal') ? 2 : 0;
+
+  const score = Object.values(breakdown).reduce((a, b) => a + b, 0);
+  return { score, max: 10, breakdown };
+}
+
+export default { formatPlan, formatPlanCompact, computeEffectivenessScore };
