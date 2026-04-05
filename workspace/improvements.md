@@ -259,9 +259,9 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Tmp prompt file orphan cleanup** — orphaned `.tmp_prompt_*.txt` files from crashed/killed wakes accumulate in project root (3 visible in git status right now). Add to `.gitignore` and add startup cleanup in `invokeClaude()` that deletes root `.tmp_prompt_*.txt` files older than 1 hour before spawning. Pollutes `git status` every session. *Self-noticed, 2026-04-04 improve21.*
 
-- **[pending]** **Contact awaiting_reply max-attempts guard** — `checkContactFollowUps()` fires follow-up wakes every 72h indefinitely for non-responsive contacts. Donna's been cold since 2026-04-02; wakes will keep firing forever. Add `follow_up_count` field to contacts.json schema; after 3 attempts, auto-set status to `cold` with a note. Prevents perpetual wakes for contacts who've ghosted. *Self-noticed, 2026-04-04 improve21.*
+- **[done]** **Contact awaiting_reply max-attempts guard** — `checkContactFollowUps()` fires follow-up wakes every 72h indefinitely for non-responsive contacts. Donna's been cold since 2026-04-02; wakes will keep firing forever. Add `follow_up_count` field to contacts.json schema; after 3 attempts, auto-set status to `cold` with a note. Prevents perpetual wakes for contacts who've ghosted. *Self-noticed, 2026-04-04 improve21. Commit: 9d7569a.*
 
-- **[pending]** **Discord wake summary notification** — operator has no passive awareness of wake results; must actively run `/plan` or check git log. Add a 2-line Discord ping after each `executeWake()` with: wake label, quality score, top task summary. Uses existing Discord bot in index.js (just needs a `sendToOperator()` export). Converts operator feedback loop from pull to push. *Self-noticed, 2026-04-04 improve21.*
+- **[done]** **Discord wake summary notification** — operator has no passive awareness of wake results; must actively run `/plan` or check git log. Replaced verbose `formatPlan()` notification with compact 2-line `formatPlanCompact()`: wake label + quality score on line 1, top task + bold verdict on line 2. Converts operator feedback loop from pull to push. *Self-noticed, 2026-04-04 improve21. Commit: this wake.*
 
 ---
 

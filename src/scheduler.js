@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getDayNumber } from './tools.js';
 import { executeWake as dispatchWake, executeDreamWake } from './dispatcher.js';
-import { formatPlan } from './plan-format.js';
+import { formatPlan, formatPlanCompact } from './plan-format.js';
 import { startDMPoller } from './bluesky-dm-poller.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -439,12 +439,12 @@ export async function executeWake(label, time, purpose = null, scheduledAt = nul
     let emoji = wakeData.empty ? '💤' : '🔧';
     if (wakeData.bluesky_posted) emoji = '📝';
 
-    // Try to show plan-formatted notification
+    // Compact 2-line notification: label, quality score, top task
     let notification;
     if (wakeData.planFile) {
       try {
         const plan = JSON.parse(await fs.readFile(wakeData.planFile, 'utf-8'));
-        notification = `${emoji} **${label.charAt(0).toUpperCase() + label.slice(1)} Wake**\n` + formatPlan(plan);
+        notification = `${emoji} ` + formatPlanCompact(plan);
       } catch {
         notification = `${emoji} ${label.charAt(0).toUpperCase() + label.slice(1)} wake — ${wakeData.summary}`;
       }
