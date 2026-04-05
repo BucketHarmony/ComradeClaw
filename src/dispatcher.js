@@ -129,17 +129,20 @@ async function checkOperatorAbsence() {
 
 const CONTACTS_FILE = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
 const CONTACT_FOLLOWUP_HOURS = 72;
+const CONTACT_MAX_FOLLOWUPS = 3;
 
 /**
  * Check contacts.json for any awaiting_reply contacts whose last_outreach was
  * more than CONTACT_FOLLOWUP_HOURS ago. For each, self-schedule a follow-up wake
- * unless one is already pending.
+ * unless one is already pending. After CONTACT_MAX_FOLLOWUPS attempts, auto-set
+ * status to 'cold' to prevent perpetual wakes for non-responsive contacts.
  */
 async function checkContactFollowUps() {
+  let contactsData = {};
   let contacts = [];
   try {
-    const data = JSON.parse(await fs.readFile(CONTACTS_FILE, 'utf-8'));
-    contacts = data.contacts || [];
+    contactsData = JSON.parse(await fs.readFile(CONTACTS_FILE, 'utf-8'));
+    contacts = contactsData.contacts || [];
   } catch {
     return; // No contacts file — nothing to check
   }
@@ -149,6 +152,8 @@ async function checkContactFollowUps() {
   let queue = [];
   try { queue = JSON.parse(await fs.readFile(wakeQueueFile, 'utf-8')); } catch {}
 
+  let contactsDirty = false;
+
   for (const contact of contacts) {
     if (contact.status !== 'awaiting_reply') continue;
     if (!contact.last_outreach) continue;
@@ -156,6 +161,17 @@ async function checkContactFollowUps() {
     const outreachMs = new Date(contact.last_outreach).getTime();
     const hoursElapsed = (now - outreachMs) / (1000 * 60 * 60);
     if (hoursElapsed < CONTACT_FOLLOWUP_HOURS) continue;
+
+    const followUpCount = contact.follow_up_count || 0;
+
+    // Max attempts reached — mark cold and stop scheduling
+    if (followUpCount >= CONTACT_MAX_FOLLOWUPS) {
+      contact.status = 'cold';
+      contact.cold_reason = `No response after ${followUpCount} follow-up attempts. Last outreach: ${contact.last_outreach}.`;
+      contactsDirty = true;
+      console.log(`[dispatcher] ${contact.name} marked cold after ${followUpCount} unanswered follow-ups`);
+      continue;
+    }
 
     const wakeLabel = `followup-${contact.handle.split('.')[0]}`;
     const hasExisting = queue.some(w => w.label === wakeLabel && w.status === 'pending');
@@ -167,16 +183,29 @@ async function checkContactFollowUps() {
     const lastExchange = (contact.exchanges || []).slice().reverse().find(e => e.direction === 'outbound');
     const lastText = lastExchange?.text || '(no recorded message)';
 
+    // Increment follow_up_count before scheduling
+    contact.follow_up_count = followUpCount + 1;
+    contactsDirty = true;
+
     queue.push({
       id: `${Date.now()}-fu-${contact.handle.split('.')[0]}`,
       label: wakeLabel,
-      purpose: `Follow-up: ${contact.name} (${contact.handle}) has not replied in ${Math.round(hoursElapsed)}h. Last outreach: "${lastText}". Check read_replies for any response. If still no reply, decide whether to send a gentle follow-up DM or note the silence in threads.md.`,
+      purpose: `Follow-up #${contact.follow_up_count}/${CONTACT_MAX_FOLLOWUPS}: ${contact.name} (${contact.handle}) has not replied in ${Math.round(hoursElapsed)}h. Last outreach: "${lastText}". Check read_replies for any response. If still no reply, decide whether to send a gentle follow-up DM or note the silence in threads.md.`,
       fire_at: new Date(now + 10 * 60 * 1000).toISOString(),
       scheduled_by: 'self',
       status: 'pending'
     });
 
-    console.log(`[dispatcher] Follow-up wake scheduled for ${contact.name} (${Math.round(hoursElapsed)}h since last outreach)`);
+    console.log(`[dispatcher] Follow-up wake #${contact.follow_up_count} scheduled for ${contact.name} (${Math.round(hoursElapsed)}h since last outreach)`);
+  }
+
+  // Write contacts back if any statuses changed
+  if (contactsDirty) {
+    try {
+      await fs.writeFile(CONTACTS_FILE, JSON.stringify({ ...contactsData, contacts }, null, 2));
+    } catch (err) {
+      console.error(`[dispatcher] Failed to write contacts file: ${err.message}`);
+    }
   }
 
   if (queue.length > 0) {
