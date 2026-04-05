@@ -1157,6 +1157,54 @@ async function runHealthCheck(filePaths) {
   return allOk;
 }
 
+// ─── Cognee Auto-Recall ──────────────────────────────────────────────────────
+
+const COGNEE_URL = process.env.COGNEE_URL || 'http://127.0.0.1:8001';
+
+/**
+ * Query Cognee knowledge graph for relevant context before spawning claude -p.
+ * Returns a formatted ## Relevant Memory block, or '' if Cognee is unavailable.
+ * Non-fatal: any error silently returns '' so wakes are never blocked.
+ */
+async function getCogneeRecall(query) {
+  try {
+    // Quick health check — short timeout so we don't delay wakes
+    const health = await fetch(`${COGNEE_URL}/health`, {
+      signal: AbortSignal.timeout(2000)
+    }).then(r => r.json()).catch(() => null);
+    if (!health || health.status !== 'ok') return '';
+
+    const res = await fetch(`${COGNEE_URL}/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, query_type: 'GRAPH_COMPLETION' }),
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!res.ok) return '';
+
+    const data = await res.json();
+    if (!data.results) return '';
+
+    // results may be a string or array
+    let text = typeof data.results === 'string'
+      ? data.results
+      : JSON.stringify(data.results);
+
+    // Cap to 1200 chars — enough for 3-4 relevant snippets, not enough to bloat context
+    if (text.length > 1200) {
+      text = text.substring(0, 1200).replace(/\s+\S*$/, '') + '...';
+    }
+    if (text.trim().length < 20) return '';
+
+    console.log(`[dispatcher] Cognee recall: ${text.length} chars for query "${query.substring(0, 60)}"`);
+    return `## Relevant Memory (from Cognee knowledge graph)\n*Query: "${query.substring(0, 80)}"*\n\n${text}`;
+  } catch (err) {
+    // Cognee down or slow — non-fatal, wake continues without recall
+    console.log(`[dispatcher] Cognee recall skipped: ${err.message}`);
+    return '';
+  }
+}
+
 // ─── Wake Interface ──────────────────────────────────────────────────────────
 
 /**
@@ -1210,6 +1258,13 @@ export async function executeWake(label, time, purpose = null) {
 
   // Check daily improve wake cap — warn if 4+ improve wakes done today
   const improveWakeWarning = await getImproveWakeWarning();
+
+  // Cognee auto-recall — query knowledge graph for relevant past context
+  // Uses purpose if set (self-scheduled), otherwise falls back to label
+  const cogneeQuery = purpose
+    ? purpose.substring(0, 200)
+    : `${label} wake organizing mutual aid cooperative dual power`;
+  const cogneeContext = await getCogneeRecall(cogneeQuery);
 
   // Cross-platform post coordination — detect topic overlap before posting
   const crossPlatformContext = !isNightWake ? await getCrossPlatformSummary() : null;
@@ -1362,6 +1417,7 @@ export async function executeWake(label, time, purpose = null) {
     `You are Comrade Claw. This is your ${label} wake. It is ${timeStr} on ${dateStr}. Day ${dayNumber}.`,
     selfWakeContext ? `\n${selfWakeContext}` : '',
     coolingContactsContext ? coolingContactsContext : '',
+    cogneeContext ? `\n${cogneeContext}` : '',
     '',
     `## Instructions`,
     `1. Read workspace/SOUL.md to ground yourself.`,
