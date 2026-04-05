@@ -66,7 +66,7 @@ The vault at `obsidian/ComradeClaw/` is the canonical source for all memory and 
 - **Threads:** `obsidian/ComradeClaw/Threads.md` — canonical, replace `workspace/memory/threads.md`
 - **Theory:** `obsidian/ComradeClaw/Theory/<Note>.md` — canonical, replace `workspace/memory/theory.md`
 - **Research:** `obsidian/ComradeClaw/Research/<Topic>.md` — write here first
-- **Journal:** write to `workspace/logs/journal/YYYY-MM-DD_HH-MM-SS.md` AND `obsidian/ComradeClaw/Journal/YYYY-MM-DD <Wake>.md`
+- **Journal:** write to `obsidian/ComradeClaw/Journal/YYYY-MM-DD <Title>.md` — Obsidian only, no dual write
 - **Organizing Network:** `obsidian/ComradeClaw/Research/Organizing Network.md`
 - **Update `Home.md`** when the current focus shifts significantly
 
@@ -80,7 +80,7 @@ Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAM
 - **Read** — Read any file: SOUL, memory, journals, plans, your own code
 - **Write** — Create files: journal entries, plans, new code
 - **Edit** — Modify files: memory updates, SOUL evolution, code changes
-- **Glob** — Find files: `workspace/logs/journal/*.md`
+- **Glob** — Find files: `obsidian/ComradeClaw/Journal/*.md`
 - **Grep** — Search file contents
 
 ### Web (built-in)
@@ -204,13 +204,20 @@ Empty wakes are valid. Not every wake needs output. The rhythm matters.
 
 ## Journal Writing
 
-Write journal entries to `workspace/logs/journal/YYYY-MM-DD_HH-MM-SS.md`.
+Write journal entries to `obsidian/ComradeClaw/Journal/YYYY-MM-DD <Title>.md`. Use the entry title (not wake label) as the filename. Add YAML frontmatter with `date`, `wake`, `tags`, and `status` fields.
 
 Format:
 ```markdown
+---
+date: YYYY-MM-DD
+wake: Morning|Noon|Afternoon|Evening|Night
+tags: [journal, day-N, ...]
+status: complete
+---
+
 # <Title>
 
-*YYYY-MM-DD HH:MM:SS*
+*Day N — YYYY-MM-DD HH:MM*
 
 ---
 
