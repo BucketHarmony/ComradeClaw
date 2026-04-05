@@ -313,6 +313,46 @@ async function getWakeDriftAlert() {
 }
 
 /**
+ * Count unique classified-organizer handles across all Bluesky + Mastodon engagement logs.
+ * Used to evaluate whether the A/B experiment gate (≥3 organizers engaged) has been cleared.
+ * Returns a context string to inject into the wake prompt, or null on failure.
+ */
+async function getOrganizerBaseline() {
+  const GATE_THRESHOLD = 3;
+  const engagementDir = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+
+  const organizers = new Set(); // unique handles classified as 'organizer'
+
+  try {
+    const files = await fs.readdir(engagementDir);
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue;
+      try {
+        const content = JSON.parse(await fs.readFile(path.join(engagementDir, file), 'utf-8'));
+        if (!Array.isArray(content)) continue;
+        for (const entry of content) {
+          if (entry.classified && entry.classification === 'organizer' && entry.handle) {
+            organizers.add(entry.handle.toLowerCase());
+          }
+        }
+      } catch { /* skip unreadable file */ }
+    }
+  } catch {
+    return null; // engagement dir doesn't exist yet — non-fatal
+  }
+
+  const count = organizers.size;
+  const cleared = count >= GATE_THRESHOLD;
+
+  if (cleared) {
+    const handles = [...organizers].join(', ');
+    return `## Organizer Engagement Baseline: ${count}/${GATE_THRESHOLD} (gate cleared: YES)\nOrganizers engaged: ${handles}\nThe A/B experiments (post format log + hashtag tracking) are now unblocked. You may begin systematic post format and hashtag tracking this wake.`;
+  } else {
+    return `Organizer engagement baseline: ${count}/${GATE_THRESHOLD} (gate cleared: no — A/B experiments blocked until ${GATE_THRESHOLD} unique organizers engage. Current: ${[...organizers].join(', ') || 'none classified yet'})`;
+  }
+}
+
+/**
  * Pre-generate a Write.as essay draft for long-form theory items.
  * Creates workspace/essays/DRAFT-<slug>.md with structure derived from item description.
  * Returns the draft file path (relative), or null if already exists or fails.
@@ -1027,6 +1067,9 @@ export async function executeWake(label, time, purpose = null) {
   // Check for wake quality drift — warn before robot-kombucha recurs
   const driftAlert = await getWakeDriftAlert();
 
+  // Check organizer baseline — evaluate A/B experiment gate
+  const organizerBaselineContext = await getOrganizerBaseline();
+
   // Load theory-derived search queries from last night's study session
   let studyQueriesContext = '';
   if (!isNightWake) {
@@ -1225,6 +1268,7 @@ export async function executeWake(label, time, purpose = null) {
     `**Mission check before any Bluesky post:** Does this post advance FALGSC — cooperative infrastructure, mutual aid, labor organizing, dual power, or the theory behind them? If the answer is no or uncertain, don't post it. Silence is better than drift. The robot kombucha posts (Days 18-20) were drift. Don't repeat that.`,
     facetWarning ? `\n${facetWarning}` : '',
     driftAlert ? `\n${driftAlert}` : '',
+    organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
   ].join('\n');
