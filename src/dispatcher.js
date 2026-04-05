@@ -679,6 +679,107 @@ async function getTheoryQueueItem() {
 }
 
 /**
+ * Theory distribution gap detector.
+ * Scans Theory vault for ## sections not yet in theory_queue.md (any status).
+ * Returns a compact context block, or '' on any failure.
+ *
+ * Surfaces:
+ *   (a) count of [unposted] queue items ready to distribute
+ *   (b) theory note sections completely absent from the queue
+ *
+ * Called on all non-night wakes so the gap is visible, not just when queue empties.
+ */
+async function getTheoryGapSummary() {
+  try {
+    const VAULT_THEORY_PATH = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw', 'Theory');
+    const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
+
+    let queueContent = '';
+    try { queueContent = await fs.readFile(QUEUE_PATH, 'utf-8'); } catch { return ''; }
+
+    // Count items ready to distribute
+    const unpostedCount = [...queueContent.matchAll(/\[unposted\]/g)].length;
+
+    // Collect all titles already in queue (any status) — same logic as autoRefillTheoryQueue
+    const queuedTitles = new Set();
+    for (const m of queueContent.matchAll(/\*\*(?:\[(?:posted[^\]]*|unposted)\])\*\*\s+\*\*(.+?)\*\*/g)) {
+      queuedTitles.add(m[1].toLowerCase().trim());
+    }
+
+    // Skip structural/reference headings that aren't distributable positions
+    const SKIP_TITLES = new Set([
+      'core positions', 'search query construction', 'tool output vs. interpretation',
+      'the basics: revolutionary foundation for cooperators',
+      'fred hampton (1948–1969)', 'mao zedong (1893–1976)',
+      'leon trotsky (1879–1940)', 'emma goldman (1869–1940)',
+      'what he built', 'his analysis', 'what the state did', 'what survived', 'lessons for cooperators',
+      'mass line ("from the masses, to the masses")', 'guerrilla warfare / base areas',
+      'contradictions analysis', 'cultural revolution (catastrophic failure)',
+      'permanent revolution', "workers' councils / soviets (dual power)", 'bureaucratic degeneration',
+      'mutual aid (with kropotkin)', 'soviet disillusionment', 'propaganda of the deed (evolution)',
+      'what killed her work', 'on dual power', 'on state response', 'on organization',
+      'on internationalism', 'on internal dangers',
+    ]);
+
+    // Scan vault for sections with substantive prose not yet queued
+    const vaultGaps = [];
+    let noteFiles = [];
+    try {
+      const entries = await fs.readdir(VAULT_THEORY_PATH);
+      noteFiles = entries.filter(f => f.endsWith('.md')).map(f => path.join(VAULT_THEORY_PATH, f));
+    } catch { return ''; }
+
+    for (const noteFile of noteFiles) {
+      let noteContent = '';
+      try { noteContent = await fs.readFile(noteFile, 'utf-8'); } catch { continue; }
+      const noteName = path.basename(noteFile, '.md');
+
+      for (const section of noteContent.split(/\n(?=## )/)) {
+        const titleMatch = section.match(/^## (.+)/);
+        if (!titleMatch) continue;
+        const title = titleMatch[1].trim();
+        const titleLower = title.toLowerCase();
+        if (SKIP_TITLES.has(titleLower) || queuedTitles.has(titleLower)) continue;
+
+        // Require at least 80 chars of substantive prose (not bullets/headers/blockquotes)
+        let prose = '';
+        for (const line of section.split('\n').slice(1)) {
+          const t = line.trim();
+          if (!t || t.startsWith('---') || t.startsWith('#') || t.startsWith('-') ||
+              t.startsWith('>') || t.startsWith('|') || t.startsWith('*Developed') ||
+              t.startsWith('tags:') || t.startsWith('status:')) {
+            if (prose.length >= 80) break;
+            continue;
+          }
+          prose += t + ' ';
+          if (prose.length >= 80) break;
+        }
+        if (prose.trim().length < 80) continue;
+
+        vaultGaps.push(`"${title}" (${noteName})`);
+      }
+    }
+
+    if (unpostedCount === 0 && vaultGaps.length === 0) return '';
+
+    const parts = [];
+    if (unpostedCount > 0) {
+      parts.push(`${unpostedCount} unposted item${unpostedCount > 1 ? 's' : ''} queued and ready to distribute`);
+    }
+    if (vaultGaps.length > 0) {
+      const preview = vaultGaps.slice(0, 3).join(', ');
+      const more = vaultGaps.length > 3 ? ` (+${vaultGaps.length - 3} more)` : '';
+      parts.push(`${vaultGaps.length} Theory vault section${vaultGaps.length > 1 ? 's' : ''} never queued: ${preview}${more}`);
+    }
+
+    return `## Theory Distribution Gap\n${parts.join('\n')}\n*Unqueued theory is unshared theory. Queue the gaps before this wake ends, or distribute what's already ready.*`;
+  } catch (err) {
+    console.error(`[getTheoryGapSummary] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Snapshot follower/following/posts counts for own Bluesky handle.
  * Writes { date, followers, following, posts } to logs/followers/YYYY-MM-DD.json.
  * Called on morning wakes only. Non-fatal — silently skips on any error.
@@ -1298,6 +1399,9 @@ export async function executeWake(label, time, purpose = null) {
     longFormDraftPath = await writeLongFormDraft(theoryQueueItem);
   }
 
+  // Theory distribution gap — vault sections never queued + ready-to-distribute count
+  const theoryGapSummary = !isNightWake ? await getTheoryGapSummary() : '';
+
   // On non-night wakes, pre-fetch RSS headlines to surface material before first search
   const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
 
@@ -1458,6 +1562,7 @@ export async function executeWake(label, time, purpose = null) {
       : theoryQueueItem && theoryQueueItem.title
         ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}${theoryQueueItem.longForm ? `\n\n📝 **Long-form item (${theoryQueueItem.description.length} chars > 1500 threshold):** This argument is too dense for a direct thread. ${longFormDraftPath ? `A pre-structured draft has been written to \`${longFormDraftPath}\`. Read it, expand each section, and publish via \`writeas_publish\`. Then post a 2-3 part bluesky_thread with the core claim + Write.as link.` : 'Publish as a Write.as essay via `writeas_publish` (full argument, ~800-1000 words), then post a 2-3 part bluesky_thread with core claim + link.'} The thread is the hook; the essay is the argument. Do not compress this into 10 posts — compression loses the reasoning.` : `\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.`}${theoryQueueItem.remaining <= 2 ? `\n\n⚠️ Only ${theoryQueueItem.remaining} item(s) left in theory queue. Add new items from Core Positions.md soon.` : ''}`
         : '',
+    theoryGapSummary ? `\n${theoryGapSummary}` : '',
     rssContext ? `\n${rssContext}\n*(Headlines pre-fetched from subscribed feeds. Scan for post-worthy material before searching Bluesky.)*` : '',
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
