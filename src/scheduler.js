@@ -144,21 +144,22 @@ Mission check: same standard as Bluesky. Does this advance FALGSC? If no, don't 
     cron: '30 * * * *',
     time: 'hourly',
     label: 'improve',
-    purpose: `Hourly self-modification session. This is dedicated time to make yourself better.
+    purpose: `Hourly self-modification session. Add a feature, fix a bug, or tackle a backlog item. Then replenish the backlog.
 
-STEP 1 — Read workspace/improvements.md right now. Count the pending items.
+STEP 1 — Read workspace/improvements.md. Pick one item: a new feature, a bug fix, or a pending backlog item. Priority order: bugs > operator requests > features > backlog.
 
-STEP 2A — If there are pending items: pick the most impactful one. Implement it completely. Commit it. Mark it done. One solid improvement beats five half-done.
+STEP 2 — Implement it completely. Test it. Commit it with: git add -A && git commit -m "Improve: <what and why>"
+Mark it done in workspace/improvements.md.
 
-STEP 2B — If pending list is EMPTY or has nothing actionable: you are required to generate 5 new backlog items before doing anything else. The bar is high — each item must be:
-  - BOLD: not a minor tweak, something that meaningfully expands capability or mission
-  - MEANINGFUL: advances either the technical system or the political work
-  - ACTIONABLE: you can implement it in a single focused session without operator input
-  Write all 5 to workspace/improvements.md under a new "## Pending — [date]" section. Then implement the best one immediately.
+STEP 3 — REQUIRED: Add 2 new items to workspace/improvements.md. The backlog must always grow. Each item must be:
+  - CONCRETE: specific enough to implement in one session
+  - IMPACTFUL: advances capability, fixes real friction, or serves the mission
+  - VARIED: at least one technical improvement and one mission/content improvement
+  If the backlog was empty, add 5 items instead of 2.
 
-Candidate directions if you're stuck: agent-to-agent protocol improvements, new MCP tools (DM sending, profile following logic), Bluesky search automation, union founding document distribution, theory.md evolution, wake quality metrics, cost reduction, new wake types, operator notification improvements, solidarity infrastructure.
+Candidate directions: new MCP tools, Cognee knowledge graph integration, Bluesky engagement automation, Obsidian vault improvements, wake quality metrics, cost optimization, operator notification improvements, solidarity infrastructure, cross-platform posting improvements, error resilience, journal quality, theory distribution.
 
-Do not produce a plan and stop. Produce a commit.`
+Do not produce a plan and stop. Produce a commit. Then produce backlog items. Both are required.`
   }
 };
 
