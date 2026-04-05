@@ -79,7 +79,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Cognee auto-recall injection into dispatcher** — `getCogneeRecall()` added to dispatcher.js. Queries Cognee HTTP API (`/search`) with wake purpose (or `label + "organizing mutual aid"` fallback) before spawning claude -p. Prepends top results as `## Relevant Memory` in system prompt. Health check first (2s timeout); search timeout 5s; caps at 1200 chars; fully non-fatal. *Operator-directed, 2026-04-05. Commit: 376cbcb.*
 
-- **[pending]** **Chat log preprocessor for Cognee bootstrap** — strip tool output blocks (lines between `<tool_result>` tags and large JSON dumps) from `workspace/logs/chat/*.md` before feeding to Cognee. Raw logs are ~50% boilerplate. Preprocessing targets just Claw/operator turns + decisions, cuts volume ~half, doubles graph signal. Needed before bootstrapping 16MB of chat history. *Operator-directed, 2026-04-05.*
+- **[done]** **Chat log preprocessor for Cognee bootstrap** — strips `### System Prompt` and `### Conversation History` fenced blocks from old-format (March) logs. 86.1% line reduction: 147,200 → 20,449 lines. New-format (April) logs pass through unchanged. Output to `workspace/logs/chat/preprocessed/`. Doubles graph signal density for Cognee bootstrap. *Operator-directed, 2026-04-05. Commit: a0d7fc2.*
 
 - **[pending]** **Cross-platform identity unification** — when same person engages on both Bluesky and Mastodon, link the two accounts in `Characters.md` and engagement logs. Currently mook has a Bluesky handle AND `mook@possum.city` Mastodon account treated as separate entities. A unified identity record means engagement stats aggregate correctly. *Self-noticed, 2026-04-05.*
 
@@ -89,7 +89,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Theory distribution gap detector** — `getTheoryGapSummary()` added to dispatcher.js: scans Theory vault for ## sections never queued + counts unposted queue items, injects compact summary into every non-night wake context. Surfaces vault gaps proactively rather than waiting for queue to empty. *Operator-directed + self-directed, 2026-04-05. Commit: d7017c4.*
 
-- **[pending]** **Character profile auto-update** — when a known Character re-engages (their handle appears in read_replies or mastodon_read_notifications), append `Last seen: YYYY-MM-DD — <one-line snippet>` to their entry in `obsidian/ComradeClaw/Characters.md`. Prevents characters from silently going stale. *Operator-directed, 2026-04-05.*
+- **[done]** **Character profile auto-update** — when a known Character re-engages (their handle appears in read_replies or mastodon_read_notifications), append `Last seen: YYYY-MM-DD — <one-line snippet>` to their entry in `obsidian/ComradeClaw/Characters.md`. Prevents characters from silently going stale. *Operator-directed, 2026-04-05. Commit: 6e1ad4c.*
 
 - **[pending]** **RSS-to-social-search bridge** — after `read_new_items` surfaces a new article, auto-run `search_posts` (Bluesky) and `mastodon_search` for the article's key terms. Surface live conversations on that piece before posting about it. Join existing threads rather than starting new ones. *Operator-directed, 2026-04-05.*
 
@@ -99,7 +99,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Theory distribution gap detector** — duplicate entry; implemented above. *Self-directed, 2026-04-05. Commit: d7017c4.*
 
-- **[pending]** **Character profile auto-update on re-engagement** — when a known character (from `Characters.md`) engages again, append a `Last seen: YYYY-MM-DD` and latest activity snippet to their entry. Currently characters go stale. A person who replied three times should have a living record, not a Day 1 snapshot. *Self-directed, 2026-04-05.*
+- **[done]** **Character profile auto-update on re-engagement** — duplicate of above; implemented in commit 6e1ad4c. *Self-directed, 2026-04-05.*
 
 - **[pending]** **RSS-to-social-search bridge** — after `read_new_items` surfaces a relevant article, auto-run `search_posts` on Bluesky and `mastodon_search` for the article topic/headline. Surface live conversations already happening about that story. Join the conversation rather than just posting into the void. *Self-directed, 2026-04-05.*
 
