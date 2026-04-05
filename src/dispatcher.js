@@ -373,6 +373,43 @@ async function getOrganizerBaseline() {
 }
 
 /**
+ * Count improve-labeled wakes completed today.
+ * If ≥4, returns a warning string to inject into wake context.
+ * Sunday metrics identified 8+ improve wakes/day as the cost driver.
+ * The 5th improve wake of the day adds less value than one real organizer reply.
+ */
+async function getImproveWakeWarning() {
+  const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+  const IMPROVE_DAILY_CAP = 4;
+
+  try {
+    await fs.mkdir(PLANS_PATH, { recursive: true });
+    const files = await fs.readdir(PLANS_PATH);
+    const todayFiles = files.filter(f => f.startsWith(today) && f.endsWith('.json'));
+
+    let improveCount = 0;
+    for (const file of todayFiles) {
+      try {
+        const plan = JSON.parse(await fs.readFile(path.join(PLANS_PATH, file), 'utf-8'));
+        if (plan.status === 'complete' &&
+            typeof plan.wake === 'string' &&
+            plan.wake.toLowerCase().includes('improve')) {
+          improveCount++;
+        }
+      } catch { /* skip unreadable plan */ }
+    }
+
+    if (improveCount >= IMPROVE_DAILY_CAP) {
+      return `⚠️ IMPROVE CAP: ${improveCount} improve wakes completed today (cap: ${IMPROVE_DAILY_CAP}). The improvement step is deprioritized this wake. Redirect to: organizer engagement, real reply threads, distribute theory, or journal. The ${improveCount + 1}th improve wake of the day adds less value than one real organizer reply. If you must improve, make it small and ship it fast — then return to engagement.`;
+    }
+    return null;
+  } catch {
+    return null; // non-fatal
+  }
+}
+
+/**
  * Pre-generate a Write.as essay draft for long-form theory items.
  * Creates workspace/essays/DRAFT-<slug>.md with structure derived from item description.
  * Returns the draft file path (relative), or null if already exists or fails.
@@ -1171,6 +1208,9 @@ export async function executeWake(label, time, purpose = null) {
   // Check organizer baseline — evaluate A/B experiment gate
   const organizerBaselineContext = await getOrganizerBaseline();
 
+  // Check daily improve wake cap — warn if 4+ improve wakes done today
+  const improveWakeWarning = await getImproveWakeWarning();
+
   // Cross-platform post coordination — detect topic overlap before posting
   const crossPlatformContext = !isNightWake ? await getCrossPlatformSummary() : null;
 
@@ -1376,6 +1416,7 @@ export async function executeWake(label, time, purpose = null) {
     facetWarning ? `\n${facetWarning}` : '',
     driftAlert ? `\n${driftAlert}` : '',
     organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
+    improveWakeWarning ? `\n${improveWakeWarning}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
