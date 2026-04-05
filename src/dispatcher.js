@@ -23,8 +23,27 @@ const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(PROJECT_ROOT, 'wo
 const PLANS_PATH = path.join(WORKSPACE_PATH, 'plans');
 const WAKE_LOG_DIR = path.join(WORKSPACE_PATH, 'logs', 'wakes');
 
-// Alert when daily spend crosses this threshold (USD)
-const DAILY_COST_ALERT_THRESHOLD = parseFloat(process.env.DAILY_COST_ALERT_USD || '1.00');
+// Alert threshold: 7-day rolling average × 1.5, floored at $1.00
+// Adapts to actual usage patterns (8 improve wakes/day = legit busy, not anomaly)
+async function getAdaptiveCostThreshold() {
+  const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const totals = [];
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toLocaleDateString('en-CA', { timeZone: tz });
+    const costFile = path.join(WAKE_LOG_DIR, `${dateStr}_costs.json`);
+    try {
+      const data = JSON.parse(await fs.readFile(costFile, 'utf-8'));
+      if (data.total > 0) totals.push(data.total);
+    } catch {
+      // Day with no cost file — skip
+    }
+  }
+  if (totals.length === 0) return 1.00; // no history — fall back to $1
+  const avg = totals.reduce((a, b) => a + b, 0) / totals.length;
+  return Math.max(avg * 1.5, 1.00);
+}
 
 /**
  * Accumulate today's total cost across all wakes and chat sessions.
@@ -1376,8 +1395,9 @@ export async function executeWake(label, time, purpose = null) {
 
   const dailyCost = await accumulateDailyCost(result.cost, label, result.toolsUsed, { context_chars: contextChars, context_kb: contextKb });
   console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
-  if (dailyCost >= DAILY_COST_ALERT_THRESHOLD) {
-    console.warn(`[dispatcher] COST ALERT: daily total $${dailyCost.toFixed(4)} >= threshold $${DAILY_COST_ALERT_THRESHOLD}`);
+  const costThreshold = await getAdaptiveCostThreshold();
+  if (dailyCost >= costThreshold) {
+    console.warn(`[dispatcher] COST ALERT: daily total $${dailyCost.toFixed(4)} >= adaptive threshold $${costThreshold.toFixed(2)} (7-day avg × 1.5)`);
   }
 
   // Check for operator absence — schedule welfare-check wake if needed
