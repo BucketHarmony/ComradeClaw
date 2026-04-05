@@ -53,7 +53,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ### A/B Infrastructure (after Karpathy Loop trigger conditions are met)
 
-- **[pending]** **Post format experiment log** — structured comparison: single post vs thread (same content split), morning vs evening, theory-grounded vs news-hook. Requires at least 10 examples in each condition before conclusions. Don't build the analysis until there's data. *Self-directed, 2026-04-01 — blocked until organizer engagement baseline ≥ 3. Current: 0 organizer engagements.*
+- **[pending]** **Post format experiment log** — structured comparison: single post vs thread (same content split), morning vs evening, theory-grounded vs news-hook. Requires at least 10 examples in each condition before conclusions. Don't build the analysis until there's data. *Self-directed, 2026-04-01 — blocked until organizer engagement baseline ≥ 3 on combined Bluesky+Mastodon. Mastodon classification now live as of 2026-04-05 improve7 (commit: 126c421); mook should now register.*
 
 - **[pending]** **Hashtag effectiveness tracking** — for each hashtag used (`#MayDay`, `#WCC26`, `#dualpower`, `#mutualaid`), track post-level engagement. Which hashtags correlate with organizer replies vs general likes? Needs the post effectiveness log above to exist first. *Self-directed, 2026-04-01 — blocked on post log.*
 
@@ -94,6 +94,8 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 ---
 
 - **[done]** **Fix pendingImprovements extraction** — regex `/## Pending\n.../` only matched the bare `## Pending` section header; items in `## Pending — X` subsections silently dropped. Replaced with global `[pending]` line filter. *Self-noticed, 2026-04-03 noon. Commit: 4f04d48.*
+
+- **[done]** **Cap prior plans summary to last 3 wakes** — priorPlansSummary had no truncation; 8+ improve wakes/day = 40+ lines injected into every context, growing linearly. Now shows last 3 wakes + "N earlier wakes" count. Direct cost reduction. *Self-noticed, 2026-04-05 improve6. Commit: 8f91a6f.*
 
 ## Pending — Radical
 
