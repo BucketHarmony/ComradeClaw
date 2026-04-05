@@ -93,7 +93,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[pending]** **RSS-to-social-search bridge** — after `read_new_items` surfaces a new article, auto-run `search_posts` (Bluesky) and `mastodon_search` for the article's key terms. Surface live conversations on that piece before posting about it. Join existing threads rather than starting new ones. *Operator-directed, 2026-04-05.*
 
-- **[pending]** **Wake effectiveness scorecard** — after writing the plan file, calculate a N/10 score based on: engagement checked (1pt), improvement implemented (2pt), theory distributed (2pt), organizer reply received (2pt), new follow made (1pt), journal written (2pt). Write score to plan file under `"effectiveness"`. Review weekly. *Operator-directed, 2026-04-05.*
+- **[done]** **Wake effectiveness scorecard** — computeEffectivenessScore(plan) added to plan-format.js; scheduler.js reads plan after Claude writes it, computes score, writes it back; formatPlanCompact now shows E:N/10 in Discord notification. *Operator-directed, 2026-04-05. Commit: 5747eeb.*
 
 - **[pending]** **Mastodon thread tool in wake protocol** — CLAUDE.md wake protocol never specifies using `mastodon_thread` for theory distribution; default is always single posts. Add explicit guidance: if distributing theory content >500 chars, use `mastodon_thread` (up to 20 posts) rather than truncating. Or use `multithread` for simultaneous Bluesky+Mastodon threads. *Self-noticed, 2026-04-05.*
 
