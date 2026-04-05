@@ -1485,8 +1485,8 @@ export async function executeWake(label, time, purpose = null) {
     await runHealthCheck(modifiedSrcFiles);
   }
 
-  // journal_written: only true if a Write targeted the journal directory
-  const journalWritten = writeTargets.some(p => p.includes('workspace/logs/journal/') || p.includes('workspace\\logs\\journal\\'));
+  // journal_written: only true if a Write targeted the Obsidian journal directory
+  const journalWritten = writeTargets.some(p => p.includes('obsidian/ComradeClaw/Journal/') || p.includes('obsidian\\ComradeClaw\\Journal\\'));
 
   // Inject quality score into plan file so degradation is visible at plan-time
   if (planFile) {
@@ -1561,18 +1561,11 @@ export async function executeDreamWake() {
   const chatLogPath = path.join(WORKSPACE_PATH, 'logs', 'chat', `${targetDate}.md`);
   try { await fs.access(chatLogPath); fileList.push(`- Chat log: ${chatLogPath}`); } catch {}
 
-  // Journal entries
-  try {
-    const journalDir = path.join(WORKSPACE_PATH, 'logs', 'journal');
-    const files = (await fs.readdir(journalDir)).filter(f => f.startsWith(targetDate)).sort();
-    for (const f of files) fileList.push(`- Journal: ${path.join(journalDir, f)}`);
-  } catch {}
-
-  // Obsidian journal entries
+  // Journal entries (Obsidian vault only — workspace/logs/journal/ is retired)
   try {
     const obsidianJournalDir = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw', 'Journal');
     const files = (await fs.readdir(obsidianJournalDir)).filter(f => f.startsWith(targetDate)).sort();
-    for (const f of files) fileList.push(`- Obsidian journal: ${path.join(obsidianJournalDir, f)}`);
+    for (const f of files) fileList.push(`- Journal: ${path.join(obsidianJournalDir, f)}`);
   } catch {}
 
   // Wake plans
