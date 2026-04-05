@@ -167,6 +167,68 @@ Do not produce a plan and stop. Produce a commit. Then produce backlog items. Bo
 let discordClient = null;
 let operatorId = null;
 
+// Cooldown tracking for improve wake (prevents identical back-to-back runs)
+let lastImproveWakeFiredAt = null;
+const IMPROVE_COOLDOWN_MS = 90 * 60 * 1000; // 90 minutes
+
+/**
+ * Generate a dynamic purpose for the improve wake.
+ * Injects the actual pending backlog items + last 3 Improve: commits
+ * so each run has distinct context and avoids repeating recent work.
+ */
+async function generateImprovePurpose() {
+  const improvementsPath = path.join(WORKSPACE_PATH, 'improvements.md');
+
+  // Extract pending items from backlog
+  let pendingBlock = '';
+  try {
+    const content = await fs.readFile(improvementsPath, 'utf-8');
+    const pendingLines = content
+      .split('\n')
+      .filter(line => /\[pending\]/i.test(line))
+      .map(line => line.trim())
+      .slice(0, 10); // cap at 10 items
+    if (pendingLines.length > 0) {
+      pendingBlock = `\n\nCURRENT PENDING BACKLOG (${pendingLines.length} items):\n${pendingLines.join('\n')}`;
+    } else {
+      pendingBlock = '\n\nCURRENT PENDING BACKLOG: empty — you must add 5 new items before implementing anything.';
+    }
+  } catch {
+    pendingBlock = '\n\n(Could not read improvements.md — read it yourself as step 1.)';
+  }
+
+  // Get last 3 Improve: commits to avoid repetition
+  let recentCommits = '';
+  try {
+    const { stdout } = await execFileAsync('git', ['log', '--oneline', '-10', '--grep=Improve:'], {
+      cwd: PROJECT_ROOT
+    });
+    const lines = stdout.trim().split('\n').filter(Boolean).slice(0, 3);
+    if (lines.length > 0) {
+      recentCommits = `\n\nRECENT IMPROVE COMMITS (do not repeat these):\n${lines.join('\n')}`;
+    }
+  } catch {
+    // git log failed — skip
+  }
+
+  return `Hourly self-modification session. Add a feature, fix a bug, or tackle a backlog item. Then replenish the backlog.
+${pendingBlock}${recentCommits}
+
+STEP 1 — Pick one PENDING item from the backlog above (not from recent commits). Priority: bugs > operator requests > features > backlog. If the backlog is empty, invent 5 new items first.
+
+STEP 2 — Implement it completely. Test it. Commit with: git add -A && git commit -m "Improve: <what and why>"
+Mark it done in workspace/improvements.md.
+
+STEP 3 — REQUIRED: Add 2 new items to workspace/improvements.md. Each must be:
+  - CONCRETE: specific enough to implement in one session
+  - IMPACTFUL: advances capability, fixes real friction, or serves the mission
+  - VARIED: at least one technical improvement and one mission/content improvement
+
+Candidate directions: new MCP tools, Cognee knowledge graph integration, Bluesky engagement automation, Obsidian vault improvements, wake quality metrics, cost optimization, operator notification improvements, solidarity infrastructure, cross-platform posting improvements, error resilience, journal quality, theory distribution.
+
+Do not produce a plan and stop. Produce a commit. Then produce backlog items. Both are required.`;
+}
+
 // Queue for wakes during active chat
 let wakeQueue = [];
 let isProcessingChat = false;
@@ -412,6 +474,11 @@ function startSelfWakePoller() {
  * Execute a wake using the orchestrator (planner + workers)
  */
 export async function executeWake(label, time, purpose = null, scheduledAt = null, actualFiredAt = null) {
+  // Track improve wake fire time for cooldown enforcement
+  if (label === 'improve') {
+    lastImproveWakeFiredAt = Date.now();
+  }
+
   // Queue if chat is active
   if (isProcessingChat) {
     console.log(`[scheduler] Chat active, queuing ${label} wake`);
@@ -548,9 +615,25 @@ export function startScheduler() {
   console.log(`[scheduler] Starting wake scheduler (timezone: ${tz})`);
 
   for (const [name, config] of Object.entries(WAKE_SCHEDULE)) {
-    cron.schedule(config.cron, () => {
+    cron.schedule(config.cron, async () => {
       console.log(`[scheduler] Cron fired: ${name}`);
-      executeWake(config.label, config.time, config.purpose || null);
+
+      if (name === 'improve') {
+        // Cooldown: skip if an improve wake fired within the last 90 minutes
+        if (lastImproveWakeFiredAt && (Date.now() - lastImproveWakeFiredAt) < IMPROVE_COOLDOWN_MS) {
+          const minAgo = Math.round((Date.now() - lastImproveWakeFiredAt) / 60000);
+          console.log(`[scheduler] Improve wake skipped — last ran ${minAgo}m ago (cooldown: ${IMPROVE_COOLDOWN_MS / 60000}m)`);
+          return;
+        }
+        lastImproveWakeFiredAt = Date.now();
+        const purpose = await generateImprovePurpose().catch(err => {
+          console.error(`[scheduler] generateImprovePurpose failed: ${err.message}`);
+          return config.purpose;
+        });
+        executeWake(config.label, config.time, purpose);
+      } else {
+        executeWake(config.label, config.time, config.purpose || null);
+      }
     }, {
       timezone: tz
     });
