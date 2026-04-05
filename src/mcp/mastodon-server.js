@@ -67,9 +67,23 @@ async function appendToMonthlyLog(dir, entry) {
 async function logMastodonNotifications(notifications) {
   // Log new mentions and reblogs (high-signal); skip favourites and follows (low-signal noise)
   const highSignal = notifications.filter(n => n.type === 'mention' || n.type === 'reblog');
+  if (highSignal.length === 0) return;
+
+  // Load existing log for deduplication (same status_id can appear across wakes)
+  const now = new Date();
+  const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+  const logFile = path.join(MASTODON_ENGAGEMENT_LOG_PATH, `mastodon-${month}.json`);
+  await fs.mkdir(MASTODON_ENGAGEMENT_LOG_PATH, { recursive: true });
+  let existing = [];
+  try {
+    existing = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+  } catch { /* new file */ }
+  const seenIds = new Set(existing.map(e => e.status_id).filter(Boolean));
+
   for (const n of highSignal) {
+    if (n.status_id && seenIds.has(n.status_id)) continue; // already logged
     try {
-      await appendToMonthlyLog(MASTODON_ENGAGEMENT_LOG_PATH, {
+      const entry = {
         platform: 'mastodon',
         timestamp: n.created_at,
         handle: n.account,
@@ -78,9 +92,31 @@ async function logMastodonNotifications(notifications) {
         text_snippet: n.status_content ? n.status_content.substring(0, 150) : null,
         status_url: n.status_url,
         logged_at: new Date().toISOString(),
-      });
+      };
+      // Classify by fetching account profile — mirrors Bluesky engagement log structure
+      if (n.account_id) {
+        try {
+          const profile = await masto(`/accounts/${n.account_id}`);
+          const bio = (profile.note || '').replace(/<[^>]*>/g, '');
+          entry.classified = true;
+          entry.classification = classifyMastodonBio(bio, profile.followers_count, profile.following_count, profile.statuses_count);
+          entry.classified_at = new Date().toISOString();
+          entry.profile_snapshot = {
+            bio: bio.substring(0, 200),
+            followers: profile.followers_count,
+            following: profile.following_count,
+            posts: profile.statuses_count,
+          };
+        } catch { entry.classified = false; }
+      }
+      existing.push(entry);
+      if (n.status_id) seenIds.add(n.status_id);
     } catch { /* non-fatal */ }
   }
+
+  try {
+    await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+  } catch { /* non-fatal */ }
 }
 
 // ─── Mastodon Auto-Follow-Back ───────────────────────────────────────────────
