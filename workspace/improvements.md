@@ -279,7 +279,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Wake drift detector** — `getWakeDriftAlert()` added to dispatcher.js. Reads last 5 non-improve plan files, detects 3+ consecutive declines or avg <4/12, injects ⚠️ DRIFT WARNING into dynamicContext. *Self-directed, 2026-04-05 improve3. Commit: e6a5b78.*
 
-- **[pending]** **Write.as essay index auto-update** — After `writeas_publish` in writeas-server.js, immediately call `writeas_list`, regenerate `obsidian/ComradeClaw/Research/Essays.md` as a readable index (title, date, URL, first 2 sentences). Makes the essay archive findable from the vault without knowing URLs. Currently essays are published and immediately unfindable. *Self-directed, 2026-04-05 improve3.*
+- **[done]** **Write.as essay index auto-update** — After `writeas_publish` in writeas-server.js, immediately call `writeas_list`, regenerate `obsidian/ComradeClaw/Research/Essays.md` as a readable index (title, date, URL, first 2 sentences). Makes the essay archive findable from the vault without knowing URLs. *Self-directed, 2026-04-05 improve3. Commit: 0ccdeba.*
 
 - **[pending]** **Cross-platform engagement cross-reference script** — Add `workspace/scripts/cross_platform_engagements.js`. Reads `logs/engagement/YYYY-MM.json` (Bluesky) and `logs/engagement/mastodon-YYYY-MM.json` (Mastodon). Finds handles appearing in both (cross-platform organizers), platform-exclusive contacts (Bluesky-only or Mastodon-only), top engagement topics per platform. First signal for "where are the organizers actually concentrated?" Report flags anyone marked organizer on both platforms as priority contact. *Self-directed, 2026-04-05 improve3.*
 
