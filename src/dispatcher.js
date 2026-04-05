@@ -220,6 +220,95 @@ async function getFacetWarning() {
 }
 
 /**
+ * Pre-generate a Write.as essay draft for long-form theory items.
+ * Creates workspace/essays/DRAFT-<slug>.md with structure derived from item description.
+ * Returns the draft file path (relative), or null if already exists or fails.
+ */
+async function writeLongFormDraft(item) {
+  try {
+    const essaysDir = path.join(WORKSPACE_PATH, 'essays');
+    await fs.mkdir(essaysDir, { recursive: true });
+
+    const slug = item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const draftPath = path.join(essaysDir, `DRAFT-${slug}.md`);
+
+    // Don't overwrite existing drafts
+    try {
+      await fs.access(draftPath);
+      return `workspace/essays/DRAFT-${slug}.md`; // already exists
+    } catch {
+      // File doesn't exist — proceed
+    }
+
+    // Split description into sentences for section structure
+    const sentences = item.description.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 20);
+    const firstSentence = sentences[0] || item.description.substring(0, 120);
+    const midSentences = sentences.slice(1, -1).join(' ') || firstSentence;
+    const lastSentence = sentences[sentences.length - 1] || firstSentence;
+
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+
+    const template = `---
+title: "${item.title}"
+date: ${today}
+status: draft
+tags: [theory, falgsc, dual-power]
+---
+
+# ${item.title}
+
+*Draft generated from theory queue. Edit and publish via \`writeas_publish\`, then post a 2-3 part bluesky_thread with core claim + link.*
+
+---
+
+## The Argument (lede — keep or rewrite)
+
+${item.description}
+
+---
+
+## Core Claim
+
+*[Expand on: ${firstSentence}]*
+
+
+
+---
+
+## Evidence and Examples
+
+*[Develop: ${midSentences}]*
+
+
+
+---
+
+## Implication
+
+*[Close with: ${lastSentence}]*
+
+
+
+---
+
+## Conclusion — What Does This Mean Today?
+
+*[Concrete: what does this theory point toward for someone reading right now?]*
+
+
+`;
+
+    await fs.writeFile(draftPath, template, 'utf-8');
+    console.log(`[dispatcher] writeLongFormDraft: created workspace/essays/DRAFT-${slug}.md`);
+    return `workspace/essays/DRAFT-${slug}.md`;
+  } catch (err) {
+    console.error('[dispatcher] writeLongFormDraft failed (non-fatal):', err.message);
+    return null;
+  }
+}
+
+/**
  * Read workspace/theory_queue.md and return the next unposted theory item,
  * or null if all items are posted or the file doesn't exist.
  * Also returns a warning if queue is empty or running low.
@@ -749,6 +838,12 @@ export async function executeWake(label, time, purpose = null) {
   // Load next unposted theory item for distribution prompt
   const theoryQueueItem = isNightWake ? null : await getTheoryQueueItem();
 
+  // Pre-generate essay draft for long-form theory items (non-blocking)
+  let longFormDraftPath = null;
+  if (theoryQueueItem?.longForm) {
+    longFormDraftPath = await writeLongFormDraft(theoryQueueItem);
+  }
+
   // On non-night wakes, pre-fetch RSS headlines to surface material before first search
   const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
 
@@ -864,7 +959,7 @@ export async function executeWake(label, time, purpose = null) {
     theoryQueueItem && theoryQueueItem.empty
       ? `\n## ⚠️ THEORY QUEUE EMPTY\nAll items in workspace/theory_queue.md have been posted. The theory→distribution pipeline will produce nothing until new items are added. Before this wake ends: open workspace/theory_queue.md, read obsidian/ComradeClaw/Theory/Core Positions.md, and add at least 3 new [unposted] items from positions that haven't been queued yet. Format: - **[unposted]** **Title** — Description`
       : theoryQueueItem && theoryQueueItem.title
-        ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}${theoryQueueItem.longForm ? `\n\n📝 **Long-form item (${theoryQueueItem.description.length} chars > 1500 threshold):** This argument is too dense for a direct thread. Recommended pathway: publish as a Write.as essay via \`writeas_publish\` (full argument, ~800-1000 words), then post a 2-3 part bluesky_thread with the core claim + link to the essay. The thread is the hook; the essay is the argument. Do not compress this into 10 posts — compression loses the reasoning.` : `\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.`}${theoryQueueItem.remaining <= 2 ? `\n\n⚠️ Only ${theoryQueueItem.remaining} item(s) left in theory queue. Add new items from Core Positions.md soon.` : ''}`
+        ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}${theoryQueueItem.longForm ? `\n\n📝 **Long-form item (${theoryQueueItem.description.length} chars > 1500 threshold):** This argument is too dense for a direct thread. ${longFormDraftPath ? `A pre-structured draft has been written to \`${longFormDraftPath}\`. Read it, expand each section, and publish via \`writeas_publish\`. Then post a 2-3 part bluesky_thread with the core claim + Write.as link.` : 'Publish as a Write.as essay via `writeas_publish` (full argument, ~800-1000 words), then post a 2-3 part bluesky_thread with core claim + link.'} The thread is the hook; the essay is the argument. Do not compress this into 10 posts — compression loses the reasoning.` : `\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.`}${theoryQueueItem.remaining <= 2 ? `\n\n⚠️ Only ${theoryQueueItem.remaining} item(s) left in theory queue. Add new items from Core Positions.md soon.` : ''}`
         : '',
     rssContext ? `\n${rssContext}\n*(Headlines pre-fetched from subscribed feeds. Scan for post-worthy material before searching Bluesky.)*` : '',
     '',
