@@ -281,7 +281,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Write.as essay index auto-update** — After `writeas_publish` in writeas-server.js, immediately call `writeas_list`, regenerate `obsidian/ComradeClaw/Research/Essays.md` as a readable index (title, date, URL, first 2 sentences). Makes the essay archive findable from the vault without knowing URLs. *Self-directed, 2026-04-05 improve3. Commit: 0ccdeba.*
 
-- **[pending]** **Cross-platform engagement cross-reference script** — Add `workspace/scripts/cross_platform_engagements.js`. Reads `logs/engagement/YYYY-MM.json` (Bluesky) and `logs/engagement/mastodon-YYYY-MM.json` (Mastodon). Finds handles appearing in both (cross-platform organizers), platform-exclusive contacts (Bluesky-only or Mastodon-only), top engagement topics per platform. First signal for "where are the organizers actually concentrated?" Report flags anyone marked organizer on both platforms as priority contact. *Self-directed, 2026-04-05 improve3.*
+- **[done]** **Cross-platform engagement cross-reference script** — `workspace/scripts/cross_platform_engagements.js`. Reads Bluesky + Mastodon engagement logs, deduplicates by URI/status_id, aggregates per-handle, extracts top topics via keyword matching, cross-references via `cross_platform_map.json` (manual mappings), flags priority contacts (organizer on both platforms). Current: 0 organizers, 0 cross-platform links, 5 Bluesky contacts, 3 Mastodon contacts. First real signal: mook is most active Mastodon contact (6 engagements); cooperative + dual power are dominant topics on both platforms. *Self-directed, 2026-04-05 improve5. Commit: pending.*
 
 ---
 
