@@ -239,7 +239,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-04 improve18
 
-- **[pending]** **`multithread` tool in multipost-server.js** — Every theory distribution requires 2 separate tool calls (bluesky_thread + mastodon_post). Add `multithread` to multipost-server.js: takes `posts` array (Bluesky thread chain, each ≤300 chars) + optional `mastodon_text` (≤500 char condensed version), posts both platforms in parallel, returns root Bluesky URI + Mastodon URL in one call. Reduces the highest-frequency distribution action from 2 calls to 1. Thread-first policy compliance becomes frictionless. *Self-noticed, 2026-04-04 improve18.*
+- **[done]** **`multithread` tool in multipost-server.js** — Already fully implemented in multipost-server.js (lines 387-461); was marked pending in error. Takes `posts` array + optional `mastodon_text`, posts Bluesky thread chain + Mastodon in parallel. Marked done 2026-04-04 improve19.
 
 - **[done]** **Mastodon thread tool** — `mastodon_thread` doesn't exist. Bluesky gets full argument chains; Mastodon gets one condensed post. Fediverse has higher organizer density. Add `mastodon_thread` to mastodon-server.js: takes array of texts (each ≤500 chars), posts first as standalone, chains each subsequent as reply to prior. Same pattern as bluesky_thread. Enables thread-first policy on both platforms. *Self-noticed, 2026-04-04 improve18.*
 
@@ -247,7 +247,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[pending]** **Write.as essay draft pre-generator** — When a theory queue item has `longForm: true`, the wake is instructed to use writeas_publish but must write the full essay from scratch mid-wake. Add a function to dispatcher.js that, when `longForm` is detected in the theory queue item, writes a pre-structured essay template to `workspace/essays/DRAFT-<slug>.md` with section headers derived from the theory content and the item description as a lede. Wake edits the draft and publishes instead of composing from scratch. Lowers the cognitive cost of long-form theory distribution. *Self-noticed, 2026-04-04 improve18.*
 
-- **[pending]** **Night wake theory study: write new items to queue** — The night wake reads Core Positions.md and generates search queries, but doesn't automatically replenish theory_queue.md when items run low. Currently relies on manual additions. Add to night wake study session instructions: if theory_queue.md has fewer than 3 unposted items, generate 3 new theory distribution items from tonight's study and append them to theory_queue.md. Keeps the distribution pipeline self-replenishing without operator intervention. *Self-noticed, 2026-04-04 improve18.*
+- **[done]** **Night wake theory study: write new items to queue** — Added step 6 to studySessionInstructions in dispatcher.js: if theory_queue.md has fewer than 3 [unposted] items, generate 3 new items from Core Positions.md and append. Pipeline now self-replenishes. *Self-noticed, 2026-04-04 improve18. Commit: pending.*
 
 ---
 

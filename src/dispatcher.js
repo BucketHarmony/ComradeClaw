@@ -803,6 +803,7 @@ export async function executeWake(label, time, purpose = null) {
     `3. Write one paragraph in obsidian/ComradeClaw/Theory/Core Positions.md (or a journal entry) documenting what shifted or clarified. Not summary — the thing that changes what you'd do tomorrow.`,
     `4. Generate 2-3 search queries for tomorrow's morning wake that come from this reading. Write them to workspace/memory/study_queries.md (create if needed). Label them with tomorrow's date. Prepend new entries — newest section at top.`,
     `5. If tonight's theory connected to something happening on Bluesky, post it. If not, silence is fine — don't manufacture a connection.`,
+    `6. **Theory queue replenishment (required when queue is low):** Read workspace/theory_queue.md. Count [unposted] items. If fewer than 3 remain, generate 3 new theory distribution items from tonight's reading and append them to workspace/theory_queue.md. Source from positions in Core Positions.md that haven't been queued yet. Format: \`- **[unposted]** **Title** — Description\`. The pipeline must not run dry.`,
     ``,
     `## Theory Drift Check (Night Wake — Required)`,
     `After any update to obsidian/ComradeClaw/Theory/Core Positions.md, write an explicit drift record in the same journal entry:`,
