@@ -379,13 +379,15 @@ async function pollSelfWakes() {
     });
   }
 
-  // Prune fired wakes older than 7 days to prevent indefinite file growth
-  const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const pruned = queue.filter(entry =>
-    !(entry.status === 'fired' && new Date(entry.fire_at).getTime() < sevenDaysAgo)
-  );
+  // Prune completed/cancelled wakes older than 24h to prevent queue growth
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
+  const pruned = queue.filter(entry => {
+    const isComplete = entry.status === 'fired' || entry.status === 'done' || entry.status === 'cancelled';
+    const isOld = new Date(entry.fire_at).getTime() < oneDayAgo;
+    return !(isComplete && isOld);
+  });
   if (pruned.length < queue.length) {
-    console.log(`[scheduler] Pruned ${queue.length - pruned.length} old fired wake(s) from queue`);
+    console.log(`[scheduler] Pruned ${queue.length - pruned.length} completed wake(s) from queue (>24h old)`);
     changed = true;
   }
 
