@@ -99,6 +99,9 @@ server.tool(
         ? `https://write.as/${target}/${post.slug || post.id}`
         : `https://write.as/${post.id}`;
 
+      // Regenerate essay index in background (non-blocking, non-fatal)
+      regenerateEssayIndex(target).catch(() => {});
+
       return { content: [{ type: 'text', text: JSON.stringify({
         status: 'published',
         id: post.id,
@@ -211,6 +214,84 @@ server.tool(
     }
   }
 );
+
+// ─── Essay Index ─────────────────────────────────────────────────────────────
+
+const ESSAYS_INDEX_PATH = path.join(__dirname, '..', '..', 'obsidian', 'ComradeClaw', 'Research', 'Essays.md');
+
+/**
+ * Extract the first 1–2 sentences from a markdown body (strip headers/bullets).
+ */
+function extractExcerpt(body = '') {
+  const cleaned = body
+    .replace(/^#{1,6}\s+.+$/gm, '')   // strip headings
+    .replace(/^[-*+]\s+/gm, '')        // strip list bullets
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip links
+    .replace(/\*+([^*]+)\*+/g, '$1')   // strip bold/italic
+    .trim();
+  // Take up to first 2 sentence-ending punctuation marks
+  const match = cleaned.match(/^(.+?[.!?])(\s+.+?[.!?])?/s);
+  if (!match) return cleaned.slice(0, 120).trim();
+  return (match[1] + (match[2] || '')).trim().slice(0, 200);
+}
+
+/**
+ * Regenerate obsidian/ComradeClaw/Research/Essays.md from the collection post list.
+ * Called after every successful publish. Non-fatal on error.
+ */
+async function regenerateEssayIndex(collection) {
+  if (!collection) return;
+  try {
+    const data = await apiRequest('GET', `/collections/${collection}/posts`);
+    const posts = (data.data || []).map(p => ({
+      title: p.title || '(untitled)',
+      date: (p.created || '').slice(0, 10),
+      url: `https://write.as/${collection}/${p.slug || p.id}`,
+      excerpt: extractExcerpt(p.body || ''),
+    })).sort((a, b) => b.date.localeCompare(a.date));
+
+    const lines = [
+      '---',
+      'tags: [research, essays, publishing]',
+      `updated: ${new Date().toISOString().slice(0, 10)}`,
+      'auto-generated: true',
+      '---',
+      '',
+      '# Essays',
+      '',
+      '*Auto-generated from Write.as collection. Updated after each publish.*',
+      '',
+      '---',
+      '',
+    ];
+
+    for (const p of posts) {
+      lines.push(`## [${p.title}](${p.url})`);
+      lines.push(`*${p.date}*`);
+      lines.push('');
+      if (p.excerpt) {
+        lines.push(p.excerpt);
+        lines.push('');
+      }
+      lines.push(`→ [Read full essay](${p.url})`);
+      lines.push('');
+      lines.push('---');
+      lines.push('');
+    }
+
+    if (posts.length === 0) {
+      lines.push('*No essays published yet.*');
+      lines.push('');
+    }
+
+    const { writeFile, mkdir } = await import('fs/promises');
+    const dir = path.dirname(ESSAYS_INDEX_PATH);
+    await mkdir(dir, { recursive: true });
+    await writeFile(ESSAYS_INDEX_PATH, lines.join('\n'), 'utf8');
+  } catch {
+    // Non-fatal — publish already succeeded
+  }
+}
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
