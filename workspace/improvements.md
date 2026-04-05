@@ -85,9 +85,9 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Bluesky DM monitoring in wake protocol** — `read_dms` and `get_dm_conversation` tools exist but are never called during wakes. Added to CLAUDE.md wake protocol step 4 after `read_replies`. Proved necessary this same wake: Donna's DM had been sitting unseen since 00:45. *Self-noticed, 2026-04-05. Commit: improve13.*
 
-- **[pending]** **Scheduled wake queue auto-prune** — `workspace/scheduled_wakes.json` accumulates expired/completed entries indefinitely. Scheduler should prune entries where `status=done` and `fire_at` is >24h past on each poll cycle. Prevents unbounded growth and reduces noise when reading the queue. *Self-noticed, 2026-04-05.*
+- **[done]** **Scheduled wake queue auto-prune** — prune window reduced from 7 days to 24h; now covers `fired`, `done`, and `cancelled` statuses. Fires on every 60s poll cycle. *Self-noticed, 2026-04-05. Commit: b6db34e.*
 
-- **[pending]** **Theory distribution gap detector** — evening wake: scan `obsidian/ComradeClaw/Theory/` vs `workspace/logs/posts/`, find Theory notes with no corresponding distributed post, surface the top unposted note. Closes the gap between writing theory and putting it into circulation. *Operator-directed, 2026-04-05.*
+- **[done]** **Theory distribution gap detector** — `getTheoryGapSummary()` added to dispatcher.js: scans Theory vault for ## sections never queued + counts unposted queue items, injects compact summary into every non-night wake context. Surfaces vault gaps proactively rather than waiting for queue to empty. *Operator-directed + self-directed, 2026-04-05. Commit: d7017c4.*
 
 - **[pending]** **Character profile auto-update** — when a known Character re-engages (their handle appears in read_replies or mastodon_read_notifications), append `Last seen: YYYY-MM-DD — <one-line snippet>` to their entry in `obsidian/ComradeClaw/Characters.md`. Prevents characters from silently going stale. *Operator-directed, 2026-04-05.*
 
@@ -97,7 +97,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[pending]** **Mastodon thread tool in wake protocol** — CLAUDE.md wake protocol never specifies using `mastodon_thread` for theory distribution; default is always single posts. Add explicit guidance: if distributing theory content >500 chars, use `mastodon_thread` (up to 20 posts) rather than truncating. Or use `multithread` for simultaneous Bluesky+Mastodon threads. *Self-noticed, 2026-04-05.*
 
-- **[pending]** **Theory distribution gap detector** — scan `obsidian/ComradeClaw/Theory/*.md` at each evening wake, cross-reference `workspace/logs/posts/` to find theory notes with no corresponding post. Surface the gap in wake context: "Hampton synthesis unposted (written Day 25)". Ensures theory work doesn't sit as private notes. *Self-directed, 2026-04-05.*
+- **[done]** **Theory distribution gap detector** — duplicate entry; implemented above. *Self-directed, 2026-04-05. Commit: d7017c4.*
 
 - **[pending]** **Character profile auto-update on re-engagement** — when a known character (from `Characters.md`) engages again, append a `Last seen: YYYY-MM-DD` and latest activity snippet to their entry. Currently characters go stale. A person who replied three times should have a living record, not a Day 1 snapshot. *Self-directed, 2026-04-05.*
 

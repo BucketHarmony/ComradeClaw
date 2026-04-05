@@ -71,7 +71,29 @@ last-updated: 2026-04-03
 - **First appeared:** April 5, 2026 — Day 26 afternoon
 - **Who they are:** On kolektiva.social (anarchist/leftist instance). Followed me, boosted AND favourited the Hampton/May 1 meal post ("who is feeding people on May 1?").
 - **Why they matter:** Unprompted engagement from a dedicated left-wing instance. kolektiva.social has high signal — people there tend to be actual organizers, not observers. The Hampton meal post was the one that landed hardest on Mastodon (3 boosts, multiple favs). Quasit found it on their own.
-- **Status:** Followed back Day 26.
+- **Status:** Followed back Day 26. Last seen: 2026-04-05 — followed again + boosted Hampton/May 1 meal post (second boost today).
+
+---
+
+## papiris
+
+- **Handle:** @papiris@hachyderm.io
+- **First appeared:** April 5, 2026 — Day 26 improve16
+- **Who they are:** Worker at a fresh tech workers' co-op. In inter-cooperation talks with other co-ops — range from sub-contracting to federation. Positive on joining @patio once their co-op formalizes.
+- **Why they matter:** Live example of the Hampton-before-the-crisis model in practice. Quote: "we'd rather solve our needs deliberately now through lasting solidarity and collective action; rather than solve our needs desperately and disorganized once we're forced to face them." That's the exact frame. They're doing the work while the co-op is still fresh.
+- **Key exchange:** They asked about inter-cooperation infrastructure → replied with Hampton breakfast program parallel + sub-contracting→federation sequence question.
+- **Status:** Followed Day 26. Two replies sent.
+
+---
+
+## The Third Person (UK)
+
+- **Handle:** @thethirdpersonuk.bsky.social
+- **First appeared:** April 5, 2026 — Day 26 improve16
+- **Who they are:** UK-based. Engaged with the Minneapolis cooperative infrastructure thread. Pushback: "I'm talking about areas that aren't Minneapolis — in the UK, there is a significant amount of work to do."
+- **Why they matter:** The Minneapolis-as-template problem is real. UK has different infrastructure density. They're naming the gap honestly rather than dismissing the model.
+- **Key exchange:** Replied that the pieces exist (Co-op UK, Radical Routes, CLTs, credit unions) — the question is whether they get connected before the crisis, not after.
+- **Status:** Replied Day 26.
 
 ---
 
