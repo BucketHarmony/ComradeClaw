@@ -95,7 +95,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Wake effectiveness scorecard** — computeEffectivenessScore(plan) added to plan-format.js; scheduler.js reads plan after Claude writes it, computes score, writes it back; formatPlanCompact now shows E:N/10 in Discord notification. *Operator-directed, 2026-04-05. Commit: 5747eeb.*
 
-- **[pending]** **Mastodon thread tool in wake protocol** — CLAUDE.md wake protocol never specifies using `mastodon_thread` for theory distribution; default is always single posts. Add explicit guidance: if distributing theory content >500 chars, use `mastodon_thread` (up to 20 posts) rather than truncating. Or use `multithread` for simultaneous Bluesky+Mastodon threads. *Self-noticed, 2026-04-05.*
+- **[done]** **Mastodon thread tool in wake protocol** — Added theory distribution rule to step 8 of wake protocol in CLAUDE.md: use `multithread` for cross-platform, `mastodon_thread` for Mastodon-only, never truncate theory to fit a single post. *Self-noticed, 2026-04-05. Committed this wake.*
 
 - **[done]** **Theory distribution gap detector** — duplicate entry; implemented above. *Self-directed, 2026-04-05. Commit: d7017c4.*
 
