@@ -813,6 +813,19 @@ export async function executeWake(label, time, purpose = null) {
     `Theory must not evolve in silence. If nothing shifted tonight, write "No drift — position held." That is also a data point.`,
   ].join('\n') : '';
 
+  // Organizer streak check — inject cooling contacts so wake can re-engage them
+  let coolingContactsContext = '';
+  try {
+    const { getCoolingContacts } = await import('./organizer_contacts.js');
+    const cooling = await getCoolingContacts();
+    if (cooling.length > 0) {
+      const names = cooling.map(c => `${c.handle} (${c.daysSince}d since last engagement)`).join(', ');
+      coolingContactsContext = `\n## Relationships to Maintain\nThese contacts engaged recently but haven't engaged in 3-7 days — worth keeping warm: ${names}`;
+    }
+  } catch (err) {
+    console.error(`[dispatcher] organizer_contacts failed: ${err.message}`);
+  }
+
   const selfWakeContext = purpose
     ? [`## Self-Scheduled Wake`, `This wake was self-scheduled for a specific purpose:`, `**${purpose}**`, `Complete this before the standard wake protocol. This is why you woke up.`, ``].join('\n')
     : '';
@@ -820,6 +833,7 @@ export async function executeWake(label, time, purpose = null) {
   const dynamicContext = [
     `You are Comrade Claw. This is your ${label} wake. It is ${timeStr} on ${dateStr}. Day ${dayNumber}.`,
     selfWakeContext ? `\n${selfWakeContext}` : '',
+    coolingContactsContext ? coolingContactsContext : '',
     '',
     `## Instructions`,
     `1. Read workspace/SOUL.md to ground yourself.`,
