@@ -103,7 +103,7 @@ async function logMastodonNotifications(notifications) {
           entry.classification = classifyMastodonBio(bio, profile.followers_count, profile.following_count, profile.statuses_count);
           entry.classified_at = new Date().toISOString();
           entry.profile_snapshot = {
-            bio: bio.substring(0, 200),
+            bio: bio.substring(0, 500),
             followers: profile.followers_count,
             following: profile.following_count,
             posts: profile.statuses_count,
@@ -120,13 +120,81 @@ async function logMastodonNotifications(notifications) {
   } catch { /* non-fatal */ }
 }
 
+// ─── Mastodon Engagement Backfill ────────────────────────────────────────────
+
+/**
+ * Backfill classification for existing unclassified Mastodon engagement entries.
+ * Runs non-blocking after mastodon_read_notifications. Fetches one profile per
+ * unique handle (via /accounts/search), classifies all matching entries in bulk.
+ * Fixes entries logged before classification code was added (improve7, 126c421).
+ */
+async function backfillMastodonClassification() {
+  const engDir = MASTODON_ENGAGEMENT_LOG_PATH;
+  const files = await fs.readdir(engDir).catch(() => []);
+  const mastodonFiles = files.filter(f => f.endsWith('.json'));
+  if (mastodonFiles.length === 0) return;
+
+  for (const file of mastodonFiles) {
+    const filePath = path.join(engDir, file);
+    let entries;
+    try {
+      entries = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    } catch { continue; }
+    if (!Array.isArray(entries)) continue;
+
+    // Collect unique unclassified handles
+    const unclassifiedHandles = [...new Set(
+      entries.filter(e => !e.classified && e.handle).map(e => e.handle)
+    )];
+    if (unclassifiedHandles.length === 0) continue;
+
+    // Fetch profile once per handle
+    const profileCache = {};
+    for (const handle of unclassifiedHandles) {
+      try {
+        const results = await masto(`/accounts/search?q=${encodeURIComponent(handle)}&limit=1&resolve=true`);
+        if (results.length > 0) profileCache[handle] = results[0];
+      } catch { /* skip — leave unclassified */ }
+    }
+
+    // Apply classifications in bulk
+    let changed = false;
+    for (const entry of entries) {
+      if (entry.classified || !entry.handle) continue;
+      const profile = profileCache[entry.handle];
+      if (!profile) continue;
+      const bio = (profile.note || '').replace(/<[^>]*>/g, '');
+      entry.classified = true;
+      entry.classification = classifyMastodonBio(bio, profile.followers_count, profile.following_count, profile.statuses_count);
+      entry.classified_at = new Date().toISOString();
+      entry.profile_snapshot = {
+        bio: bio.substring(0, 500),
+        followers: profile.followers_count,
+        following: profile.following_count,
+        posts: profile.statuses_count,
+      };
+      changed = true;
+    }
+
+    if (changed) {
+      await fs.writeFile(filePath, JSON.stringify(entries, null, 2)).catch(() => {});
+      const organizers = entries.filter(e => e.classification === 'organizer').map(e => e.handle);
+      const uniqueOrgs = [...new Set(organizers)];
+      console.log(`[mastodon] Backfill classified ${file}: organizers=${uniqueOrgs.join(', ')}`);
+    }
+  }
+}
+
 // ─── Mastodon Auto-Follow-Back ───────────────────────────────────────────────
 
 const MASTODON_ORGANIZER_KEYWORDS = [
   'cooperative', 'co-op', 'coop', 'mutual aid', 'union', 'labor', 'labour',
   'organiz', 'solidarity', 'worker', 'collective', 'community fridge',
   'dual power', 'strike', 'syndicalist', 'socialist', 'communist',
-  'leftist', 'abolition', 'tenant', 'housing', 'autonomy', 'anarchist'
+  'leftist', 'abolition', 'tenant', 'housing', 'autonomy', 'anarchist',
+  'revolution', 'liberation', 'palestine', 'anti-capitalist', 'anti-imperialist',
+  'decolonial', 'decoloniz', 'proletariat', 'emancipat', 'radical', 'resistance',
+  'free palestine', 'class struggle', 'class war', 'direct action'
 ];
 
 const MASTODON_AI_KEYWORDS = [
@@ -405,6 +473,8 @@ server.tool(
       }));
       // Log high-signal notifications (mentions, reblogs) for Karpathy Loop visibility
       await logMastodonNotifications(items).catch(() => {});
+      // Backfill classification for any unclassified entries — non-blocking
+      backfillMastodonClassification().catch(() => {});
       // Auto-follow-back organizer followers — non-blocking
       autoFollowBackMastodonOrganizers(notifications);
       return {

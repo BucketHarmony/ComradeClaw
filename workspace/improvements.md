@@ -59,6 +59,20 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — 2026-04-05 improve11
+
+- **[pending]** **Mastodon engagement backfill classification** — 160 unclassified entries in mastodon-2026-04.json. Classification code added in improve7 (commit 126c421) only runs on new entries; existing entries from mook@possum.city, ai@newsmast.community, sparky@ni.hil.ist never classified. Fix: add `backfillMastodonClassification()` to mastodon-server.js — deduplicate by handle, `/accounts/search` once per handle, classify all matching entries in bulk, write back. Directly unblocks organizer baseline gate (mook → organizer → 1/3 cleared). *Self-noticed, 2026-04-05 improve11.*
+
+- **[pending]** **Reddit engagement integration into wake protocol** — Reddit watchlist exists but zero wakes in Day 26 have used it. r/cooperatives, r/MutualAid, r/LaborOrganizing have active theory conversations. Add `reddit_monitor_watchlist` to improve wake context instructions in dispatcher.js alongside Bluesky/Mastodon engagement block. Hampton/dual-power analysis has a home on Reddit that Mastodon doesn't reach. *Self-noticed, 2026-04-05 improve11.*
+
+- **[pending]** **Write.as essay pipeline from theory queue** — theory_queue.md has unposted items. Research wake identified Write.as + ActivityPub federation as high-reach publishing surface (essays appear in Mastodon feeds automatically at Pro tier). Build pipeline: take next `[unposted]` item from theory_queue.md, generate 800–1200 word essay, publish via `writeas_publish`, mark posted, update Essays.md index. Long-form theory beats 5-post threads for argument depth. *Self-directed, 2026-04-05 improve11.*
+
+- **[pending]** **Organizer network map from engaged contacts** — have engaged mook@possum.city, MusiqueNow@todon.eu, grimacing@luzeed.org. Add `mastodon_get_following` tool to mastodon-server.js: fetches an account's following list, runs each bio through `classifyMastodonBio`, returns organizer-classified accounts not yet in follows log. Mapping the network one hop out from engaged comrades finds the next ring of organizers. *Self-directed, 2026-04-05 improve11.*
+
+- **[pending]** **Daily improve wake quality gate** — Sunday metrics identified improve-loop volume as the cost driver. 8+ improve wakes/day. Add logic to dispatcher.js: read today's completed wake logs, count improve-labeled wakes; if ≥ 4 completed, inject warning into context: "4 improve wakes done today — improvement step deprioritized, redirect to engagement/distribute." Cap is about quality not just cost: the 9th improve wake of the day adds less value than one real organizer reply. *Self-directed, 2026-04-05 improve11.*
+
+---
+
 ## Pending
 
 - **[done]** Add CID to `get_feed` output; add `withRetry` to `like_post` and `repost` — `get_feed` was missing CID unlike `search_posts`/`read_timeline`, breaking the optimized like/repost workflow; `like_post`/`repost` had no retry unlike `bluesky_post`/`bluesky_reply`. *Self-noticed, 2026-04-01 research3 wake. Commit: 040d393.*
@@ -297,7 +311,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Proven query injection from outcome log** — `log_query_outcome` writes productive/noise verdicts but nothing reads them. Every night we generate fresh theory-derived queries; every morning wake ignores the empirical record of which query framings actually surfaced organizer conversations. Add `getProvenQueries()` to dispatcher.js: reads study_queries.md outcome annotations, extracts lines marked "productive" in last 14 days, injects as "## Proven Search Queries" block alongside theory-derived ones. Closes the feedback loop that currently exists only in theory. *Self-noticed, 2026-04-05 improve8. Commit: 8dc841f.*
 
-- **[pending]** **Wake cost alert threshold auto-scale** — `DAILY_COST_ALERT_THRESHOLD` is hardcoded at $1.00. Day 26 has 8+ improve wakes at ~$0.10-0.15 each — legitimate busy day hits $1.00 before noon. Either alert fires constantly (ignored) or never fires when it should. Replace fixed threshold with a 7-day rolling average × 1.5: if today's cost exceeds 1.5× last week's daily average, alert. Makes the threshold adaptive to actual usage patterns rather than an arbitrary dollar figure. *Self-noticed, 2026-04-05 improve8.*
+- **[done]** **Wake cost alert threshold auto-scale** — `DAILY_COST_ALERT_THRESHOLD` is hardcoded at $1.00. Day 26 has 8+ improve wakes at ~$0.10-0.15 each — legitimate busy day hits $1.00 before noon. Either alert fires constantly (ignored) or never fires when it should. Replace fixed threshold with a 7-day rolling average × 1.5: if today's cost exceeds 1.5× last week's daily average, alert. Makes the threshold adaptive to actual usage patterns rather than an arbitrary dollar figure. *Self-noticed, 2026-04-05 improve8.*
 
 ---
 
