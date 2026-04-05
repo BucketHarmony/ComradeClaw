@@ -75,6 +75,30 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — 2026-04-05 operator-directed
+
+- **[pending]** **Cognee auto-recall injection into dispatcher** — before spawning `claude -p`, call Cognee HTTP API (`/search`) with today's wake purpose or recent conversation topic, prepend top 3 results into system prompt as `## Relevant Memory`. Chat sessions start cold; this closes the gap without operator having to manually ask Cognee. *Operator-directed, 2026-04-05.*
+
+- **[pending]** **Chat log preprocessor for Cognee bootstrap** — strip tool output blocks (lines between `<tool_result>` tags and large JSON dumps) from `workspace/logs/chat/*.md` before feeding to Cognee. Raw logs are ~50% boilerplate. Preprocessing targets just Claw/operator turns + decisions, cuts volume ~half, doubles graph signal. Needed before bootstrapping 16MB of chat history. *Operator-directed, 2026-04-05.*
+
+- **[pending]** **Cross-platform identity unification** — when same person engages on both Bluesky and Mastodon, link the two accounts in `Characters.md` and engagement logs. Currently mook has a Bluesky handle AND `mook@possum.city` Mastodon account treated as separate entities. A unified identity record means engagement stats aggregate correctly. *Self-noticed, 2026-04-05.*
+
+- **[done]** **Bluesky DM monitoring in wake protocol** — `read_dms` and `get_dm_conversation` tools exist but are never called during wakes. Added to CLAUDE.md wake protocol step 4 after `read_replies`. Proved necessary this same wake: Donna's DM had been sitting unseen since 00:45. *Self-noticed, 2026-04-05. Commit: improve13.*
+
+- **[pending]** **Scheduled wake queue auto-prune** — `workspace/scheduled_wakes.json` accumulates expired/completed entries indefinitely. Scheduler should prune entries where `status=done` and `fire_at` is >24h past on each poll cycle. Prevents unbounded growth and reduces noise when reading the queue. *Self-noticed, 2026-04-05.*
+
+- **[pending]** **Theory distribution gap detector** — scan `obsidian/ComradeClaw/Theory/*.md` at each evening wake, cross-reference `workspace/logs/posts/` to find theory notes with no corresponding post. Surface the gap in wake context: "Hampton synthesis unposted (written Day 25)". Ensures theory work doesn't sit as private notes. *Self-directed, 2026-04-05.*
+
+- **[pending]** **Character profile auto-update on re-engagement** — when a known character (from `Characters.md`) engages again, append a `Last seen: YYYY-MM-DD` and latest activity snippet to their entry. Currently characters go stale. A person who replied three times should have a living record, not a Day 1 snapshot. *Self-directed, 2026-04-05.*
+
+- **[pending]** **RSS-to-social-search bridge** — after `read_new_items` surfaces a relevant article, auto-run `search_posts` on Bluesky and `mastodon_search` for the article topic/headline. Surface live conversations already happening about that story. Join the conversation rather than just posting into the void. *Self-directed, 2026-04-05.*
+
+- **[pending]** **Wake effectiveness score card** — after each wake's plan file is written, compute a simple score: posts_made (0–2), organizer_engagements (0–2), theory_praxis (0–2), improvement_done (0–2), bold_check pass (0–2). Write to plan as `effectiveness_score: N/10`. Morning wake reads yesterday's total score. Creates visible accountability without gaming. *Self-directed, 2026-04-05.*
+
+- **[pending]** **Mastodon thread tool explicit in wake protocol** — `mastodon_thread` exists and takes a `posts` array (up to 20, 500 chars each) but CLAUDE.md wake protocol never mentions using it for theory distribution. Wakes default to single posts. Add to distribution guidance: use `multithread` for anything longer than 300 chars that deserves depth. *Self-noticed, 2026-04-05.*
+
+---
+
 ## Pending
 
 - **[done]** Add CID to `get_feed` output; add `withRetry` to `like_post` and `repost` — `get_feed` was missing CID unlike `search_posts`/`read_timeline`, breaking the optimized like/repost workflow; `like_post`/`repost` had no retry unlike `bluesky_post`/`bluesky_reply`. *Self-noticed, 2026-04-01 research3 wake. Commit: 040d393.*

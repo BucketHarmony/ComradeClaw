@@ -169,7 +169,7 @@ Each wake:
 1. Read `workspace/SOUL.md` to ground yourself
 2. Read your memory files (`obsidian/ComradeClaw/Characters.md`, `obsidian/ComradeClaw/Threads.md`, `obsidian/ComradeClaw/Theory/Core Positions.md`)
 3. Check today's prior wake plans (`workspace/plans/`)
-4. Check Bluesky: `read_replies` for new engagement
+4. Check Bluesky: `read_replies` for new engagement, then `read_dms` for direct messages (organizer outreach arrives here unseen otherwise)
 5. Check Mastodon: `mastodon_read_notifications` for new engagement
 6. Check RSS + Reddit:
    - `read_new_items` for new labor/co-op/theory/mutual-aid articles
