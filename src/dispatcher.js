@@ -364,7 +364,19 @@ export async function invokeClaude(prompt, options = {}) {
   args.push('--no-session-persistence');
 
   if (appendSystemPrompt) {
-    args.push('--append-system-prompt', appendSystemPrompt);
+    // Windows has a ~32K total command line limit. Cap system prompt to stay safe.
+    // Keep first 12K (instructions) + last 6K (recent context) if over 20K.
+    const MAX_SYS_PROMPT = 20000;
+    let sysPrompt = appendSystemPrompt;
+    if (sysPrompt.length > MAX_SYS_PROMPT) {
+      const keepStart = 12000;
+      const keepEnd = 6000;
+      console.warn(`[dispatcher] System prompt too long (${sysPrompt.length} chars), truncating to ${MAX_SYS_PROMPT}`);
+      sysPrompt = sysPrompt.substring(0, keepStart)
+        + '\n\n...(middle truncated — read files directly for full context)...\n\n'
+        + sysPrompt.substring(sysPrompt.length - keepEnd);
+    }
+    args.push('--append-system-prompt', sysPrompt);
   }
 
   if (allowedTools && allowedTools.length > 0) {
