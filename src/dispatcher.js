@@ -15,6 +15,7 @@ import { fileURLToPath } from 'url';
 
 const execFileAsync = promisify(execFileNode);
 import { getDayNumber } from './tools.js';
+import { getCrossPlatformSummary } from './post_dedup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1170,6 +1171,9 @@ export async function executeWake(label, time, purpose = null) {
   // Check organizer baseline — evaluate A/B experiment gate
   const organizerBaselineContext = await getOrganizerBaseline();
 
+  // Cross-platform post coordination — detect topic overlap before posting
+  const crossPlatformContext = !isNightWake ? await getCrossPlatformSummary() : null;
+
   // Load theory-derived search queries from last night's study session
   let studyQueriesContext = '';
   let provenQueriesContext = '';
@@ -1372,6 +1376,7 @@ export async function executeWake(label, time, purpose = null) {
     facetWarning ? `\n${facetWarning}` : '',
     driftAlert ? `\n${driftAlert}` : '',
     organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
+    crossPlatformContext ? `\n${crossPlatformContext}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
   ].join('\n');

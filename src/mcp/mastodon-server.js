@@ -16,6 +16,7 @@ import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logSharedPost } from '../post_dedup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -275,6 +276,7 @@ server.tool(
         method: 'POST',
         body: JSON.stringify({ status: text, visibility }),
       });
+      await logSharedPost('mastodon', text);
       return {
         content: [
           {
@@ -621,6 +623,7 @@ server.tool(
     }
 
     const posted = results.filter(r => r.status === 'posted').length;
+    if (posted > 0) await logSharedPost('mastodon', posts[0]);
     return {
       content: [
         {

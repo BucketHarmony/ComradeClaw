@@ -14,6 +14,7 @@ import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logSharedPost } from '../post_dedup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -446,6 +447,7 @@ server.tool(
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
       await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'post', char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour) });
+      await logSharedPost('bluesky', text);
       scheduleRetrospectiveWake(result.uri, 'post');
       verifyFacets(agent, result.uri, text);
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, cid: result.cid, text, charCount: text.length }) }] };
@@ -1107,6 +1109,7 @@ server.tool(
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
       await logPost({ uri: rootUri, cid: rootCid, posted_at: now.toISOString(), type: 'thread', thread_length: posts.length, char_count: posts.reduce((s, p) => s + p.length, 0), hashtags: [...new Set(posts.flatMap(p => detectHashtags(p)))], time_of_day: timeOfDay(hour) });
+      await logSharedPost('bluesky', posts[0]);
       scheduleRetrospectiveWake(rootUri, 'thread');
       verifyFacets(agent, rootUri, posts[0]);
       return { content: [{ type: 'text', text: JSON.stringify({
