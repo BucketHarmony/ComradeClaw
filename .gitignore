@@ -43,3 +43,6 @@ yarn-error.log*
 
 # Test scripts
 test-*.js
+
+# Temp files from dispatcher stdin workaround
+.tmp_prompt_*.txt

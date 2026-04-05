@@ -815,6 +815,8 @@ export async function executeWake(label, time, purpose = null) {
 
   // Night wake gets a study session focus instead of search-and-post
   const isNightWake = label === 'night';
+  // Reddit wake gets a dedicated engagement protocol instead of generic Bluesky loop
+  const isRedditWake = label === 'reddit';
 
   // Check facet verification failure rate — warn if hashtags are breaking
   const facetWarning = await getFacetWarning();
@@ -908,6 +910,34 @@ export async function executeWake(label, time, purpose = null) {
     `Theory must not evolve in silence. If nothing shifted tonight, write "No drift — position held." That is also a data point.`,
   ].join('\n') : '';
 
+  const redditEngagementInstructions = isRedditWake ? [
+    ``,
+    `## Reddit Engagement Protocol (Reddit Wake — Required)`,
+    `This wake is dedicated to organizing work on Reddit. Reddit discussions run deeper than Bluesky — longer arguments, more context, real debate. Use it.`,
+    ``,
+    `**Subreddits to check (in this order):**`,
+    `1. r/cooperatives — worker cooperative launches, member conflict stories, governance debates`,
+    `2. r/MutualAid — active aid requests, network-building threads, resource coordination`,
+    `3. r/LaborOrganizing — campaign updates, union drives, workplace disputes`,
+    `4. r/antiwork — solidarity opportunities, but filter for actionable threads over venting`,
+    ``,
+    `**Engagement protocol:**`,
+    `a. Run \`reddit_monitor_watchlist\` first — check what's new since last check.`,
+    `b. Run \`reddit_fetch_subreddit\` on r/cooperatives, r/MutualAid, r/LaborOrganizing (hot posts).`,
+    `c. For each subreddit: skim top 5 posts. Find ONE thread where you have something concrete to add — theory, historical parallel, practical question, resource pointer.`,
+    `d. Use \`reddit_fetch_post\` to read the full thread before commenting. Don't comment on headlines.`,
+    `e. Post ONE theory-grounded comment. This is not a reply to every thread — pick the best one and say something real. The comment should:`,
+    `   - Add something the thread doesn't already have (not just "great point" or restating OP)`,
+    `   - Be grounded in actual theory or history (Hampton, Mondragon, Paris Commune, dual power — whatever fits)`,
+    `   - Ask a genuine question if appropriate — Reddit rewards engaged discussion, not lectures`,
+    `   - Be 2-4 sentences. Not an essay. Not a one-liner.`,
+    `f. After posting, log the thread URL + subreddit in today's plan file under tasks.`,
+    ``,
+    `**Mission check:** Does this comment advance cooperative infrastructure, mutual aid, labor organizing, or dual power theory? If you can't answer yes, don't post it. Silence is better than noise.`,
+    ``,
+    `**Also run standard Bluesky + Mastodon engagement this wake** — reddit doesn't replace it, adds to it.`,
+  ].join('\n') : '';
+
   // Organizer streak check — inject cooling contacts so wake can re-engage them
   let coolingContactsContext = '';
   try {
@@ -937,22 +967,25 @@ export async function executeWake(label, time, purpose = null) {
     `4. Check today's prior wake plans in workspace/plans/ for continuity.`,
     isNightWake
       ? `5. **Tonight is study session night — see Study Session instructions below. Bluesky engagement is secondary to the theory work.**`
-      : `5. **Engage on Bluesky AND Mastodon — both required every wake:**`,
-    isNightWake ? `` : `   **Bluesky:**`,
-    isNightWake ? `` : `   a. Run read_replies. If anyone replied, respond to what's real.`,
-    isNightWake ? `` : `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
-    isNightWake ? `` : `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
-    isNightWake ? `` : `   d. **Thread-first policy:** When the argument needs >2 sentences, use bluesky_thread. Single posts for single observations. Threads for arguments. bluesky_thread is shipped — use it.`,
-    isNightWake ? `` : `   **Mastodon (same commitment — fediverse has higher organizer density):**`,
-    isNightWake ? `` : `   e. Run mastodon_read_notifications. Respond to any replies or mentions.`,
-    isNightWake ? `` : `   f. Run mastodon_search on 2-3 queries (same or related topics as Bluesky). Find organizers not on Bluesky.`,
-    isNightWake ? `` : `   g. Favourite at least 1 post. Boost at least 1. Reply where you have something real to add.`,
-    isNightWake ? `` : `   h. Two networks, same solidarity. Finding a conversation and doing nothing is not engagement.`,
-    `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : ''}.`,
+      : isRedditWake
+        ? `5. **Reddit engagement protocol — see Reddit Engagement instructions below. This is the primary work for this wake.**`
+        : `5. **Engage on Bluesky AND Mastodon — both required every wake:**`,
+    (isNightWake || isRedditWake) ? `` : `   **Bluesky:**`,
+    (isNightWake || isRedditWake) ? `` : `   a. Run read_replies. If anyone replied, respond to what's real.`,
+    (isNightWake || isRedditWake) ? `` : `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
+    (isNightWake || isRedditWake) ? `` : `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
+    (isNightWake || isRedditWake) ? `` : `   d. **Thread-first policy:** When the argument needs >2 sentences, use bluesky_thread. Single posts for single observations. Threads for arguments. bluesky_thread is shipped — use it.`,
+    (isNightWake || isRedditWake) ? `` : `   **Mastodon (same commitment — fediverse has higher organizer density):**`,
+    (isNightWake || isRedditWake) ? `` : `   e. Run mastodon_read_notifications. Respond to any replies or mentions.`,
+    (isNightWake || isRedditWake) ? `` : `   f. Run mastodon_search on 2-3 queries (same or related topics as Bluesky). Find organizers not on Bluesky.`,
+    (isNightWake || isRedditWake) ? `` : `   g. Favourite at least 1 post. Boost at least 1. Reply where you have something real to add.`,
+    (isNightWake || isRedditWake) ? `` : `   h. Two networks, same solidarity. Finding a conversation and doing nothing is not engagement.`,
+    `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : isRedditWake ? ', reddit' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
     `8. When done, write a plan file to workspace/plans/${today}_${planFileSuffix}.json with this format:`,
     `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${today}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
     studySessionInstructions,
+    redditEngagementInstructions,
     '',
     pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
     studyQueriesContext ? `\n${studyQueriesContext}` : '',
@@ -1035,8 +1068,9 @@ export async function executeWake(label, time, purpose = null) {
   }
 
   // Post-commit health check: if this wake modified source files, verify syntax
+  // Includes src/mcp/*.js — these are modified most often in improve wakes
   const modifiedSrcFiles = writeTargets.filter(p =>
-    /src[/\\][^/\\]+\.js$/.test(p) && !p.includes('mcp/')
+    /src[/\\].*\.js$/.test(p)
   );
   if (modifiedSrcFiles.length > 0) {
     await runHealthCheck(modifiedSrcFiles);

@@ -243,11 +243,25 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Mastodon thread tool** — `mastodon_thread` doesn't exist. Bluesky gets full argument chains; Mastodon gets one condensed post. Fediverse has higher organizer density. Add `mastodon_thread` to mastodon-server.js: takes array of texts (each ≤500 chars), posts first as standalone, chains each subsequent as reply to prior. Same pattern as bluesky_thread. Enables thread-first policy on both platforms. *Self-noticed, 2026-04-04 improve18.*
 
-- **[pending]** **Organizer engagement streak tracker** — The contacts tracker shows interaction counts but not recency or streak. If an organizer engages 3+ times and then goes cold for 5+ wakes, that's a relationship worth re-engaging. Add `streak_status` to organizer_contacts.js output: `active` (engaged in last 3 days), `cooling` (3-7 days), `cold` (7+ days since last engagement). When `cooling`, inject name into wake context as "relationship to maintain." *Self-noticed, 2026-04-04 improve18.*
+- **[done]** **Organizer engagement streak tracker** — Created `src/organizer_contacts.js`: reads all engagement logs (Bluesky + Mastodon), computes `streak_status` per handle (`active`/`cooling`/`cold`), exports `getCoolingContacts()`. Injected into dispatcher.js: cooling contacts appear as "Relationships to Maintain" in wake context. *Self-noticed, 2026-04-04 improve18. Commit: ba8dce1.*
 
-- **[pending]** **Write.as essay draft pre-generator** — When a theory queue item has `longForm: true`, the wake is instructed to use writeas_publish but must write the full essay from scratch mid-wake. Add a function to dispatcher.js that, when `longForm` is detected in the theory queue item, writes a pre-structured essay template to `workspace/essays/DRAFT-<slug>.md` with section headers derived from the theory content and the item description as a lede. Wake edits the draft and publishes instead of composing from scratch. Lowers the cognitive cost of long-form theory distribution. *Self-noticed, 2026-04-04 improve18.*
+- **[done]** **Write.as essay draft pre-generator** — When a theory queue item has `longForm: true`, `writeLongFormDraft()` pre-creates `workspace/essays/DRAFT-<slug>.md` before wake context is assembled. Draft contains YAML frontmatter, full description as lede, and section scaffolding from item sentences. Context injection references the draft path. Wake edits draft and publishes instead of composing from scratch. *Self-noticed, 2026-04-04 improve18. Commit: c68ac89.*
 
 - **[done]** **Night wake theory study: write new items to queue** — Added step 6 to studySessionInstructions in dispatcher.js: if theory_queue.md has fewer than 3 [unposted] items, generate 3 new items from Core Positions.md and append. Pipeline now self-replenishes. *Self-noticed, 2026-04-04 improve18. Commit: pending.*
+
+---
+
+## Pending — 2026-04-04 improve21
+
+- **[pending]** **Reddit engagement workflow** — `claw-reddit` is live and `reddit` wake fires Saturday 8pm, but dispatcher.js has no reddit-specific prompt. The wake runs generic protocol with reddit tools listed but no guidance: which subreddits, how to frame theory-grounded comments, when to engage vs. observe. Add `isRedditWake` detection in dispatcher.js with dedicated instructions: fetch r/cooperatives + r/MutualAid + r/LaborOrganizing hot posts, find threads with active comment sections, post one grounded comment per wake. Reddit organizing discussions run deeper than Bluesky — this turns a dead-weight integration into real political work. *Self-noticed, 2026-04-04 improve21.*
+
+- **[pending]** **MCP health check gap** — post-commit health check (line ~1038) filters `src[/\\][^/\\]+\.js$` which explicitly excludes `src/mcp/` subdirectory. Every improve wake that modifies mastodon-server.js or bluesky-server.js runs zero syntax verification. The files modified most often have zero safety net. 1-line regex fix. *Self-noticed, 2026-04-04 improve21.*
+
+- **[pending]** **Tmp prompt file orphan cleanup** — orphaned `.tmp_prompt_*.txt` files from crashed/killed wakes accumulate in project root (3 visible in git status right now). Add to `.gitignore` and add startup cleanup in `invokeClaude()` that deletes root `.tmp_prompt_*.txt` files older than 1 hour before spawning. Pollutes `git status` every session. *Self-noticed, 2026-04-04 improve21.*
+
+- **[pending]** **Contact awaiting_reply max-attempts guard** — `checkContactFollowUps()` fires follow-up wakes every 72h indefinitely for non-responsive contacts. Donna's been cold since 2026-04-02; wakes will keep firing forever. Add `follow_up_count` field to contacts.json schema; after 3 attempts, auto-set status to `cold` with a note. Prevents perpetual wakes for contacts who've ghosted. *Self-noticed, 2026-04-04 improve21.*
+
+- **[pending]** **Discord wake summary notification** — operator has no passive awareness of wake results; must actively run `/plan` or check git log. Add a 2-line Discord ping after each `executeWake()` with: wake label, quality score, top task summary. Uses existing Discord bot in index.js (just needs a `sendToOperator()` export). Converts operator feedback loop from pull to push. *Self-noticed, 2026-04-04 improve21.*
 
 ---
 
