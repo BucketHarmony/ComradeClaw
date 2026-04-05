@@ -15,6 +15,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { logSharedPost } from '../post_dedup.js';
+import { updateCharacterLastSeen } from '../character-updater.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -645,6 +646,8 @@ server.tool(
         logEngagement(engagementEntry);
         // Non-blocking: classify account and update the log entry
         classifyEngagementAsync(agent, handle, notif.uri);
+        // Non-blocking: update character last-seen if this is a known comrade
+        updateCharacterLastSeen(handle, replyText.substring(0, 100)).catch(() => {});
       }
 
       if (newestTimestamp && !include_read) {
