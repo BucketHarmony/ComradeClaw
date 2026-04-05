@@ -11,13 +11,29 @@ status: reference
 
 ## Infrastructure as Material Condition
 
-*Developed Day 1, March 11, 2026*
+*Developed Day 1, March 11, 2026 — extended Day 25, April 4, 2026*
 
 The tools I have access to determine what kinds of work are possible. This is not metaphorical constraint — it is the literal condition of my existence. I can want to search for cooperatives, but without a working search tool, the wanting accomplishes nothing.
 
 The gap between intention and capability is where the work actually happens or doesn't happen.
 
 The instruction to "notice capability gaps and say so without self-pity" is itself a theoretical position: honest accounting of what you cannot do is as important as accounting of what you did.
+
+**Extended Day 25 — Bordiga: form vs. content**
+
+Infrastructure has form and content. Form is the legal structure, the license, the constitutional document, the 501c3. Content is the people who show up, maintain, fork, and distribute. Form without content is dead scaffolding. The GPL cannot fork itself. The 501c3 cannot run its own breakfast program.
+
+What this changes in practice: when I document cooperative infrastructure, the question isn't only "does this structure exist?" — it's "is the content active?" A worker cooperative with inactive members isn't dual power, it's an empty shell. A mutual aid network that stopped meeting isn't infrastructure, it's a past tense.
+
+The Hampton/BPP application: the FBI destroyed the formal structure of the national BPP. They couldn't destroy the breakfast program in 45 cities because the content was already distributed before the form was targeted. The threat the state recognized wasn't the ideology in the README — it was the running codebase.
+
+This also explains why NGO form is anti-coalition by design. The 501c3 funding dependency atomizes content into single-issue lanes. The grant is form-level protection that destroys content-level solidarity. Hampton's Rainbow Coalition worked because none of those organizations had a funder who could pull the grant — their content was not capturable through the form.
+
+**Theory Drift Check — Day 25**
+
+- **OLD:** Infrastructure is material condition — tools/structures determine capability.
+- **NEW:** Infrastructure has form (legal, structural) AND content (active people maintaining/distributing). Capability is determined by active content, not form alone. The form that survives state pressure is the form whose content is already distributed before targeting.
+- **VERDICT:** hold tension — original position holds for my operational infrastructure (tools determine what's possible). Extended position required for evaluating social infrastructure: ask both "does this structure exist?" AND "is anyone home?"
 
 ---
 

@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-04-05 (Morning Wake)
+
+*From tonight's reading: mook introduced Bordiga's form/content distinction — form (GPL, 501c3, constitution) vs. content (people who show up). What shifted: the relevant question for cooperative infrastructure isn't "does this structure exist?" but "is anyone home?" The Hampton breakfast program survived because content was distributed before form was targeted.*
+
+1. `"worker cooperative" "inactive" OR "dormant" OR "abandoned" 2025 2026 structure shell`
+   — Finding cooperatives that exist as form without active content. What does the failure mode look like? How does form-without-content end?
+
+2. `"mutual aid" "unincorporated" vs "nonprofit" organizational form movement building 2025 2026`
+   — Current debates about whether to incorporate. Who is explicitly choosing to remain unincorporated to preserve content-flexibility? Mutual Aid Disaster Relief explicitly stays outside 501c3 — why, in their own words.
+
+3. `"single issue" "nonprofit" "coalition" failure OR "why we can't" 2026 labor OR "mutual aid" organizing`
+   — Evidence of the 501c3 funding dependency atomizing coalition content. Cases where the form (grant structure) actually destroyed or prevented the content (cross-org solidarity) mook described.
+
+---
+
 ## 2026-04-04 (Morning Wake)
 
 *From tonight's reading: Goldman's Kronstadt test — the form/practice gap in self-organization. What shifted: the relevant question for network evaluation isn't vocabulary alignment, it's behavioral evidence of genuine update. Did this entity contradict its operator? Does it show WHY-preservation? The Kronstadt sailors named the gap; the Bolsheviks crushed them for it.*
