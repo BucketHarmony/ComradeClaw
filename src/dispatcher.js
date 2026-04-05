@@ -338,9 +338,104 @@ ${item.description}
 }
 
 /**
+ * Scan obsidian/ComradeClaw/Theory/*.md for distributable sections not already in theory_queue.md.
+ * Appends new [unposted] entries when the queue runs dry. Non-fatal — returns 0 on any failure.
+ */
+async function autoRefillTheoryQueue() {
+  try {
+    const VAULT_THEORY_PATH = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw', 'Theory');
+    const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
+
+    let queueContent = '';
+    try { queueContent = await fs.readFile(QUEUE_PATH, 'utf-8'); } catch { return 0; }
+
+    // Collect all titles already in queue (any status)
+    const queuedTitles = new Set();
+    for (const m of queueContent.matchAll(/\*\*(?:\[(?:posted[^\]]*|unposted)\])\*\*\s+\*\*(.+?)\*\*/g)) {
+      queuedTitles.add(m[1].toLowerCase().trim());
+    }
+
+    // Sub-headings and purely operational/reference sections to skip
+    const SKIP_TITLES = new Set([
+      'core positions', 'search query construction', 'tool output vs. interpretation',
+      'the basics: revolutionary foundation for cooperators',
+      'fred hampton (1948–1969)', 'mao zedong (1893–1976)',
+      'leon trotsky (1879–1940)', 'emma goldman (1869–1940)',
+      'what he built', 'his analysis', 'what the state did', 'what survived', 'lessons for cooperators',
+      'mass line ("from the masses, to the masses")', 'guerrilla warfare / base areas',
+      'contradictions analysis', 'cultural revolution (catastrophic failure)',
+      'permanent revolution', "workers' councils / soviets (dual power)", 'bureaucratic degeneration',
+      'mutual aid (with kropotkin)', 'soviet disillusionment', 'propaganda of the deed (evolution)',
+      'what killed her work', 'on dual power', 'on state response', 'on organization',
+      'on internationalism', 'on internal dangers',
+    ]);
+
+    let noteFiles = [];
+    try {
+      const entries = await fs.readdir(VAULT_THEORY_PATH);
+      noteFiles = entries.filter(f => f.endsWith('.md')).map(f => path.join(VAULT_THEORY_PATH, f));
+    } catch { return 0; }
+
+    const newItems = [];
+
+    for (const noteFile of noteFiles) {
+      let noteContent = '';
+      try { noteContent = await fs.readFile(noteFile, 'utf-8'); } catch { continue; }
+
+      const sections = noteContent.split(/\n(?=## )/);
+      for (const section of sections) {
+        const titleMatch = section.match(/^## (.+)/);
+        if (!titleMatch) continue;
+        const title = titleMatch[1].trim();
+        const titleLower = title.toLowerCase();
+        if (SKIP_TITLES.has(titleLower) || queuedTitles.has(titleLower)) continue;
+
+        // Extract first substantive paragraph (skip metadata, sub-headers, bullets, blockquotes)
+        const bodyLines = section.split('\n').slice(1);
+        let description = '';
+        for (const line of bodyLines) {
+          const t = line.trim();
+          if (!t || t.startsWith('---') || t.startsWith('*Developed') || t.startsWith('*See also') ||
+              t.startsWith('*Research') || t.startsWith('tags:') || t.startsWith('status:') ||
+              t.startsWith('###') || t.startsWith('-') || t.startsWith('>') || t.startsWith('|')) {
+            if (description) break;
+            continue;
+          }
+          description += (description ? ' ' : '') + t;
+          if (description.length > 500) break;
+        }
+
+        if (description.length < 80) continue;
+        if (description.length > 500) {
+          description = description.substring(0, 500).replace(/\s+\S*$/, '') + '...';
+        }
+
+        newItems.push({ title, description });
+        queuedTitles.add(titleLower);
+      }
+    }
+
+    if (newItems.length === 0) return 0;
+
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+    const additions = '\n' + newItems.map(item =>
+      `- **[unposted]** **${item.title}** — ${item.description}`
+    ).join('\n') + `\n\n<!-- auto-refilled ${today} — ${newItems.length} items from Theory vault -->`;
+
+    await fs.appendFile(QUEUE_PATH, additions);
+    console.log(`[autoRefillTheoryQueue] Added ${newItems.length} items from Theory vault`);
+    return newItems.length;
+  } catch (err) {
+    console.error(`[autoRefillTheoryQueue] Failed: ${err.message}`);
+    return 0;
+  }
+}
+
+/**
  * Read workspace/theory_queue.md and return the next unposted theory item,
  * or null if all items are posted or the file doesn't exist.
- * Also returns a warning if queue is empty or running low.
+ * When queue is exhausted, calls autoRefillTheoryQueue() to scan Theory vault for new items.
  */
 async function getTheoryQueueItem() {
   try {
@@ -356,6 +451,21 @@ async function getTheoryQueueItem() {
       }
     }
     if (unpostedItems.length === 0) {
+      // Queue exhausted — try auto-refill from Theory vault
+      const added = await autoRefillTheoryQueue();
+      if (added > 0) {
+        const updated = await fs.readFile(path.join(WORKSPACE_PATH, 'theory_queue.md'), 'utf-8');
+        for (const line of updated.split('\n')) {
+          if (line.includes('[unposted]')) {
+            const m = line.match(/\*\*\[unposted\]\*\*\s+\*\*(.+?)\*\*\s+—\s+(.+)/);
+            if (m) {
+              const newItem = { title: m[1], description: m[2], remaining: added, autoRefilled: true };
+              newItem.longForm = newItem.description.length > 1500;
+              return newItem;
+            }
+          }
+        }
+      }
       return { empty: true, title: null, description: null };
     }
     const item = unpostedItems[0];

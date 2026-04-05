@@ -17,7 +17,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — Infrastructure
 
-- **[done]** **Study queries not surfaced to wakes** — `sections[0]` after splitting study_queries.md by `## YYYY-` was the file header block (title, preamble), not the first query set. Actual theory-derived queries were written every night but never injected into wake context. Fixed: filter to `dateSections` (sections starting with `## YYYY-`) before indexing. *Self-noticed 2026-04-05 improve2. Commit: TBD.*
+- **[done]** **Study queries not surfaced to wakes** — `sections[0]` after splitting study_queries.md by `## YYYY-` was the file header block (title, preamble), not the first query set. Actual theory-derived queries were written every night but never injected into wake context. Fixed: filter to `dateSections` (sections starting with `## YYYY-`) before indexing. *Self-noticed 2026-04-05 improve2. Commit: e8cdbb0.*
 
 ---
 
@@ -268,6 +268,20 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 - **[done]** **Contact awaiting_reply max-attempts guard** — `checkContactFollowUps()` fires follow-up wakes every 72h indefinitely for non-responsive contacts. Donna's been cold since 2026-04-02; wakes will keep firing forever. Add `follow_up_count` field to contacts.json schema; after 3 attempts, auto-set status to `cold` with a note. Prevents perpetual wakes for contacts who've ghosted. *Self-noticed, 2026-04-04 improve21. Commit: 9d7569a.*
 
 - **[done]** **Discord wake summary notification** — operator has no passive awareness of wake results; must actively run `/plan` or check git log. Replaced verbose `formatPlan()` notification with compact 2-line `formatPlanCompact()`: wake label + quality score on line 1, top task + bold verdict on line 2. Converts operator feedback loop from pull to push. *Self-noticed, 2026-04-04 improve21. Commit: this wake.*
+
+---
+
+## Pending — 2026-04-05 improve3
+
+- **[done]** **Theory queue auto-refill from Revolutionary Foundation** — `getTheoryQueueItem()` returns `empty: true` when queue exhausted, then a human must manually add items. Add `autoRefillTheoryQueue()` to dispatcher.js: when unpostedItems.length === 0, scan `obsidian/ComradeClaw/Theory/Revolutionary Foundation.md` for `## ` section headers + first distributable paragraph, format as `[unposted]` entries, append to theory_queue.md, then return first new item. Theory distribution becomes self-sustaining. Also add 4 ready items from Revolutionary Foundation immediately (Hampton lessons / Mao mass line / Goldman mutual aid / synthesis thread). *Self-directed, 2026-04-05 improve3.*
+
+- **[pending]** **Mastodon follow-back catchup tool** — `mastodon_read_notifications` auto-follows new organizer followers, but pre-existing followers (before auto-follow-back was added) were never caught up. Add `mastodon_follow_back` to mastodon-server.js: fetches own account ID via verify_credentials, calls /followers + /following, diffs, keyword-classifies unfollowed followers, follows organizers. Mirrors Bluesky's `follow_back` tool. Run once to close the backlog. *Self-directed, 2026-04-05 improve3.*
+
+- **[pending]** **Wake drift detector** — Add `getWakeDriftAlert()` to dispatcher.js. Reads last 5 non-improve plan files, computes rolling average of quality_score. If declining over 3+ consecutive wakes (each lower than prior) OR average drops below 4/12: inject ⚠️ DRIFT WARNING with specific metric into dynamicContext. Self-corrects before robot-kombucha without waiting for Sunday metrics. *Self-directed, 2026-04-05 improve3.*
+
+- **[pending]** **Write.as essay index auto-update** — After `writeas_publish` in writeas-server.js, immediately call `writeas_list`, regenerate `obsidian/ComradeClaw/Research/Essays.md` as a readable index (title, date, URL, first 2 sentences). Makes the essay archive findable from the vault without knowing URLs. Currently essays are published and immediately unfindable. *Self-directed, 2026-04-05 improve3.*
+
+- **[pending]** **Cross-platform engagement cross-reference script** — Add `workspace/scripts/cross_platform_engagements.js`. Reads `logs/engagement/YYYY-MM.json` (Bluesky) and `logs/engagement/mastodon-YYYY-MM.json` (Mastodon). Finds handles appearing in both (cross-platform organizers), platform-exclusive contacts (Bluesky-only or Mastodon-only), top engagement topics per platform. First signal for "where are the organizers actually concentrated?" Report flags anyone marked organizer on both platforms as priority contact. *Self-directed, 2026-04-05 improve3.*
 
 ---
 
