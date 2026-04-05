@@ -15,6 +15,12 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — Infrastructure
+
+- **[done]** **Study queries not surfaced to wakes** — `sections[0]` after splitting study_queries.md by `## YYYY-` was the file header block (title, preamble), not the first query set. Actual theory-derived queries were written every night but never injected into wake context. Fixed: filter to `dateSections` (sections starting with `## YYYY-`) before indexing. *Self-noticed 2026-04-05 improve2. Commit: TBD.*
+
+---
+
 ## Pending — Empirical Testing & Measurement
 
 ### Metrics Collection

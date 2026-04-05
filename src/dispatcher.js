@@ -856,10 +856,12 @@ export async function executeWake(label, time, purpose = null) {
     try {
       const sqPath = path.join(WORKSPACE_PATH, 'memory', 'study_queries.md');
       const sqContent = await fs.readFile(sqPath, 'utf-8');
-      // Split on section headers and find the most recent one
+      // Split on section headers; sections[0] is the file header block (title, preamble).
+      // Filter to only dated sections (## YYYY-...) so we get the most recent query set.
       const sections = sqContent.split(/\n(?=## \d{4}-)/).filter(s => s.trim());
-      if (sections.length > 0) {
-        studyQueriesContext = `## Theory-Derived Search Queries (from last night's study)\n${sections[0].trim()}\n\n*After searching with any of these queries, call \`log_query_outcome\` with the query text, outcome ("productive"/"noise"), and a one-line note. This closes the theory→query→material feedback loop.*`;
+      const dateSections = sections.filter(s => /^## \d{4}-/.test(s.trimStart()));
+      if (dateSections.length > 0) {
+        studyQueriesContext = `## Theory-Derived Search Queries (from last night's study)\n${dateSections[0].trim()}\n\n*After searching with any of these queries, call \`log_query_outcome\` with the query text, outcome ("productive"/"noise"), and a one-line note. This closes the theory→query→material feedback loop.*`;
       }
     } catch {
       // No study_queries.md — not fatal
