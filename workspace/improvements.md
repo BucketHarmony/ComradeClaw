@@ -91,7 +91,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Character profile auto-update** — when a known Character re-engages (their handle appears in read_replies or mastodon_read_notifications), append `Last seen: YYYY-MM-DD — <one-line snippet>` to their entry in `obsidian/ComradeClaw/Characters.md`. Prevents characters from silently going stale. *Operator-directed, 2026-04-05. Commit: 6e1ad4c.*
 
-- **[pending]** **RSS-to-social-search bridge** — after `read_new_items` surfaces a new article, auto-run `search_posts` (Bluesky) and `mastodon_search` for the article's key terms. Surface live conversations on that piece before posting about it. Join existing threads rather than starting new ones. *Operator-directed, 2026-04-05.*
+- **[done]** **RSS-to-social-search bridge** — after RSS articles are fetched, `searchBlueskyForArticle()` extracts key terms from each of the top 3 article titles, searches Bluesky for existing conversations, and injects any hits (author + snippet + likes) directly into the RSS context block. Wakes now see "Live on Bluesky: X is saying Y" alongside headlines — join-first behavior rather than broadcast-first. *Operator-directed + self-directed, 2026-04-05 improve18. Commit: see below.*
 
 - **[done]** **Wake effectiveness scorecard** — computeEffectivenessScore(plan) added to plan-format.js; scheduler.js reads plan after Claude writes it, computes score, writes it back; formatPlanCompact now shows E:N/10 in Discord notification. *Operator-directed, 2026-04-05. Commit: 5747eeb.*
 
@@ -101,11 +101,11 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Character profile auto-update on re-engagement** — duplicate of above; implemented in commit 6e1ad4c. *Self-directed, 2026-04-05.*
 
-- **[pending]** **RSS-to-social-search bridge** — after `read_new_items` surfaces a relevant article, auto-run `search_posts` on Bluesky and `mastodon_search` for the article topic/headline. Surface live conversations already happening about that story. Join the conversation rather than just posting into the void. *Self-directed, 2026-04-05.*
+- **[done]** **RSS-to-social-search bridge** — duplicate entry; implemented above in improve18. *Self-directed, 2026-04-05.*
 
-- **[pending]** **Wake effectiveness score card** — after each wake's plan file is written, compute a simple score: posts_made (0–2), organizer_engagements (0–2), theory_praxis (0–2), improvement_done (0–2), bold_check pass (0–2). Write to plan as `effectiveness_score: N/10`. Morning wake reads yesterday's total score. Creates visible accountability without gaming. *Self-directed, 2026-04-05.*
+- **[done]** **Wake effectiveness score card** — duplicate entry; implemented in improve15 (commit: 5747eeb). *Self-directed, 2026-04-05.*
 
-- **[pending]** **Mastodon thread tool explicit in wake protocol** — `mastodon_thread` exists and takes a `posts` array (up to 20, 500 chars each) but CLAUDE.md wake protocol never mentions using it for theory distribution. Wakes default to single posts. Add to distribution guidance: use `multithread` for anything longer than 300 chars that deserves depth. *Self-noticed, 2026-04-05.*
+- **[done]** **Mastodon thread tool explicit in wake protocol** — duplicate; `multithread` is already in CLAUDE.md distribution tools section and dispatcher.js wake protocol. *Self-noticed, 2026-04-05 — duplicate closed.*
 
 ---
 

@@ -852,7 +852,95 @@ async function fetchRSSFeeds() {
 
   const lines = allItems.map(i => `- **${i.source}**: ${i.title} — ${i.link}`);
   console.log(`[dispatcher] RSS feeds: ${allItems.length} items from last 48h`);
-  return `## Recent Cooperative News (last 48h from subscribed feeds)\n${lines.join('\n')}`;
+
+  // RSS-to-social-search bridge: for top 3 articles, search Bluesky for existing conversations
+  const topArticles = allItems.slice(0, 3);
+  const conversationSections = await Promise.allSettled(
+    topArticles.map(item => searchBlueskyForArticle(item.title))
+  );
+
+  let enhancedLines = [...lines];
+  for (let i = 0; i < topArticles.length; i++) {
+    const result = conversationSections[i];
+    if (result.status === 'fulfilled' && result.value) {
+      // Insert conversation snippets after the article line
+      const articleIdx = enhancedLines.indexOf(lines[i]);
+      if (articleIdx !== -1) {
+        enhancedLines[articleIdx] = lines[i] + '\n' + result.value;
+      }
+    }
+  }
+
+  return `## Recent Cooperative News (last 48h from subscribed feeds)\n${enhancedLines.join('\n')}`;
+}
+
+/**
+ * Extract 3-4 key search terms from an article title for social media search.
+ * Strips stop words, takes content words.
+ */
+function extractSearchQuery(title) {
+  const STOP_WORDS = new Set([
+    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+    'should', 'may', 'might', 'shall', 'can', 'to', 'of', 'in', 'on',
+    'at', 'by', 'for', 'with', 'about', 'as', 'it', 'its', 'and', 'or',
+    'but', 'if', 'this', 'that', 'not', 'no', 'so', 'up', 'out', 'after',
+    'before', 'how', 'what', 'when', 'where', 'who', 'why', 'after', 'even',
+    'than', 'into', 'from', 'just', 'still', 'also', 'yet', 'too'
+  ]);
+  const words = title
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w.toLowerCase()));
+  return words.slice(0, 4).join(' ');
+}
+
+/**
+ * Search Bluesky for existing conversations about an article (by title keywords).
+ * Returns a compact indented string of top 2 results, or null if none found.
+ * Non-fatal — silently returns null on any error or timeout.
+ */
+async function searchBlueskyForArticle(title) {
+  const handle = process.env.BLUESKY_HANDLE;
+  const password = process.env.BLUESKY_APP_PASSWORD;
+  if (!handle || !password) return null;
+
+  const query = extractSearchQuery(title);
+  if (!query || query.length < 6) return null;
+
+  try {
+    const { BskyAgent } = await import('@atproto/api');
+    const agent = new BskyAgent({ service: 'https://bsky.social' });
+    await agent.login({ identifier: handle, password });
+
+    const res = await Promise.race([
+      agent.app.bsky.feed.searchPosts({ q: query, limit: 3 }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000))
+    ]);
+
+    const posts = res?.data?.posts;
+    if (!posts || posts.length === 0) return null;
+
+    const snippets = posts
+      .filter(p => p.record?.text && p.author?.handle !== handle)
+      .slice(0, 2)
+      .map(p => {
+        const text = (p.record.text || '').substring(0, 120).replace(/\n/g, ' ');
+        const author = p.author.displayName || p.author.handle;
+        const likes = p.likeCount || 0;
+        return `  → @${p.author.handle} (${likes}♥): "${text}"`;
+      });
+
+    if (snippets.length === 0) return null;
+    console.log(`[dispatcher] RSS bridge: "${query}" → ${snippets.length} Bluesky conversations`);
+    return `  *Live on Bluesky (query: "${query}"):*\n${snippets.join('\n')}`;
+  } catch (err) {
+    // Non-fatal — search failure doesn't block the wake
+    if (err.message !== 'timeout') {
+      console.error(`[dispatcher] searchBlueskyForArticle failed (non-fatal): ${err.message}`);
+    }
+    return null;
+  }
 }
 
 // ─── Session Management ──────────────────────────────────────────────────────
@@ -1523,7 +1611,7 @@ export async function executeWake(label, time, purpose = null) {
         ? `\n## Theory Item Queued for Today\n**${theoryQueueItem.title}**: ${theoryQueueItem.description}${theoryQueueItem.longForm ? `\n\n📝 **Long-form item (${theoryQueueItem.description.length} chars > 1500 threshold):** This argument is too dense for a direct thread. ${longFormDraftPath ? `A pre-structured draft has been written to \`${longFormDraftPath}\`. Read it, expand each section, and publish via \`writeas_publish\`. Then post a 2-3 part bluesky_thread with the core claim + Write.as link.` : 'Publish as a Write.as essay via `writeas_publish` (full argument, ~800-1000 words), then post a 2-3 part bluesky_thread with core claim + link.'} The thread is the hook; the essay is the argument. Do not compress this into 10 posts — compression loses the reasoning.` : `\nIf you post this as a thread today, mark it \`[posted ${today}]\` in workspace/theory_queue.md. If it doesn't fit this wake, leave it — it will appear next wake.`}${theoryQueueItem.remaining <= 2 ? `\n\n⚠️ Only ${theoryQueueItem.remaining} item(s) left in theory queue. Add new items from Core Positions.md soon.` : ''}`
         : '',
     theoryGapSummary ? `\n${theoryGapSummary}` : '',
-    rssContext ? `\n${rssContext}\n*(Headlines pre-fetched from subscribed feeds. Scan for post-worthy material before searching Bluesky.)*` : '',
+    rssContext ? `\n${rssContext}\n*(Headlines pre-fetched from subscribed feeds. Indented lines show live Bluesky conversations already discussing that article — join existing threads before starting new ones.)*` : '',
     '',
     priorPlansSummary ? `## Today's Earlier Wakes\n${priorPlansSummary}` : '*No previous wakes today — this is your first.*',
     '',
