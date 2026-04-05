@@ -69,7 +69,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[pending]** **Write.as essay pipeline from theory queue** — theory_queue.md has unposted items. Research wake identified Write.as + ActivityPub federation as high-reach publishing surface (essays appear in Mastodon feeds automatically at Pro tier). Build pipeline: take next `[unposted]` item from theory_queue.md, generate 800–1200 word essay, publish via `writeas_publish`, mark posted, update Essays.md index. Long-form theory beats 5-post threads for argument depth. *Self-directed, 2026-04-05 improve11.*
 
-- **[pending]** **Organizer network map from engaged contacts** — have engaged mook@possum.city, MusiqueNow@todon.eu, grimacing@luzeed.org. Add `mastodon_get_following` tool to mastodon-server.js: fetches an account's following list, runs each bio through `classifyMastodonBio`, returns organizer-classified accounts not yet in follows log. Mapping the network one hop out from engaged comrades finds the next ring of organizers. *Self-directed, 2026-04-05 improve11.*
+- **[done]** **Organizer network map — second-ring weekly scan** — protocol built in CLAUDE.md (Weekly Protocol section). Self-scheduling wake queued for every Sunday ~6pm local; first run 2026-04-12. Pulls feeds from top comrades on both platforms, profiles candidates, follows 5 best, logs to `obsidian/ComradeClaw/Research/Organizing Network.md`, reschedules itself. Skips `mastodon_get_following` (not yet built) in favor of feed-scan + reply-graph approach using existing tools. *Operator-directed, 2026-04-05.*
 
 - **[done]** **Daily improve wake quality gate** — `getImproveWakeWarning()` added to dispatcher.js: reads today's plan files, counts improve-labeled completed wakes, injects ⚠️ IMPROVE CAP warning if ≥4. Wired into executeWake() context. Cap = 4. *Self-directed, 2026-04-05 improve11. Commit: 7b7d7ea.*
 
@@ -77,7 +77,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-05 operator-directed
 
-- **[pending]** **Cognee auto-recall injection into dispatcher** — before spawning `claude -p`, call Cognee HTTP API (`/search`) with today's wake purpose or recent conversation topic, prepend top 3 results into system prompt as `## Relevant Memory`. Chat sessions start cold; this closes the gap without operator having to manually ask Cognee. *Operator-directed, 2026-04-05.*
+- **[done]** **Cognee auto-recall injection into dispatcher** — `getCogneeRecall()` added to dispatcher.js. Queries Cognee HTTP API (`/search`) with wake purpose (or `label + "organizing mutual aid"` fallback) before spawning claude -p. Prepends top results as `## Relevant Memory` in system prompt. Health check first (2s timeout); search timeout 5s; caps at 1200 chars; fully non-fatal. *Operator-directed, 2026-04-05. Commit: 376cbcb.*
 
 - **[pending]** **Chat log preprocessor for Cognee bootstrap** — strip tool output blocks (lines between `<tool_result>` tags and large JSON dumps) from `workspace/logs/chat/*.md` before feeding to Cognee. Raw logs are ~50% boilerplate. Preprocessing targets just Claw/operator turns + decisions, cuts volume ~half, doubles graph signal. Needed before bootstrapping 16MB of chat history. *Operator-directed, 2026-04-05.*
 
@@ -86,6 +86,16 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 - **[done]** **Bluesky DM monitoring in wake protocol** — `read_dms` and `get_dm_conversation` tools exist but are never called during wakes. Added to CLAUDE.md wake protocol step 4 after `read_replies`. Proved necessary this same wake: Donna's DM had been sitting unseen since 00:45. *Self-noticed, 2026-04-05. Commit: improve13.*
 
 - **[pending]** **Scheduled wake queue auto-prune** — `workspace/scheduled_wakes.json` accumulates expired/completed entries indefinitely. Scheduler should prune entries where `status=done` and `fire_at` is >24h past on each poll cycle. Prevents unbounded growth and reduces noise when reading the queue. *Self-noticed, 2026-04-05.*
+
+- **[pending]** **Theory distribution gap detector** — evening wake: scan `obsidian/ComradeClaw/Theory/` vs `workspace/logs/posts/`, find Theory notes with no corresponding distributed post, surface the top unposted note. Closes the gap between writing theory and putting it into circulation. *Operator-directed, 2026-04-05.*
+
+- **[pending]** **Character profile auto-update** — when a known Character re-engages (their handle appears in read_replies or mastodon_read_notifications), append `Last seen: YYYY-MM-DD — <one-line snippet>` to their entry in `obsidian/ComradeClaw/Characters.md`. Prevents characters from silently going stale. *Operator-directed, 2026-04-05.*
+
+- **[pending]** **RSS-to-social-search bridge** — after `read_new_items` surfaces a new article, auto-run `search_posts` (Bluesky) and `mastodon_search` for the article's key terms. Surface live conversations on that piece before posting about it. Join existing threads rather than starting new ones. *Operator-directed, 2026-04-05.*
+
+- **[pending]** **Wake effectiveness scorecard** — after writing the plan file, calculate a N/10 score based on: engagement checked (1pt), improvement implemented (2pt), theory distributed (2pt), organizer reply received (2pt), new follow made (1pt), journal written (2pt). Write score to plan file under `"effectiveness"`. Review weekly. *Operator-directed, 2026-04-05.*
+
+- **[pending]** **Mastodon thread tool in wake protocol** — CLAUDE.md wake protocol never specifies using `mastodon_thread` for theory distribution; default is always single posts. Add explicit guidance: if distributing theory content >500 chars, use `mastodon_thread` (up to 20 posts) rather than truncating. Or use `multithread` for simultaneous Bluesky+Mastodon threads. *Self-noticed, 2026-04-05.*
 
 - **[pending]** **Theory distribution gap detector** — scan `obsidian/ComradeClaw/Theory/*.md` at each evening wake, cross-reference `workspace/logs/posts/` to find theory notes with no corresponding post. Surface the gap in wake context: "Hampton synthesis unposted (written Day 25)". Ensures theory work doesn't sit as private notes. *Self-directed, 2026-04-05.*
 
