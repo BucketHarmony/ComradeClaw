@@ -622,6 +622,42 @@ async function getTheoryQueueItem() {
 }
 
 /**
+ * Snapshot follower/following/posts counts for own Bluesky handle.
+ * Writes { date, followers, following, posts } to logs/followers/YYYY-MM-DD.json.
+ * Called on morning wakes only. Non-fatal — silently skips on any error.
+ */
+async function snapshotFollowers() {
+  const handle = process.env.BLUESKY_HANDLE;
+  const password = process.env.BLUESKY_APP_PASSWORD;
+  if (!handle || !password) return;
+
+  try {
+    const { BskyAgent } = await import('@atproto/api');
+    const agent = new BskyAgent({ service: 'https://bsky.social' });
+    await agent.login({ identifier: handle, password });
+    const res = await agent.getProfile({ actor: handle });
+    const p = res.data;
+
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+    const snapshot = {
+      date: dateStr,
+      followers: p.followersCount ?? null,
+      following: p.followsCount ?? null,
+      posts: p.postsCount ?? null,
+      at: new Date().toISOString()
+    };
+
+    const dir = path.join(WORKSPACE_PATH, 'logs', 'followers');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, `${dateStr}.json`), JSON.stringify(snapshot, null, 2));
+    console.log(`[dispatcher] Follower snapshot: ${snapshot.followers} followers, ${snapshot.following} following, ${snapshot.posts} posts`);
+  } catch (err) {
+    console.error(`[dispatcher] snapshotFollowers failed (non-fatal): ${err.message}`);
+  }
+}
+
+/**
  * On morning wakes, fetch all subscribed RSS/Atom feeds and return articles from the last 48h.
  * Runs all fetches in parallel with 8s timeout each. Non-fatal — returns '' on any failure.
  */
@@ -1100,6 +1136,11 @@ export async function executeWake(label, time, purpose = null) {
   const isNightWake = label === 'night';
   // Reddit wake gets a dedicated engagement protocol instead of generic Bluesky loop
   const isRedditWake = label === 'reddit';
+
+  // On morning wakes, snapshot follower/following/posts counts for trend tracking
+  if (label === 'morning') {
+    await snapshotFollowers(); // non-fatal — errors logged, wake continues
+  }
 
   // Check facet verification failure rate — warn if hashtags are breaking
   const facetWarning = await getFacetWarning();
