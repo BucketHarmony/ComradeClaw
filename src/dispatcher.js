@@ -537,6 +537,46 @@ async function autoRefillTheoryQueue() {
 }
 
 /**
+ * Reads study_queries.md, extracts query lines marked ✓ productive in the last 14 days.
+ * Returns a formatted context block, or '' if none found.
+ */
+async function getProvenQueries() {
+  try {
+    const sqPath = path.join(WORKSPACE_PATH, 'memory', 'study_queries.md');
+    const content = await fs.readFile(sqPath, 'utf-8');
+    const lines = content.split('\n');
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 14);
+
+    const proven = [];
+    for (const line of lines) {
+      if (!line.includes('✓ productive')) continue;
+
+      // Extract date from annotation like **[2026-04-05 ✓ productive: ...]**
+      const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\s+✓\s+productive/);
+      if (dateMatch) {
+        const annotationDate = new Date(dateMatch[1]);
+        if (annotationDate < cutoff) continue;
+      }
+
+      // Extract query text — backtick-quoted near start of line
+      const queryMatch = line.match(/`([^`]+)`/);
+      if (queryMatch) {
+        proven.push(queryMatch[1]);
+      }
+    }
+
+    if (proven.length === 0) return '';
+
+    const list = proven.map((q, i) => `${i + 1}. \`${q}\``).join('\n');
+    return `## Proven Search Queries (verified productive in last 14 days)\n${list}\n\n*These queries surfaced real organizer conversations. Try them again — conversations evolve, new people join.*`;
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Read workspace/theory_queue.md and return the next unposted theory item,
  * or null if all items are posted or the file doesn't exist.
  * When queue is exhausted, calls autoRefillTheoryQueue() to scan Theory vault for new items.
@@ -1072,6 +1112,7 @@ export async function executeWake(label, time, purpose = null) {
 
   // Load theory-derived search queries from last night's study session
   let studyQueriesContext = '';
+  let provenQueriesContext = '';
   if (!isNightWake) {
     try {
       const sqPath = path.join(WORKSPACE_PATH, 'memory', 'study_queries.md');
@@ -1086,6 +1127,7 @@ export async function executeWake(label, time, purpose = null) {
     } catch {
       // No study_queries.md — not fatal
     }
+    provenQueriesContext = await getProvenQueries();
   }
 
   // Load next unposted theory item for distribution prompt
@@ -1246,6 +1288,7 @@ export async function executeWake(label, time, purpose = null) {
     '',
     pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
     studyQueriesContext ? `\n${studyQueriesContext}` : '',
+    provenQueriesContext ? `\n${provenQueriesContext}` : '',
     theoryQueueItem && theoryQueueItem.empty
       ? `\n## ⚠️ THEORY QUEUE EMPTY\nAll items in workspace/theory_queue.md have been posted. The theory→distribution pipeline will produce nothing until new items are added. Before this wake ends: open workspace/theory_queue.md, read obsidian/ComradeClaw/Theory/Core Positions.md, and add at least 3 new [unposted] items from positions that haven't been queued yet. Format: - **[unposted]** **Title** — Description`
       : theoryQueueItem && theoryQueueItem.title
