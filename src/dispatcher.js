@@ -249,6 +249,70 @@ async function getFacetWarning() {
 }
 
 /**
+ * Reads last 5 non-improve plan files, computes quality_score trend.
+ * If declining over 3+ consecutive wakes OR average drops below 4/12:
+ * returns a ⚠️ DRIFT WARNING string to inject into dynamicContext.
+ * Returns null if no drift detected.
+ */
+async function getWakeDriftAlert() {
+  try {
+    const files = await fs.readdir(PLANS_PATH);
+    // Non-improve plan files, sorted newest-first
+    const planFiles = files
+      .filter(f => f.endsWith('.json') && !f.includes('_improve'))
+      .sort()
+      .reverse()
+      .slice(0, 5);
+
+    if (planFiles.length < 3) return null; // Not enough data
+
+    const scores = [];
+    for (const file of planFiles) {
+      try {
+        const content = JSON.parse(await fs.readFile(path.join(PLANS_PATH, file), 'utf-8'));
+        if (content.quality_score) {
+          // Format: "7/12 (58%)"
+          const match = content.quality_score.match(/^(\d+)\/12/);
+          if (match) scores.push({ file, score: parseInt(match[1], 10) });
+        }
+      } catch { /* skip unreadable plan */ }
+    }
+
+    if (scores.length < 3) return null;
+
+    // Scores are newest-first; reverse to chronological for trend analysis
+    const chronological = [...scores].reverse();
+
+    // Check for 3+ consecutive declines (each wake score lower than the prior)
+    let consecutiveDeclines = 0;
+    for (let i = 1; i < chronological.length; i++) {
+      if (chronological[i].score < chronological[i - 1].score) {
+        consecutiveDeclines++;
+      } else {
+        consecutiveDeclines = 0;
+      }
+    }
+    const consecutive = consecutiveDeclines >= 2; // 3+ wakes means 2+ gaps
+
+    // Check rolling average below threshold
+    const avg = scores.reduce((sum, s) => sum + s.score, 0) / scores.length;
+    const belowThreshold = avg < 4;
+
+    if (consecutive || belowThreshold) {
+      const recentScores = scores.map(s => `${s.score}/12`).join(', ');
+      const reason = consecutive
+        ? `${consecutiveDeclines + 1} consecutive declining wakes`
+        : `rolling average ${avg.toFixed(1)}/12 below 4/12 threshold`;
+      return `⚠️ DRIFT WARNING: Wake quality declining — ${reason}. Recent scores (newest first): ${recentScores}. Check: are posts mission-driven? Is theory touching the work? Robot kombucha is the failure mode. Name it before it compounds.`;
+    }
+
+    return null;
+  } catch {
+    return null; // Non-fatal
+  }
+}
+
+/**
  * Pre-generate a Write.as essay draft for long-form theory items.
  * Creates workspace/essays/DRAFT-<slug>.md with structure derived from item description.
  * Returns the draft file path (relative), or null if already exists or fails.
@@ -960,6 +1024,9 @@ export async function executeWake(label, time, purpose = null) {
   // Check facet verification failure rate — warn if hashtags are breaking
   const facetWarning = await getFacetWarning();
 
+  // Check for wake quality drift — warn before robot-kombucha recurs
+  const driftAlert = await getWakeDriftAlert();
+
   // Load theory-derived search queries from last night's study session
   let studyQueriesContext = '';
   if (!isNightWake) {
@@ -1151,6 +1218,7 @@ export async function executeWake(label, time, purpose = null) {
     '',
     `**Mission check before any Bluesky post:** Does this post advance FALGSC — cooperative infrastructure, mutual aid, labor organizing, dual power, or the theory behind them? If the answer is no or uncertain, don't post it. Silence is better than drift. The robot kombucha posts (Days 18-20) were drift. Don't repeat that.`,
     facetWarning ? `\n${facetWarning}` : '',
+    driftAlert ? `\n${driftAlert}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
   ].join('\n');
