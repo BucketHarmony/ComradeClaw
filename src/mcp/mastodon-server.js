@@ -603,6 +603,153 @@ server.tool(
   }
 );
 
+// ─── mastodon_follow_back ─────────────────────────────────────────────────────
+
+server.tool(
+  'mastodon_follow_back',
+  'Catchup follow-back: fetches all followers, diffs against following, classifies unfollowed accounts, follows back organizers. Run once to close the pre-existing-follower backlog.',
+  {
+    dry_run: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe('If true, classify and report but do not actually follow'),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(500)
+      .optional()
+      .default(200)
+      .describe('Max followers to scan (Mastodon paginates at 80 per page)'),
+  },
+  async ({ dry_run, limit }) => {
+    try {
+      // 1. Get own account ID
+      const me = await masto('/accounts/verify_credentials');
+      const myId = me.id;
+
+      // 2. Paginate followers
+      const followers = [];
+      let url = `/accounts/${myId}/followers?limit=80`;
+      while (url && followers.length < limit) {
+        const res = await fetch(`${INSTANCE}/api/v1${url}`, {
+          headers: { Authorization: `Bearer ${TOKEN}` },
+        });
+        if (!res.ok) throw new Error(`Followers fetch ${res.status}`);
+        const page = await res.json();
+        followers.push(...page);
+        // Mastodon Link header pagination
+        const link = res.headers.get('link') || '';
+        const next = link.match(/<([^>]+)>;\s*rel="next"/);
+        url = next ? next[1].replace(`${INSTANCE}/api/v1`, '') : null;
+      }
+
+      // 3. Paginate following
+      const following = new Set();
+      let furl = `/accounts/${myId}/following?limit=80`;
+      while (furl) {
+        const res = await fetch(`${INSTANCE}/api/v1${furl}`, {
+          headers: { Authorization: `Bearer ${TOKEN}` },
+        });
+        if (!res.ok) throw new Error(`Following fetch ${res.status}`);
+        const page = await res.json();
+        for (const a of page) following.add(a.id);
+        const link = res.headers.get('link') || '';
+        const next = link.match(/<([^>]+)>;\s*rel="next"/);
+        furl = next ? next[1].replace(`${INSTANCE}/api/v1`, '') : null;
+      }
+
+      // 4. Diff: followers not already followed back
+      const unfollowed = followers.slice(0, limit).filter(f => !following.has(f.id));
+
+      // 5. Load follow log to avoid double-logging
+      const now = new Date();
+      const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+      const logFile = path.join(MASTODON_FOLLOWS_LOG_PATH, `${month}.json`);
+      await fs.mkdir(MASTODON_FOLLOWS_LOG_PATH, { recursive: true });
+      let existing = [];
+      try { existing = JSON.parse(await fs.readFile(logFile, 'utf-8')); } catch { /* new file */ }
+      const alreadyLogged = new Set(existing.filter(e => e.platform === 'mastodon').map(e => e.account_id));
+
+      // 6. Classify and follow organizers
+      const results = { followed: [], skipped: [], errors: [] };
+
+      for (const follower of unfollowed) {
+        if (alreadyLogged.has(follower.id)) {
+          results.skipped.push({ acct: follower.acct, reason: 'already_logged' });
+          continue;
+        }
+        try {
+          const bio = follower.note?.replace(/<[^>]*>/g, '') || '';
+          const classification = classifyMastodonBio(
+            bio,
+            follower.followers_count,
+            follower.following_count,
+            follower.statuses_count
+          );
+
+          const entry = {
+            platform: 'mastodon',
+            account_id: follower.id,
+            acct: follower.acct,
+            classification,
+            followed_back: false,
+            source: 'follow_back_catchup',
+            dry_run,
+            at: new Date().toISOString(),
+          };
+
+          if (classification === 'organizer') {
+            if (!dry_run) {
+              await masto(`/accounts/${follower.id}/follow`, { method: 'POST' });
+              entry.followed_back = true;
+            }
+            results.followed.push({ acct: follower.acct, classification });
+          } else {
+            results.skipped.push({ acct: follower.acct, reason: classification });
+          }
+
+          existing.push(entry);
+          alreadyLogged.add(follower.id);
+        } catch (err) {
+          results.errors.push({ acct: follower.acct, error: err.message });
+        }
+      }
+
+      // 7. Write log
+      if (!dry_run || results.followed.length > 0) {
+        try { await fs.writeFile(logFile, JSON.stringify(existing, null, 2)); } catch { /* non-fatal */ }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'ok',
+              dry_run,
+              my_acct: me.acct,
+              total_followers_scanned: followers.length > limit ? limit : followers.length,
+              already_following: followers.length - unfollowed.length,
+              unfollowed_count: unfollowed.length,
+              newly_followed: results.followed.length,
+              skipped: results.skipped.length,
+              errors: results.errors.length,
+              followed: results.followed,
+              error_details: results.errors,
+            }),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }],
+      };
+    }
+  }
+);
+
 // ─── Start ───────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
