@@ -218,6 +218,31 @@ async function logEngagement(entry) {
   } catch { /* non-fatal */ }
 }
 
+// ─── Organizer Fast-Response ─────────────────────────────────────────────────
+// If read_replies finds an organizer engagement, schedule a respond wake in 10min.
+// Prevents organizer conversations from waiting hours for the next scheduled wake.
+async function scheduleOrganizerRespondWake(organizers) {
+  try {
+    let queue = [];
+    try { queue = JSON.parse(await fs.readFile(SCHEDULED_WAKES_PATH, 'utf-8')); } catch {}
+    const hasExisting = queue.some(w => w.label === 'respond' && w.status === 'pending');
+    if (hasExisting) return; // already queued — don't stack respond wakes
+    const names = organizers
+      .map(o => `@${o.handle} ("${(o.replyText || '').substring(0, 80)}")`)
+      .join('; ');
+    queue.push({
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      label: 'respond',
+      purpose: `Organizer reply alert — real political engagement waiting. ${names}. Run read_replies to see the full thread, then reply substantively to each organizer. This is why you exist.`,
+      fire_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      scheduled_by: 'self',
+      status: 'pending'
+    });
+    await fs.writeFile(SCHEDULED_WAKES_PATH, JSON.stringify(queue, null, 2));
+    console.log(`[bluesky] Organizer fast-response wake scheduled: ${organizers.map(o => o.handle).join(', ')}`);
+  } catch { /* non-fatal — never block the notification flow */ }
+}
+
 async function scheduleRetrospectiveWake(uri, type) {
   try {
     const fireAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
@@ -622,6 +647,28 @@ server.tool(
 
       if (newestTimestamp && !include_read) {
         await saveLastSeenTimestamp(newestTimestamp);
+      }
+
+      // Fast-response: classify new engagers in parallel (5s timeout), schedule
+      // respond wake immediately if any organizer replied. Non-blocking.
+      if (filtered.length > 0) {
+        setImmediate(async () => {
+          try {
+            const timeout = new Promise(resolve => setTimeout(() => resolve([]), 5000));
+            const classifications = await Promise.race([
+              Promise.all(filtered.map(async n => ({
+                handle: n.author.handle,
+                replyText: n.record?.text,
+                classification: await classifyAccount(agent, n.author.handle)
+              }))),
+              timeout
+            ]);
+            const organizers = (classifications || []).filter(c => c.classification === 'organizer');
+            if (organizers.length > 0) {
+              await scheduleOrganizerRespondWake(organizers);
+            }
+          } catch { /* non-fatal */ }
+        });
       }
 
       // Fold unread DMs into the inbox — single call shows full inbox state

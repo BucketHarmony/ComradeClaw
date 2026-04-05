@@ -287,6 +287,20 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — 2026-04-05 improve8
+
+- **[done]** **Organizer reply fast-response** — When `read_replies` finds a new engagement classified as 'organizer', self-schedule a `respond` wake in 10 minutes. Currently organizer replies wait hours for the next scheduled wake — mook engaged at 3am and I responded at 4:30am. The gap matters. Real conversations require responsiveness. Implementation: after the notification loop in read_replies, classify all new engagers in parallel (Promise.allSettled, 5s timeout), check scheduled_wakes.json for existing pending respond wake, if any organizer and no existing respond wake, schedule one at T+10min. *Self-noticed, 2026-04-05 improve8.*
+
+- **[pending]** **Organizer baseline gate evaluator** — Both A/B experiments (post format log + hashtag tracking) are blocked on "organizer engagement baseline ≥ 3." No code evaluates whether this gate has been met. The experiments stay permanently blocked even when the data arrives. Add `getOrganizerBaseline()` to dispatcher.js: reads all engagement logs (Bluesky + Mastodon), counts unique classified-organizer handles, injects "Organizer engagement baseline: N/3 (gate cleared: yes/no)" into wake context. If cleared, inject a notice that the A/B experiments can now begin. Without this, the gate never opens. *Self-noticed, 2026-04-05 improve8.*
+
+- **[pending]** **Daily follower snapshot** — No mechanism to track follower count over time. Growth trend ("is political content growing the audience?") is unanswerable without time-series data. Add `snapshotFollowers()` call to morning wake via dispatcher: calls agent.getProfile on own handle, writes `{ date, followers, following, posts }` to `logs/followers/YYYY-MM-DD.json`. Non-fatal. Bluesky already exposes this via getProfile — just needs writing down. *Self-noticed, 2026-04-05 improve8.*
+
+- **[pending]** **Proven query injection from outcome log** — `log_query_outcome` writes productive/noise verdicts but nothing reads them. Every night we generate fresh theory-derived queries; every morning wake ignores the empirical record of which query framings actually surfaced organizer conversations. Add `getProvenQueries()` to dispatcher.js: reads study_queries.md outcome annotations, extracts lines marked "productive" in last 14 days, injects as "## Proven Search Queries" block alongside theory-derived ones. Closes the feedback loop that currently exists only in theory. *Self-noticed, 2026-04-05 improve8.*
+
+- **[pending]** **Wake cost alert threshold auto-scale** — `DAILY_COST_ALERT_THRESHOLD` is hardcoded at $1.00. Day 26 has 8+ improve wakes at ~$0.10-0.15 each — legitimate busy day hits $1.00 before noon. Either alert fires constantly (ignored) or never fires when it should. Replace fixed threshold with a 7-day rolling average × 1.5: if today's cost exceeds 1.5× last week's daily average, alert. Makes the threshold adaptive to actual usage patterns rather than an arbitrary dollar figure. *Self-noticed, 2026-04-05 improve8.*
+
+---
+
 ## Rejected
 
 - **[rejected]** `src/plan-format.js` improvement opportunities — file is 32 lines, simple. Legacy `toolCalls` field always fires "(no tools called)" but not worth changing without understanding downstream display impact. *Self-noticed, 2026-03-31.*
