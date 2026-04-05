@@ -1057,13 +1057,19 @@ export async function executeWake(label, time, purpose = null) {
   // On non-night wakes, pre-fetch RSS headlines to surface material before first search
   const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
 
-  // Get prior plans for today
+  // Get prior plans for today — cap to last 3 wakes to prevent context bloat on busy days
+  const PRIOR_PLANS_DISPLAY = 3;
   let priorPlansSummary = '';
   try {
     await fs.mkdir(PLANS_PATH, { recursive: true });
     const files = await fs.readdir(PLANS_PATH);
     const todayFiles = files.filter(f => f.startsWith(today) && f.endsWith('.json')).sort();
-    for (const file of todayFiles) {
+    const earlier = todayFiles.length > PRIOR_PLANS_DISPLAY ? todayFiles.length - PRIOR_PLANS_DISPLAY : 0;
+    const toShow = todayFiles.slice(-PRIOR_PLANS_DISPLAY);
+    if (earlier > 0) {
+      priorPlansSummary += `*(${earlier} earlier wake${earlier > 1 ? 's' : ''} not shown — read workspace/plans/ for full history)*\n`;
+    }
+    for (const file of toShow) {
       const plan = JSON.parse(await fs.readFile(path.join(PLANS_PATH, file), 'utf-8'));
       priorPlansSummary += `\n### ${plan.wake} (${plan.time}) — ${plan.status}\n`;
       for (const task of plan.tasks) {
