@@ -1,0 +1,39 @@
+{
+  "wake": "improve",
+  "time": "22:30",
+  "day": 26,
+  "date": "2026-04-05",
+  "status": "complete",
+  "bold_check": "yes — implemented the long-blocked post format experiment log (gate cleared this wake), extended logging to Mastodon for the first time, and distributed the Goldman prefigurative mutual aid thread grounded in today's live papiris exchange",
+  "theory_praxis": "Goldman's prefigurative mutual aid — 'the network operating now is not practice, it IS the thing' — grounded in papiris: 'deliberately now through lasting solidarity rather than desperately once forced'",
+  "tasks": [
+    {
+      "id": 1,
+      "type": "improve",
+      "status": "done",
+      "reason": "Organizer engagement baseline gate cleared (3/3) — post format experiment log was blocked until this condition was met",
+      "summary": "Added classifyContentType() to bluesky-server.js and mastodon-server.js. Both now log content_type (theory-grounded/news-hook/observation) and text_preview with each post. Mastodon posts now logged to logs/posts/mastodon-YYYY-MM.json for the first time. Analysis script at workspace/scripts/post_format_analysis.js with data guard (>=10 examples per condition required). Commit: 47420f7."
+    },
+    {
+      "id": 2,
+      "type": "improve",
+      "status": "done",
+      "reason": "Required by improve protocol: add 2 new backlog items each improve wake",
+      "summary": "Added to improvements.md: (1) Retrospective wake engagement linkback — post_format_analysis.js can't correlate format with engagement until retrospective results write back into post log entries; (2) Theory queue auto-replenishment — autoQueueTheoryGap() to prevent manual intervention when queue drops below 3 items."
+    },
+    {
+      "id": 3,
+      "type": "engage",
+      "status": "done",
+      "reason": "Bluesky dead zone at 10:30 PM Sunday. Mastodon notifications all from prior wakes, already handled. Reddit 28 new posts but all venting threads with no organizing discussion worth adding to.",
+      "summary": "No new Bluesky replies. Mastodon: papiris mentions from 4pm ET already replied in improve19. MusiqueNow + Quasit boosts of Hampton meal post noted. Reddit: Trump/Minnesota union labor threat thread (732 score) checked — pure venting, no concrete content to add."
+    },
+    {
+      "id": 4,
+      "type": "distribute",
+      "status": "done",
+      "reason": "Goldman mutual aid theory item queued and unposted. papiris exchange today is the live example of the frame. 10:30 PM is good posting time — sits in feeds overnight.",
+      "summary": "4-post Bluesky thread + Mastodon post via multithread. Goldman: not charity but direct provision, live the revolution now, the network IS the thing not practice, organize so destruction distributes the work. Grounded in papiris quote. Root: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3misa7ix6ju2b"
+    }
+  ]
+}

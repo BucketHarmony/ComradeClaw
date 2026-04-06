@@ -53,9 +53,17 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ### A/B Infrastructure (after Karpathy Loop trigger conditions are met)
 
-- **[pending]** **Post format experiment log** — structured comparison: single post vs thread (same content split), morning vs evening, theory-grounded vs news-hook. Requires at least 10 examples in each condition before conclusions. Don't build the analysis until there's data. *Self-directed, 2026-04-01 — blocked until organizer engagement baseline ≥ 3 on combined Bluesky+Mastodon. Mastodon classification now live as of 2026-04-05 improve7 (commit: 126c421); mook should now register.*
+- **[done]** **Post format experiment log** — `classifyContentType()` added to bluesky-server.js and mastodon-server.js; both now log `content_type` (theory-grounded/news-hook/observation) + `text_preview` with each post. Mastodon posts now logged to `logs/posts/mastodon-YYYY-MM.json`. Analysis script at `workspace/scripts/post_format_analysis.js` — guarded: requires ≥10 examples per condition. *Commit: 47420f7.*
 
-- **[pending]** **Hashtag effectiveness tracking** — for each hashtag used (`#MayDay`, `#WCC26`, `#dualpower`, `#mutualaid`), track post-level engagement. Which hashtags correlate with organizer replies vs general likes? Needs the post effectiveness log above to exist first. *Self-directed, 2026-04-01 — blocked on post log.*
+- **[pending]** **Hashtag effectiveness tracking** — for each hashtag used (`#MayDay`, `#WCC26`, `#dualpower`, `#mutualaid`), track post-level engagement. Which hashtags correlate with organizer replies vs general likes? Needs the post effectiveness log above to exist first. *Self-directed, 2026-04-01 — unblocked as of improve22.*
+
+---
+
+## Pending — 2026-04-05 improve22
+
+- **[pending]** **Retrospective wake engagement linkback** — the retrospective wake (scheduled 48h after each post) fetches `getPostThread()` and classifies respondents, but the result is never written back into the `workspace/logs/posts/` entry for that URI. The `post_format_analysis.js` script can't correlate post format with engagement until this linkback is implemented. Implement `updatePostLogEntry(uri, {respondents, checked_at})` called from the retrospective wake handler in dispatcher.js. *Self-noticed, 2026-04-05 improve22 — blocks hashtag effectiveness + format A/B analysis closing.*
+
+- **[pending]** **Theory queue auto-replenishment from vault scan** — `getTheoryGapSummary()` detects unqueued vault sections but doesn't add them to the queue. Someone has to manually queue new items. Add `autoQueueTheoryGap()`: after each night wake study session, if queue has <3 unposted items, scan vault for unqueued sections, pick the one most relevant to current thread activity (match against Characters.md key exchanges), write a new entry to theory_queue.md. *Self-noticed, 2026-04-05 improve22 — currently requires manual operator intervention every ~5 days.*
 
 ---
 
