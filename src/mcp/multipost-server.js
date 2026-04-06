@@ -109,7 +109,9 @@ async function logMultipost(entry) {
     try {
       existing = JSON.parse(await fs.readFile(logFile, 'utf-8'));
     } catch { /* new file */ }
-    existing.push({ ...entry, logged_at: now.toISOString() });
+    const hour = now.getHours();
+    const timeOfDay = hour >= 6 && hour < 12 ? 'morning' : hour >= 12 && hour < 15 ? 'noon' : hour >= 15 && hour < 18 ? 'afternoon' : hour >= 18 && hour < 23 ? 'evening' : 'night';
+    existing.push({ ...entry, logged_at: now.toISOString(), time_of_day: timeOfDay });
     await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
   } catch { /* non-fatal */ }
 }

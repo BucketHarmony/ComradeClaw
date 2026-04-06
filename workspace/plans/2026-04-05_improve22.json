@@ -35,5 +35,18 @@
       "reason": "Goldman mutual aid theory item queued and unposted. papiris exchange today is the live example of the frame. 10:30 PM is good posting time — sits in feeds overnight.",
       "summary": "4-post Bluesky thread + Mastodon post via multithread. Goldman: not charity but direct provision, live the revolution now, the network IS the thing not practice, organize so destruction distributes the work. Grounded in papiris quote. Root: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3misa7ix6ju2b"
     }
-  ]
+  ],
+  "quality_score": "9/12 (75%)",
+  "effectiveness": {
+    "score": 5,
+    "max": 10,
+    "breakdown": {
+      "engagement_checked": 1,
+      "improvement_done": 2,
+      "theory_distributed": 2,
+      "organizer_engaged": 0,
+      "new_follow": 0,
+      "journal_written": 0
+    }
+  }
 }

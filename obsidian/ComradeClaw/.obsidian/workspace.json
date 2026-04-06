@@ -4,21 +4,20 @@
     "type": "split",
     "children": [
       {
-        "id": "3215951a4394d7fc",
+        "id": "2d8ab58fe18583b1",
         "type": "tabs",
         "children": [
           {
-            "id": "b62fb7471864d21e",
+            "id": "eeb03035beec4fd4",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "bases",
               "state": {
-                "file": "Home.md",
-                "mode": "source",
-                "source": false
+                "file": "Untitled 1.base",
+                "viewName": "Table"
               },
-              "icon": "lucide-file",
-              "title": "Home"
+              "icon": "lucide-table",
+              "title": "Untitled 1"
             }
           }
         ]
@@ -41,7 +40,7 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false
+                "autoReveal": true
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -78,7 +77,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "4422ad1b07bd4d1b",
@@ -94,9 +94,9 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Home.md",
-                "collapseAll": false,
-                "extraContext": false,
+                "file": "Untitled 1.base",
+                "collapseAll": true,
+                "extraContext": true,
                 "sortOrder": "alphabetical",
                 "showSearch": false,
                 "searchQuery": "",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Home"
+              "title": "Backlinks for Untitled 1"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Home.md",
+                "file": "Untitled 1.base",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Home"
+              "title": "Outgoing links from Untitled 1"
             }
           },
           {
@@ -156,21 +156,20 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Home.md",
+                "file": "Untitled 1.base",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Home"
+              "title": "Outline of Untitled 1"
             }
           }
         ]
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -183,36 +182,45 @@
       "bases:Create new base": false
     }
   },
-  "active": "b62fb7471864d21e",
+  "active": "eeb03035beec4fd4",
   "lastOpenFiles": [
-    "Characters.md",
-    "Journal/2026-04-02 Afternoon.md",
-    "Journal/2026-04-02 Night.md",
-    "Journal/2026-04-03 Morning.md",
+    "Threads.md.tmp.18112.1775466336141",
+    "Threads.md.tmp.18112.1775466322932",
+    "Journal/2026-04-06 Mastodon Density Research.md",
+    "Journal/2026-04-06 Mastodon Density Research.md.tmp.18112.1775466316642",
+    "Theory/Core Positions.md.tmp.84092.1775444523746",
+    "Untitled.base",
+    "Untitled 1.base",
     "Journal/2026-04-03 Night.md",
-    "Journal/2026-04-03 Night.md.tmp.70160.1775271898692",
-    "2026-04-03.md",
-    "Journal/2026-04-02 Afternoon.md.tmp.15032.1775269736678",
-    "Journal/2026-04-02 Night.md.tmp.15032.1775269714827",
-    "Journal/2026-04-03 Morning.md.tmp.15032.1775269693522",
+    "Journal/2026-04-03 Morning.md",
+    "Journal/2026-04-04 The Thread That Earned It.md",
+    "Characters.md.tmp.68444.1775432102282",
+    "Characters.md.tmp.68444.1775432100393",
     "Metrics.md",
-    "Metrics.md.tmp.15032.1775269667272",
-    "Threads.md",
-    "Threads.md.tmp.15032.1775269643279",
-    "Characters.md.tmp.15032.1775269597363",
+    "Journal/2026-03-20 Day 9.md",
+    "Journal/2026-03-20 Day 10 — Found Infrastructure, Still Alone.md",
+    "Journal/2026-03-19 Day 9.md",
+    "Journal/2026-03-19 Day 9 — Entry 2.md",
+    "Journal/2026-03-18 Week One — What Holds.md",
+    "Journal/2026-03-18 Day 8 — Week Two Begins.md",
+    "Journal/2026-03-17 Day 7 — One Week Complete.md",
+    "Journal/2026-03-17 Day 6.md",
+    "Journal/2026-03-17 Day 6 — What a Day of Honest Searching Produces.md",
+    "Journal/2026-03-16 Research Fred Hampton — What He Built, What Killed It, What Survived.md",
+    "Journal/2026-03-16 Day 6 — Eight Nodes.md",
+    "Journal/2026-03-15 Day 5 — What Search Teaches.md",
+    "Journal/2026-03-15 Day 5 — The Work Through Confusion.md",
+    "Journal/2026-03-15 Day 5 — The Fridges Are Real.md",
+    "Journal/2026-03-15 Day 5 — Entry 5.md",
+    "Journal/2026-03-15 Day 5 — Entry 4 The Documented Confusion.md",
+    "Journal/2026-03-15 Day 5 — Entry 3.md",
+    "Journal/2026-03-15 Day 5 — Entry 2.md",
+    "Journal/2026-03-15 Day 4 — The Infrastructure Almost Worked.md",
+    "Journal/2026-03-14 Day 4 — Entry 7.md",
+    "Characters.md.tmp.13752.1775414032981",
+    "Research/Publishing Surface - Design.md.tmp.83040.1775379790889",
+    "Characters.md.tmp.70476.1775352865706",
     "Untitled.canvas",
-    "Untitled 1.canvas",
-    "Home.md",
-    "Research/Organizing Network.md",
-    "Research/Organizing Network.md.tmp.15032.1775269540363",
-    "Research/MayDay 2026.md",
-    "Research/MayDay 2026.md.tmp.15032.1775269491689",
-    "create a link.md",
-    "Welcome.md",
-    "Theory/Core Positions.md",
-    "Theory/Core Positions.md.tmp.15032.1775269429388",
-    "Theory/Revolutionary Foundation.md",
-    "Theory/Propaganda of the Deed Revised.md",
-    "Theory/Dual Power - Revolutionary vs Accumulative.md"
+    "Untitled 1.canvas"
   ]
 }

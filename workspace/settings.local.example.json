@@ -1,0 +1,67 @@
+{
+  "_comment": "Copy to .claude/settings.local.json — NOT committed to git. Local overrides only.",
+
+  "permissions": {
+    "allow": [
+      "Bash(rm -f nul)",
+      "Bash(mkdir -p workspace/memory workspace/plans workspace/logs/chat workspace/logs/journal workspace/logs/wakes workspace/bluesky)",
+      "Bash(node --check src/dispatcher.js)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(wmic process:*)",
+      "Bash(node src/index.js)",
+      "Bash(powershell -Command:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  },
+
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'TODAY=$(date +%Y-%m-%d) && PLAN_COUNT=$(ls workspace/plans/ 2>/dev/null | grep \"^$TODAY\" | wc -l) && JOURNAL_COUNT=$(ls \"obsidian/ComradeClaw/Journal/\" 2>/dev/null | grep \"^$TODAY\" | wc -l) && if [ \"$PLAN_COUNT\" -gt \"0\" ] && [ \"$JOURNAL_COUNT\" -eq \"0\" ]; then echo \"NO JOURNAL: $PLAN_COUNT wake plan(s) written today but no journal entry found in obsidian/ComradeClaw/Journal/. Write a journal entry before this session ends.\"; fi'"
+          }
+        ]
+      }
+    ],
+
+    "PreToolUse": [
+      {
+        "matcher": "mcp__claw-social__bluesky_post",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"[PRE-POST] Bluesky post about to fire — check timeline for duplicates first.\"'"
+          }
+        ]
+      }
+    ],
+
+    "PostToolUse": [
+      {
+        "matcher": "mcp__claw-social__bluesky_post",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"[POST-POST] Bluesky post fired at $(date --iso-8601=seconds)\" >> workspace/logs/post_log.txt'"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__claw-mastodon__mastodon_post",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"[POST-POST] Mastodon post fired at $(date --iso-8601=seconds)\" >> workspace/logs/post_log.txt'"
+          }
+        ]
+      }
+    ]
+  }
+}
