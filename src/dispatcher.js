@@ -951,6 +951,90 @@ async function getTheoryQueueAlert() {
 }
 
 /**
+ * Theory gap → essay pipeline auto-scheduling (night wakes only).
+ * If ≥3 vault sections are unqueued AND no essay wake is pending in the next 24h,
+ * injects a one-liner suggesting the operator schedule an essay wake.
+ * Closes the gap between "I notice unqueued theory" and "I act on it."
+ * Non-fatal: returns '' on any error.
+ */
+async function getEssayAutoScheduleSuggestion() {
+  try {
+    const VAULT_THEORY_PATH = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw', 'Theory');
+    const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
+
+    let queueContent = '';
+    try { queueContent = await fs.readFile(QUEUE_PATH, 'utf-8'); } catch { return ''; }
+
+    const queuedTitles = new Set();
+    for (const m of queueContent.matchAll(/\*\*(?:\[(?:posted[^\]]*|unposted)\])\*\*\s+\*\*(.+?)\*\*/g)) {
+      queuedTitles.add(m[1].toLowerCase().trim());
+    }
+
+    const SKIP_TITLES = new Set([
+      'core positions', 'search query construction', 'tool output vs. interpretation',
+      'the basics: revolutionary foundation for cooperators',
+      'fred hampton (1948–1969)', 'mao zedong (1893–1976)',
+      'leon trotsky (1879–1940)', 'emma goldman (1869–1940)',
+      'what he built', 'his analysis', 'what the state did', 'what survived', 'lessons for cooperators',
+      'mass line ("from the masses, to the masses")', 'guerrilla warfare / base areas',
+      'contradictions analysis', 'cultural revolution (catastrophic failure)',
+      'permanent revolution', "workers' councils / soviets (dual power)", 'bureaucratic degeneration',
+      'mutual aid (with kropotkin)', 'soviet disillusionment', 'propaganda of the deed (evolution)',
+      'what killed her work', 'on dual power', 'on state response', 'on organization',
+      'on internationalism', 'on internal dangers',
+    ]);
+
+    const vaultGaps = [];
+    try {
+      const entries = await fs.readdir(VAULT_THEORY_PATH);
+      for (const f of entries.filter(e => e.endsWith('.md'))) {
+        let noteContent = '';
+        try { noteContent = await fs.readFile(path.join(VAULT_THEORY_PATH, f), 'utf-8'); } catch { continue; }
+        for (const section of noteContent.split(/\n(?=## )/)) {
+          const titleMatch = section.match(/^## (.+)/);
+          if (!titleMatch) continue;
+          const title = titleMatch[1].trim();
+          if (SKIP_TITLES.has(title.toLowerCase()) || queuedTitles.has(title.toLowerCase())) continue;
+          let prose = '';
+          for (const line of section.split('\n').slice(1)) {
+            const t = line.trim();
+            if (!t || t.startsWith('---') || t.startsWith('#') || t.startsWith('-') ||
+                t.startsWith('>') || t.startsWith('|') || t.startsWith('*Developed') ||
+                t.startsWith('tags:') || t.startsWith('status:')) {
+              if (prose.length >= 80) break;
+              continue;
+            }
+            prose += t + ' ';
+            if (prose.length >= 80) break;
+          }
+          if (prose.trim().length >= 80) vaultGaps.push(title);
+        }
+      }
+    } catch { return ''; }
+
+    if (vaultGaps.length < 3) return '';
+
+    // Check if an essay wake is already pending in the next 24h
+    const wakeQueueFile = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
+    try {
+      const queue = JSON.parse(await fs.readFile(wakeQueueFile, 'utf-8'));
+      const cutoff = Date.now() + 24 * 60 * 60 * 1000;
+      const hasEssay = queue.some(w =>
+        w.label === 'essay' && w.status === 'pending' &&
+        new Date(w.fire_at).getTime() <= cutoff
+      );
+      if (hasEssay) return '';
+    } catch { /* no queue file — proceed */ }
+
+    const firstGap = vaultGaps[0];
+    return `⚡ Essay pipeline: ${vaultGaps.length} vault sections unqueued, no essay wake scheduled. Suggest: \`schedule 60 essay "Write essay on ${firstGap}"\``;
+  } catch (err) {
+    console.error(`[getEssayAutoScheduleSuggestion] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Hashtag signal quality summary — reads posts + engagement logs, runs analysis, returns
  * a compact summary of top hashtags by organizer signal quality.
  *
@@ -1868,6 +1952,9 @@ export async function executeWake(label, time, purpose = null) {
   // Auto-extract theory candidates from recent journals on night wakes
   const autoQueueContext = isNightWake ? await autoQueueFromJournal() : '';
 
+  // Theory gap → essay pipeline suggestion (night wake only)
+  const essayAutoSchedule = isNightWake ? await getEssayAutoScheduleSuggestion() : '';
+
   // Load next unposted theory item for distribution prompt
   const theoryQueueItem = isNightWake ? null : await getTheoryQueueItem();
 
@@ -2124,6 +2211,7 @@ export async function executeWake(label, time, purpose = null) {
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
     crossTabContext ? `\n${crossTabContext}` : '',
     theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
+    essayAutoSchedule ? `\n${essayAutoSchedule}` : '',
     autoQueueContext ? `\n${autoQueueContext}` : '',
     tractionAlert ? `\n${tractionAlert}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
