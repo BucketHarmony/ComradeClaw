@@ -1932,7 +1932,20 @@ export async function executeWake(label, time, purpose = null) {
       const sections = sqContent.split(/\n(?=## \d{4}-)/).filter(s => s.trim());
       const dateSections = sections.filter(s => /^## \d{4}-/.test(s.trimStart()));
       if (dateSections.length > 0) {
-        studyQueriesContext = `## Theory-Derived Search Queries (from last night's study)\n${dateSections[0].trim()}\n\n*After searching with any of these queries, call \`log_query_outcome\` with the query text, outcome ("productive"/"noise"), and a one-line note. This closes the theory→query→material feedback loop.*`;
+        // Filter out queries already marked ✗ noise — dead leads waste context and cause repeated failed searches
+        const sectionLines = dateSections[0].split('\n');
+        const filteredLines = sectionLines.filter(l => !l.includes('✗ noise'));
+        const noiseCount = sectionLines.length - filteredLines.length;
+        const queryLines = filteredLines.filter(l => /^\d+\./.test(l.trim()));
+
+        if (queryLines.length > 0) {
+          const filteredSection = filteredLines.join('\n').trim();
+          const noiseNote = noiseCount > 0 ? ` *(${noiseCount} noise-marked quer${noiseCount !== 1 ? 'ies' : 'y'} hidden — already logged as dead)*` : '';
+          studyQueriesContext = `## Theory-Derived Search Queries (from last night's study)\n${filteredSection}\n\n*After searching with any of these queries, call \`log_query_outcome\` with the query text, outcome ("productive"/"noise"), and a one-line note. This closes the theory→query→material feedback loop.*${noiseNote}`;
+        } else if (noiseCount > 0) {
+          // All queries marked noise — surface this instead of showing an empty section
+          studyQueriesContext = `## Theory-Derived Search Queries\n*All ${noiseCount} queries from the most recent study session are marked noise. Night wake study session needed to generate fresh queries.*`;
+        }
       }
     } catch {
       // No study_queries.md — not fatal
