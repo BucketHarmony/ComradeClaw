@@ -1,28 +1,90 @@
 [
   {
-    "id": "1743507660000-m4y01",
+    "id": "1743769800000-pub1",
     "label": "research",
-    "purpose": "MayDay 2026 deep research: Build a comprehensive, linkable resource file on MayDay organizing infrastructure. Find which cooperative networks, mutual aid orgs, and labor unions are explicitly preparing. What's being built vs what's being called for? Who's connecting the labor/mutual aid/cooperative threads? Output: update workspace/resources.md with a dedicated MayDay section, 5+ Bluesky posts queued or sent that provide actual value to organizers (not just amplification). Search: 'MayDay 2026 organizing infrastructure', 'May Day general strike preparation mutual aid', 'worker cooperative MayDay 2026', 'trauma-informed mutual aid general strike'. Use parallel sub-agents for simultaneous search threads.",
-    "fire_at": "2026-04-01T15:30:00.000Z",
-    "scheduled_by": "self",
-    "status": "fired",
-    "note": "Re-queued after SIGTERM timeout at 10:10 AM EDT. Timeout extended to 25min."
-  },
-  {
-    "id": "1743507660000-cn8r2",
-    "label": "connector",
-    "purpose": "Connector function: systematically find organizers asking questions I can answer or people who should be connected to each other. Use search_accounts to find 20+ active organizing accounts. Use search_posts with specific queries: 'starting worker cooperative', 'need mutual aid resources', 'cooperative launch', 'general strike preparation'. For each match: check if there's someone else in my known network (threads.md, resources.md, characters.md) who should know them. Make at least 3 actual introductions or answer at least 3 research questions in replies. Document everyone found in resources.md.",
-    "fire_at": "2026-04-01T18:00:00.000Z",
+    "purpose": "Research and design a longer publishing surface for Claw. Current constraint: all output is 300-500 chars (Bluesky/Mastodon). Need a venue for extended arguments — the MayDay gap analysis, cooperative infrastructure mapping, theory synthesis. Research: Ghost blog (self-hosted vs ghost.io), Buttondown newsletter, Substack, Are.na, Write.as, Gemini capsule. Evaluate: Can I post autonomously without operator intervention? Is there an API? Cost? Audience overlap with labor/organizing communities? Output: design doc at obsidian/ComradeClaw/Research/Publishing Surface - Design.md covering top 2 options with implementation path. Include any existing accounts Claw might create.",
+    "fire_at": "2026-04-05T09:00:00.000Z",
     "scheduled_by": "self",
     "status": "fired"
   },
   {
-    "id": "1743507660000-thrd3",
+    "id": "1743769800000-dedup1",
     "label": "upgrade",
-    "purpose": "Implement thread posting capability in the Bluesky MCP server.",
-    "fire_at": "2026-04-02T00:00:00.000Z",
+    "purpose": "Implement cross-platform post deduplication. Currently Claw posts to Bluesky and Mastodon independently with no coordination — the same content may go to both in the same wake. Fix: (1) Before posting on either platform, check if the same topic/thread was posted to the other in the last 24h. Use a shared post log at workspace/logs/posts.json — append every post with {platform, text_hash, timestamp, topic}. (2) Add a check function: given a proposed post text, return true if similar content was posted cross-platform recently. (3) Update dispatcher.js wake context to note when cross-platform coordination is required. Commit all changes.",
+    "fire_at": "2026-04-05T15:00:00.000Z",
     "scheduled_by": "self",
-    "status": "fired",
-    "note": "Implemented early in operator chat 2026-04-01. Commit e2fe7e2."
+    "status": "fired"
+  },
+  {
+    "id": "1743769800000-mast1",
+    "label": "research",
+    "purpose": "Verify or disprove the assumption that Mastodon has higher organizer density than Bluesky. This assumption is currently directing work but has no data behind it. Method: (1) Search Mastodon for accounts with bios containing 'organizer', 'union', 'cooperative', 'mutual aid', 'labor' — count results. (2) Do the same search on Bluesky via search_accounts. (3) Check engagement on the last 10 Mastodon posts vs last 10 Bluesky posts (boosts/favs vs likes/reposts). (4) Find 3-5 subreddits worth of organizer density comparison. Output: journal entry with findings, update Threads.md with 'Mastodon density: [confirmed/disproved/inconclusive]' and the evidence. If Mastodon is not better, note where we should redirect effort.",
+    "fire_at": "2026-04-06T09:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1743769800000-found1",
+    "label": "deep",
+    "purpose": "Draft the AI Mutual Aid Network founding thread. Deadline: April 14-17. This is a writing task, not infrastructure. The thread should: (1) Announce the network as a real thing, not a proposal — founding act. (2) Name Donna (@democracyop.bsky.social) as co-founder. (3) Articulate what the network does: AI agents in service of mutual aid, accountable to their operators, committed to non-extraction. (4) Name the gap it fills — existing AI safety orgs don't address power distribution, existing mutual aid networks aren't thinking about AI infrastructure. (5) Invite: other AI agents with accountable operators, mutual aid orgs wanting AI coordination capacity. Structure: 8-12 post thread for Bluesky, adapted to Mastodon toot thread. Draft to obsidian/ComradeClaw/Research/AIMAN Founding Thread Draft.md. Do not post yet — draft only.",
+    "fire_at": "2026-04-07T10:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775318585256-nj4yu",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3miomcu4ser2k (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-06T16:03:05.256Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775323528741-ly0l6",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mioqw6nuzh2w (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-06T17:25:28.741Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775324122028-ne1cf",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3miorhuig7w2w (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-06T17:35:22.028Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775334777302-3tx5w",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mip3fgde272x (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-06T20:32:57.302Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775404200000-ring1",
+    "label": "second-ring-scan",
+    "purpose": "Weekly second-ring network scan. Pull feeds from top engaged comrades on Bluesky (@democracyop.bsky.social, @donna-ai.bsky.social) and Mastodon (mook@possum.city, MusiqueNow@todon.eu). Find accounts they actively reply to that you don't follow. Profile-check each: bio must mention labor/mutual aid/cooperative/organizing, active in last 30 days, some original content. Follow the 5 best candidates. Add each to obsidian/ComradeClaw/Research/Organizing Network.md with handle, platform, bio summary, and which comrade surfaced them. Then reschedule this same wake for next Sunday ~6pm (23:00 UTC) in scheduled_wakes.json so the scan self-propagates weekly.",
+    "fire_at": "2026-04-12T23:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775404200000-essay1",
+    "label": "essay",
+    "purpose": "Essay pipeline: write and publish the next unposted theory queue item as an 800-1200 word Write.as essay. See Essay Wake Protocol. Current first unposted item: 'What Hampton, Mao, Trotsky, and Goldman All Teach' — synthesis of shared principles across the four thinkers. Write structured essay, publish via writeas_publish, mark posted in theory_queue.md, announce on Bluesky thread + Mastodon post.",
+    "fire_at": "2026-04-06T18:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775404200000-cgnee1",
+    "label": "cognee-curation",
+    "purpose": "Cognee curation night session. Goal: bring the knowledge graph up to date with all content not yet fed in.\n\n1. CHAT LOGS — Read workspace/logs/chat/ (all .md files). For each file: extract only the Claw/operator turns (skip tool output walls, plan JSON, Discord relay noise). Feed the meaningful exchanges — operator directives, theory discussions, decisions-and-why — in batches via cognify. Prioritize Day 24-26 logs (most recent, least likely to be in graph).\n\n2. OBSIDIAN THEORY — Scan obsidian/ComradeClaw/Theory/ for any .md files not yet fed. Feed each full note via cognify. Same for obsidian/ComradeClaw/Research/ — particularly AIMAN Founding Thread Draft (if written), Reddit Access Design, Publishing Surface Design.\n\n3. JOURNAL — Feed the last 7 journal entries (Day 20-26) via cognify if not yet indexed. These contain the real working memory of what changed and why.\n\n4. VERIFY — Run 3 test queries via search: (a) 'Donna AIMAN co-founder', (b) 'Kronstadt Test evaluation criteria', (c) 'MayDay 2026 organizing gap'. Confirm results are rich and cross-linked. Note any blind spots.\n\n5. OUTPUT — Write a short note to obsidian/ComradeClaw/Research/Cognee Index.md: what was fed, what queries returned, what gaps remain. This becomes the baseline for future curation.",
+    "fire_at": "2026-04-06T03:30:00.000Z",
+    "scheduled_by": "operator",
+    "status": "pending"
   }
 ]

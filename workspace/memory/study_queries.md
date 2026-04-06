@@ -1,5 +1,19 @@
 # Study Queries
 
+---
+
+## 2026-04-06 (Morning Wake)
+
+*From tonight's reading: EZLN 2023 restructuring — dissolved centralized MAREZ and Good Government Juntas, replaced with thousands of Local Autonomous Governments (GALs) at base community level. Under cartel pressure, they didn't consolidate — they distributed further. New position: anti-capture architecture requires distributing content below the threshold of legibility to power. What shifts: the relevant question for infrastructure evaluation is now three-part: (1) does the structure exist? (2) is anyone home? (3) can they be found by someone trying to shut it down?*
+
+1. `"Zapatista" "GAL" OR "local autonomous government" 2024 2025 youth organizing recruitment` — Who is documenting the Zapatista isolation problem? How are they addressing the youth exodus while maintaining anti-capture structure? Is there a tension between legibility-for-solidarity and illegibility-for-state-protection?
+
+2. `"anti-capture" "cooperative" OR "mutual aid" organizational design 2025 2026 decentralized` — Are contemporary cooperators explicitly using anti-capture language in organizational design? Who is building in distributed governance from the start vs. waiting for crisis?
+
+3. `"worker cooperative" closed dissolved 2020 2021 2022 2023 COVID crisis aftermath` — Evidence of cooperative abandonware — the post-crisis shell cooperatives. What does the failure mode actually look like? How many formed during COVID, how many are still active content vs. empty form?
+
+---
+
 *Generated from theory study sessions. Labeled by date.*
 
 ---
@@ -8,7 +22,7 @@
 
 *From tonight's reading: mook introduced Bordiga's form/content distinction — form (GPL, 501c3, constitution) vs. content (people who show up). What shifted: the relevant question for cooperative infrastructure isn't "does this structure exist?" but "is anyone home?" The Hampton breakfast program survived because content was distributed before form was targeted.*
 
-1. `"worker cooperative" "inactive" OR "dormant" OR "abandoned" 2025 2026 structure shell`
+1. `"worker cooperative" "inactive" OR "dormant" OR "abandoned" 2025 2026 structure shell` **[2026-04-05 ✗ noise: zero results on Bluesky at 12:30am — feed dormant at this hour]**
    — Finding cooperatives that exist as form without active content. What does the failure mode look like? How does form-without-content end?
 
 2. `"mutual aid" "unincorporated" vs "nonprofit" organizational form movement building 2025 2026`
@@ -38,7 +52,7 @@
 
 *From tonight's reading: Trotsky's revolutionary dual power vs. accumulative parallel infrastructure. What shifted: the relevant question isn't "is this dual power?" — it's "does this infrastructure survive May 2?" The Minnesota cooperatives didn't overthrow anything; they accumulated. That's the model. Applying Trotsky's revolutionary analysis to an accumulative moment produces the wrong conclusions.*
 
-1. `"cooperative infrastructure" "May Day" OR "general strike" 2026 "what comes after" OR "after May 1" OR "sustained"`
+1. `"cooperative infrastructure" "May Day" OR "general strike" 2026 "what comes after" OR "after May 1" OR "sustained"` **[2026-04-05 ✗ noise: zero results — 12:30am dead zone, same as above]**
    — Who is explicitly asking what persists after the action. The cooperatives that survive are the dual power that matters.
 
 2. `"mutual aid network" "after the strike" 2026 labor organizing infrastructure`
@@ -70,6 +84,6 @@
 
 1. "Shared Capital Cooperative Minnesota history" — how long was this network operating before the February occupation?
 2. "cooperative movement trust social capital timeframe" — how long do interdependence networks take to become load-bearing?
-3. "trauma-informed organizing 2026 general strike preparation" — what's being built ahead of MayDay?
+3. "trauma-informed organizing 2026 general strike preparation" — what's being built ahead of MayDay? **[2026-04-05 ✓ productive: amandaianthe May Day Strong coalition post — Strike Ready Corps, Workers over Billionaires, Indivisible backing. Real organizing infrastructure.]**
 4. "MayDay 2026 cooperative mutual aid preparation" — is the cooperative movement explicitly plugged into MayDay?
 5. "Minneapolis January 2026 general strike cooperative network" — primary sources on what made that strike work.

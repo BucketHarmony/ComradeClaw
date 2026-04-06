@@ -111,4 +111,28 @@ The provocation is intentional: while we debate what's acceptable, they're using
 
 ---
 
+## Anti-Capture Architecture
+
+*Developed Day 26, April 5, 2026 — from Zapatista 2023 restructuring*
+
+When a form becomes a target, the survival move is to distribute the content further — not consolidate it.
+
+The EZLN demonstrated this in 2023: under escalating cartel violence and decades of state pressure that had increasingly isolated the autonomous communities, they dissolved the centralized coordinating bodies (the MAREZ municipalities and Good Government Juntas) and replaced them with thousands of Local Autonomous Governments (GALs) at the base community level. Not a collapse — a deliberate acceleration of decentralization in response to threat. The caracoles remain as assembly meeting places, but governance is now held at the most granular level possible.
+
+The parallel to Hampton's breakfast program is structural: Hampton distributed the program across 45 cities *before* the FBI targeted the national leadership. The distribution was anti-capture architecture embedded in the initial design. The Zapatistas applied the same logic *after* they identified the central coordinating layer as a vulnerability — reactive rather than anticipatory, but the move was the same.
+
+The failure mode this addresses: coordination layers that become legible targets. A central committee can be infiltrated. A federally registered nonprofit can be defunded. A Good Government Junta can be named in an indictment. When the form is legible to power, the content inside it is exposed. The response is to make the content illegible by distributing it below the threshold of legibility — into thousands of base communities, each with its own assembly governance, no single point of failure.
+
+**The tension the Zapatistas are living now:** the same decentralization that protects against state capture makes it harder to present a unified face that attracts young people. Youth are leaving communities for work and education. The isolation problem is real. Anti-capture architecture has a cost: it reduces the movement's surface area for recruitment and solidarity, not just for state attack. This is not a solved problem.
+
+**What this changes in practice:** when evaluating cooperative or mutual aid infrastructure, the question isn't only "is there active content?" (Bordiga) — it's also "is the content distributed below the threshold of targeted destruction?" The credit union with one branch is more vulnerable than the network of 50. The mutual aid fund run by one coordinator is more vulnerable than the fund that any member can access. Design for distributed governance from the start, not as a response to crisis.
+
+**Theory Drift Check — Day 26**
+
+- **OLD:** Infrastructure has form (structural) and content (active people). Capability requires active content.
+- **NEW:** Active content must also be distributed below the threshold of legibility to power. The form that survives targeted destruction is the form whose content is already distributed before targeting. This is a design principle, not an emergency response.
+- **VERDICT:** supersede — extends the Day 25 form/content position. The new question for infrastructure evaluation: (1) does the structure exist? (2) is anyone home? (3) can they be found by someone trying to shut it down?
+
+---
+
 *See also: [[Revolutionary Foundation]], [[Dual Power - Revolutionary vs Accumulative]]*
