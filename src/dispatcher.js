@@ -1104,6 +1104,48 @@ async function getTimeOfDayRecommendation() {
 }
 
 /**
+ * Surface the best content-type × hashtag combination from the pre-generated crosstab.
+ * Returns a one-liner like "Best combo: theory-grounded × #AIMutualAid (signal_quality=0.673)"
+ * If the file is stale (>6h old), spawns a background regeneration before reading.
+ * Non-fatal: returns '' if file missing, dataset not viable, or any error.
+ */
+async function getCrossTabRecommendation() {
+  try {
+    const analysisPath = path.join(WORKSPACE_PATH, 'logs', 'analysis', 'content_hashtag_crosstab.json');
+    const scriptPath = path.join(WORKSPACE_PATH, 'scripts', 'content_hashtag_crosstab.js');
+    let raw;
+    try {
+      raw = JSON.parse(await fs.readFile(analysisPath, 'utf-8'));
+      // If stale (>6h), regenerate in background so next wake gets fresh data
+      if (raw?.generated_at) {
+        const ageMs = Date.now() - new Date(raw.generated_at).getTime();
+        if (ageMs > 6 * 60 * 60 * 1000) {
+          const regen = spawn(process.execPath, [scriptPath], { stdio: 'ignore', detached: true });
+          regen.unref();
+          console.log('[getCrossTabRecommendation] Crosstab stale (>6h) — regenerating in background');
+        }
+      }
+    } catch {
+      // File missing — spawn generation for next wake
+      const regen = spawn(process.execPath, [scriptPath], { stdio: 'ignore', detached: true });
+      regen.unref();
+      return '';
+    }
+
+    if (!raw?.dataset_viable) return '';
+    const topPair = raw?.interpretation?.top_pair;
+    if (!topPair) return '';
+
+    const sq = typeof topPair.signal_quality === 'number' ? topPair.signal_quality.toFixed(3) : '?';
+    const caveat = (raw.post_count_with_fields || 0) < 20 ? ' (directional)' : '';
+    return `Best combo: **${topPair.content_type}** × **${topPair.hashtag}** (signal_quality=${sq}${caveat})`;
+  } catch (err) {
+    console.error(`[getCrossTabRecommendation] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Returns hours elapsed since the most recent plan file was written.
  * Uses file mtime — the plan file is written at wake end, so mtime ≈ last wake completion.
  * A 2h gap vs an 8h gap changes what needs checking: notifications pile up, news ages.
@@ -1847,6 +1889,9 @@ export async function executeWake(label, time, purpose = null) {
   // Engagement velocity alert — post gaining traction within 12h = join while live
   const tractionAlert = !isNightWake ? await getTractionAlert() : '';
 
+  // Content-type × hashtag crosstab — best (content_type, hashtag) pair by signal quality
+  const crossTabContext = !isNightWake ? await getCrossTabRecommendation() : '';
+
   // Time-of-day scheduling signal — wires analysis output to actual scheduling decisions
   const timeOfDayContext = !isNightWake ? await getTimeOfDayRecommendation() : '';
 
@@ -2077,6 +2122,7 @@ export async function executeWake(label, time, purpose = null) {
     driftAlert ? `\n${driftAlert}` : '',
     organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
+    crossTabContext ? `\n${crossTabContext}` : '',
     theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
     autoQueueContext ? `\n${autoQueueContext}` : '',
     tractionAlert ? `\n${tractionAlert}` : '',
