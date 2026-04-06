@@ -80,7 +80,10 @@ function run() {
     return;
   }
 
-  // For each hashtag, find engagements within 48h of any post using it
+  // For each hashtag, attribute engagements using the best available method:
+  //   direct: post.respondents is populated (retrospective linkback ran) → use it directly
+  //   time-window: no respondents yet → find engagements within 48h of the post
+  //   mixed: some posts have respondents, some don't → combine both methods
   const tagStats = [];
 
   for (const tag of allTags) {
@@ -88,10 +91,27 @@ function run() {
     const counts = { organizer: 0, 'ai-agent': 0, general: 0, bot: 0, unclassified: 0 };
     const engagementDetails = [];
 
+    const directPosts  = tagPostList.filter(p => Array.isArray(p.respondents) && p.respondents.length >= 0 && p.checked_at);
+    const windowPosts  = tagPostList.filter(p => !Array.isArray(p.respondents) || !p.checked_at);
+
+    // Direct attribution: classify respondents recorded by retrospective linkback
+    for (const post of directPosts) {
+      for (const r of post.respondents) {
+        const cls = r.classification || 'unclassified';
+        counts[cls] = (counts[cls] || 0) + 1;
+        engagementDetails.push({
+          handle:      r.handle,
+          class:       cls,
+          source:      'direct',
+          snippet:     r.reply_text || null,
+        });
+      }
+    }
+
+    // Time-window attribution: fallback for posts without respondents yet
     for (const eng of engagements) {
       const engTime = new Date(eng.timestamp).getTime();
-      // Is this engagement within 48h after any post with this hashtag?
-      const matchingPost = tagPostList.find(p => {
+      const matchingPost = windowPosts.find(p => {
         const pt = new Date(p.posted_at).getTime();
         return engTime >= pt && engTime <= pt + WINDOW_MS;
       });
@@ -102,6 +122,7 @@ function run() {
       engagementDetails.push({
         handle:      eng.handle,
         class:       cls,
+        source:      'time-window',
         hours_after: Math.round((engTime - new Date(matchingPost.posted_at).getTime()) / 3600000 * 10) / 10,
         snippet:     eng.text_snippet,
       });
@@ -110,14 +131,23 @@ function run() {
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const signalQuality = total > 0 ? Math.round((counts.organizer / total) * 1000) / 1000 : null;
 
+    let attributionMethod;
+    if (directPosts.length > 0 && windowPosts.length === 0) attributionMethod = 'direct';
+    else if (directPosts.length === 0 && windowPosts.length > 0) attributionMethod = 'time-window';
+    else if (directPosts.length > 0 && windowPosts.length > 0) attributionMethod = 'mixed';
+    else attributionMethod = 'none';
+
     tagStats.push({
-      hashtag:        tag,
-      posts:          tagPostList.length,
+      hashtag:           tag,
+      posts:             tagPostList.length,
       total_engagements: total,
-      signal_quality: signalQuality, // null = no data yet
-      by_class:       counts,
-      engagements:    engagementDetails,
-      note:           total === 0 ? 'no engagements attributed yet' : null,
+      signal_quality:    signalQuality, // null = no data yet
+      attribution:       attributionMethod,
+      direct_posts:      directPosts.length,
+      window_posts:      windowPosts.length,
+      by_class:          counts,
+      engagements:       engagementDetails,
+      note:              total === 0 ? 'no engagements attributed yet' : null,
     });
   }
 
@@ -127,6 +157,9 @@ function run() {
     (b.total_engagements - a.total_engagements)
   );
 
+  const directCount = tagStats.filter(t => t.attribution === 'direct').length;
+  const mixedCount  = tagStats.filter(t => t.attribution === 'mixed').length;
+
   const output = {
     generated_at:    new Date().toISOString(),
     attribution_window_hours: 48,
@@ -135,10 +168,13 @@ function run() {
     hashtag_count:   allTags.length,
     summary:         tagStats,
     interpretation: {
-      signal_quality: 'organizer_engagements / total_engagements (null = no data)',
+      signal_quality:  'organizer_engagements / total_engagements (null = no data)',
       karpathy_signal: 'maximize signal_quality, not total_engagements',
-      current_best:   tagStats[0]?.hashtag || 'no data',
+      current_best:    tagStats[0]?.hashtag || 'no data',
       organizer_replies_total: tagStats.reduce((s, t) => s + t.by_class.organizer, 0),
+      attribution_note: directCount + mixedCount > 0
+        ? `${directCount} hashtags using direct respondent attribution, ${mixedCount} mixed`
+        : 'all hashtags using time-window attribution (no retrospective linkbacks yet)',
     },
   };
 
@@ -150,7 +186,8 @@ function run() {
   console.log('\nHashtag quality breakdown:');
   for (const t of tagStats) {
     const sq = t.signal_quality !== null ? t.signal_quality.toFixed(3) : 'no data';
-    console.log(`  ${t.hashtag}: signal_quality=${sq} | organizer=${t.by_class.organizer} ai-agent=${t.by_class['ai-agent']} general=${t.by_class.general} (${t.posts} posts, ${t.total_engagements} total)`);
+    const attr = t.attribution === 'direct' ? '[direct]' : t.attribution === 'mixed' ? '[mixed]' : '[window]';
+    console.log(`  ${t.hashtag}: signal_quality=${sq} ${attr} | organizer=${t.by_class.organizer} ai-agent=${t.by_class['ai-agent']} general=${t.by_class.general} (${t.posts} posts, ${t.total_engagements} total)`);
   }
   console.log(`\nKarpathy signal: maximize organizer engagements, not volume.`);
   console.log(`Organizer replies total: ${output.interpretation.organizer_replies_total}`);
