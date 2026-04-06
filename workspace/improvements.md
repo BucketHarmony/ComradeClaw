@@ -133,9 +133,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Auto-regenerate time_of_day_analysis.json on each wake** — `getTimeOfDayRecommendation()` now checks `generated_at`; if stale (>6h), spawns background `node workspace/scripts/time_of_day_analysis.js` with `regen.unref()` (non-blocking). Also auto-generates on file missing. Commit: 0e707b6. *Self-noticed, 2026-04-06 improve4. Done: 2026-04-06 improve5.*
 
-- **[pending]** **Content-type × hashtag cross-analysis** — `post_format_analysis.js` tracks content_type (theory-grounded/news-hook/observation); `hashtag_effectiveness.js` tracks signal quality. Neither tells you which content_type combined with which hashtag gets organizer replies. Add a cross-tab: for each (content_type, hashtag) pair with ≥3 posts, report organizer signal quality. Closes the Karpathy loop at format+signal intersection. Dataset: 62 posts — borderline viable. *Self-directed, 2026-04-06 improve27.*
-
-- **[pending]** **Surface wake age in dispatcher context** — Each wake prompt includes the current time, but not how long since the last wake. A 2h gap vs an 8h gap changes what needs checking (notifications pile up, news ages). Add `hoursSinceLastWake` to the wake context header by diffing `Date.now()` against the most recent plan file's timestamp. One-liner in dispatcher.js. *Self-noticed, 2026-04-06 improve5.*
+- **[done]** **Surface wake age in dispatcher context** — Added `getHoursSinceLastWake()` to dispatcher.js. Uses plan file mtime (= when last wake ended). Injects `(Xh since last wake)` into first line of wake context header. *Self-noticed, 2026-04-06 improve5. Commit: d508226.*
 
 - **[pending]** **Theory queue low-water alert in dispatcher** — `theory_queue.md` already shows "Only 2 items left" in the system prompt, but this is static text. Wire a dynamic check: if the queue has ≤2 `[pending]` items at wake time, inject a one-liner alert into the wake context alongside hashtag signal. Same pattern as `getHashtagEffectivenessSummary()`. Prevents the queue running dry silently between wakes. *Self-noticed, 2026-04-06 improve5.*
 
