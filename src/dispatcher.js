@@ -920,6 +920,39 @@ async function getHashtagEffectivenessSummary() {
 }
 
 /**
+ * Surface best posting time bucket from pre-generated time_of_day_analysis.json.
+ * Returns a one-liner like "Best posting time: afternoon (organizer_reply_rate=0.944)."
+ * Non-fatal: returns '' if file missing, dataset too small, or any error.
+ */
+async function getTimeOfDayRecommendation() {
+  try {
+    const analysisPath = path.join(WORKSPACE_PATH, 'logs', 'analysis', 'time_of_day_analysis.json');
+    let raw;
+    try {
+      raw = JSON.parse(await fs.readFile(analysisPath, 'utf-8'));
+    } catch {
+      return ''; // file not yet generated — run workspace/scripts/time_of_day_analysis.js first
+    }
+
+    const best = raw?.interpretation?.best_bucket;
+    if (!best || best === 'insufficient data') return '';
+
+    const bucketData = (raw.buckets || []).find(b => b.bucket === best);
+    if (!bucketData || bucketData.organizer_reply_rate === null) return '';
+
+    // Skip if dataset is too small to be directional
+    if ((raw.total_posts || 0) < 5) return '';
+
+    const rate = bucketData.organizer_reply_rate.toFixed(3);
+    const caveat = (raw.total_posts || 0) < 20 ? ' (directional — small dataset)' : '';
+    return `Best posting time: **${best}** (organizer_reply_rate=${rate}${caveat})`;
+  } catch (err) {
+    console.error(`[getTimeOfDayRecommendation] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Snapshot follower/following/posts counts for own Bluesky handle.
  * Writes { date, followers, following, posts } to logs/followers/YYYY-MM-DD.json.
  * Called on morning wakes only. Non-fatal — silently skips on any error.
@@ -1635,6 +1668,9 @@ export async function executeWake(label, time, purpose = null) {
   // Hashtag signal quality — which tags correlate with organizer engagement vs general likes
   const hashtagSignalContext = !isNightWake ? await getHashtagEffectivenessSummary() : '';
 
+  // Time-of-day scheduling signal — wires analysis output to actual scheduling decisions
+  const timeOfDayContext = !isNightWake ? await getTimeOfDayRecommendation() : '';
+
   // On non-night wakes, pre-fetch RSS headlines to surface material before first search
   const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
 
@@ -1859,6 +1895,7 @@ export async function executeWake(label, time, purpose = null) {
     driftAlert ? `\n${driftAlert}` : '',
     organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
+    timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
