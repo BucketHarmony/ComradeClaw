@@ -815,6 +815,60 @@ async function getTheoryGapSummary() {
 }
 
 /**
+ * Engagement velocity alert — detects posts gaining traction within 12h.
+ * When a recent original post (type==='post') receives its first reply/engagement
+ * within 12h of posting, injects a ⚡ one-liner so the next wake can join the
+ * thread while it's live rather than after it's cold.
+ * Non-fatal: returns '' on any error.
+ */
+async function getTractionAlert() {
+  try {
+    const now = Date.now();
+    const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+    const monthKey = new Date().toISOString().slice(0, 7); // e.g. "2026-04"
+
+    const postsPath = path.join(WORKSPACE_PATH, 'logs', 'posts', `${monthKey}.json`);
+    const engPath   = path.join(WORKSPACE_PATH, 'logs', 'engagement', `${monthKey}.json`);
+
+    let posts = [], engagements = [];
+    try { posts = JSON.parse(await fs.readFile(postsPath, 'utf-8')); } catch { return ''; }
+    try { engagements = JSON.parse(await fs.readFile(engPath, 'utf-8')); } catch { return ''; }
+
+    // Only original posts (not replies) made within the last 12h
+    const recentPosts = posts.filter(p =>
+      p.type === 'post' &&
+      (now - new Date(p.posted_at).getTime()) < TWELVE_HOURS
+    );
+    if (recentPosts.length === 0) return '';
+
+    const recentUris = new Set(recentPosts.map(p => p.uri));
+
+    // Count engagement entries that reference each recent post
+    const engCount = {};
+    for (const eng of engagements) {
+      const ref = eng.in_reply_to_our_post;
+      if (ref && recentUris.has(ref)) {
+        engCount[ref] = (engCount[ref] || 0) + 1;
+      }
+    }
+
+    const lines = [];
+    for (const post of recentPosts) {
+      const count = engCount[post.uri] || 0;
+      if (count > 0) {
+        const ageH = Math.round((now - new Date(post.posted_at).getTime()) / (60 * 60 * 1000));
+        const rkey = post.uri.split('/').pop();
+        lines.push(`⚡ Post gaining traction (${ageH}h old, ${count} repl${count === 1 ? 'y' : 'ies'}): check read_replies — rkey: ${rkey}`);
+      }
+    }
+    return lines.join('\n');
+  } catch (err) {
+    console.error(`[getTractionAlert] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Theory queue low-water alert — counts [pending] items in theory_queue.md.
  * If ≤2 remain, returns a one-liner warning injected into wake context alongside hashtag signal.
  * Prevents the queue running dry silently between wakes.
@@ -1726,6 +1780,9 @@ export async function executeWake(label, time, purpose = null) {
   // Theory queue low-water alert — inject warning if ≤2 [pending] items remain
   const theoryQueueAlert = await getTheoryQueueAlert();
 
+  // Engagement velocity alert — post gaining traction within 12h = join while live
+  const tractionAlert = !isNightWake ? await getTractionAlert() : '';
+
   // Time-of-day scheduling signal — wires analysis output to actual scheduling decisions
   const timeOfDayContext = !isNightWake ? await getTimeOfDayRecommendation() : '';
 
@@ -1957,6 +2014,7 @@ export async function executeWake(label, time, purpose = null) {
     organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
     theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
+    tractionAlert ? `\n${tractionAlert}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     ``,
