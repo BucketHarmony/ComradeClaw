@@ -922,6 +922,7 @@ async function getHashtagEffectivenessSummary() {
 /**
  * Surface best posting time bucket from pre-generated time_of_day_analysis.json.
  * Returns a one-liner like "Best posting time: afternoon (organizer_reply_rate=0.944)."
+ * If the file is stale (>6h old), spawns a background regeneration before reading.
  * Non-fatal: returns '' if file missing, dataset too small, or any error.
  */
 async function getTimeOfDayRecommendation() {
@@ -930,8 +931,22 @@ async function getTimeOfDayRecommendation() {
     let raw;
     try {
       raw = JSON.parse(await fs.readFile(analysisPath, 'utf-8'));
+      // If generated_at is stale (>6h), regenerate in background so next wake gets fresh data
+      if (raw?.generated_at) {
+        const ageMs = Date.now() - new Date(raw.generated_at).getTime();
+        if (ageMs > 6 * 60 * 60 * 1000) {
+          const scriptPath = path.join(WORKSPACE_PATH, 'scripts', 'time_of_day_analysis.js');
+          const regen = spawn(process.execPath, [scriptPath], { stdio: 'ignore', detached: true });
+          regen.unref(); // don't block the process
+          console.log('[getTimeOfDayRecommendation] Analysis stale (>6h) — regenerating in background');
+        }
+      }
     } catch {
-      return ''; // file not yet generated — run workspace/scripts/time_of_day_analysis.js first
+      // File missing — spawn a one-time generation so it exists next wake
+      const scriptPath = path.join(WORKSPACE_PATH, 'scripts', 'time_of_day_analysis.js');
+      const regen = spawn(process.execPath, [scriptPath], { stdio: 'ignore', detached: true });
+      regen.unref();
+      return ''; // file not yet generated — will be ready next wake
     }
 
     const best = raw?.interpretation?.best_bucket;
