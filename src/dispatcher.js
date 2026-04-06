@@ -869,6 +869,67 @@ async function getTractionAlert() {
 }
 
 /**
+ * Auto-extract theory candidates from recent journal entries.
+ * Greps for **bold phrases** (≥4 words) that look like distributable arguments.
+ * Appends them as [candidate] items to theory_queue.md so the night wake study
+ * session can review and promote to [unposted] rather than generating from scratch.
+ * Closes the gap between "thing I thought" and "thing I queued."
+ * Runs on night wakes only. Non-fatal: returns '' on any error.
+ */
+async function autoQueueFromJournal() {
+  try {
+    const JOURNAL_DIR = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw', 'Journal');
+    const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
+
+    let files;
+    try { files = await fs.readdir(JOURNAL_DIR); } catch { return ''; }
+
+    // Most recent 2 journal entries
+    const mdFiles = files.filter(f => f.endsWith('.md')).sort().slice(-2);
+    if (mdFiles.length === 0) return '';
+
+    // Extract **bold phrases** — must be ≥4 words, no colons (skips frontmatter labels)
+    const candidates = new Set();
+    for (const file of mdFiles) {
+      let content;
+      try { content = await fs.readFile(path.join(JOURNAL_DIR, file), 'utf-8'); } catch { continue; }
+      const matches = content.match(/\*\*([^*\n]{15,120})\*\*/g) || [];
+      for (const m of matches) {
+        const text = m.replace(/^\*\*|\*\*$/g, '').trim();
+        const wordCount = text.split(/\s+/).length;
+        // Keep: ≥4 words, no colon (skips "Why:" / "How to apply:" memory labels)
+        if (wordCount >= 4 && !text.includes(':') && !text.startsWith('OLD') && !text.startsWith('NEW') && !text.startsWith('VERDICT')) {
+          candidates.add(text);
+        }
+      }
+    }
+
+    if (candidates.size === 0) return '';
+
+    // Filter out phrases already present in theory_queue.md
+    let queueContent = '';
+    try { queueContent = await fs.readFile(QUEUE_PATH, 'utf-8'); } catch { /* new file */ }
+
+    const newCandidates = [...candidates].filter(c => !queueContent.includes(c));
+    if (newCandidates.length === 0) return '';
+
+    // Append up to 3 [candidate] entries
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const date = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+    const entries = newCandidates.slice(0, 3).map(c =>
+      `- **[candidate]** **${c}** — Auto-extracted from journal ${date}. Promote to [unposted] if distributable.`
+    ).join('\n');
+    const section = `\n## Auto-Extracted Candidates — ${date}\n${entries}\n`;
+    await fs.appendFile(QUEUE_PATH, section);
+
+    return `⚡ ${newCandidates.length} theory candidate${newCandidates.length !== 1 ? 's' : ''} auto-extracted from recent journals → theory_queue.md as [candidate]. Review during study session and promote to [unposted] if distributable.`;
+  } catch (err) {
+    console.error(`[autoQueueFromJournal] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Theory queue low-water alert — counts [pending] items in theory_queue.md.
  * If ≤2 remain, returns a one-liner warning injected into wake context alongside hashtag signal.
  * Prevents the queue running dry silently between wakes.
@@ -1762,6 +1823,9 @@ export async function executeWake(label, time, purpose = null) {
   // Proactively replenish theory queue on night wakes (before prompt is built)
   if (isNightWake) await proactiveQueueReplenishment();
 
+  // Auto-extract theory candidates from recent journals on night wakes
+  const autoQueueContext = isNightWake ? await autoQueueFromJournal() : '';
+
   // Load next unposted theory item for distribution prompt
   const theoryQueueItem = isNightWake ? null : await getTheoryQueueItem();
 
@@ -2014,6 +2078,7 @@ export async function executeWake(label, time, purpose = null) {
     organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
     theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
+    autoQueueContext ? `\n${autoQueueContext}` : '',
     tractionAlert ? `\n${tractionAlert}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
