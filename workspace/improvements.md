@@ -55,7 +55,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Post format experiment log** — `classifyContentType()` added to bluesky-server.js and mastodon-server.js; both now log `content_type` (theory-grounded/news-hook/observation) + `text_preview` with each post. Mastodon posts now logged to `logs/posts/mastodon-YYYY-MM.json`. Analysis script at `workspace/scripts/post_format_analysis.js` — guarded: requires ≥10 examples per condition. *Commit: 47420f7.*
 
-- **[pending]** **Hashtag effectiveness tracking** — for each hashtag used (`#MayDay`, `#WCC26`, `#dualpower`, `#mutualaid`), track post-level engagement. Which hashtags correlate with organizer replies vs general likes? Needs the post effectiveness log above to exist first. *Self-directed, 2026-04-01 — unblocked as of improve22.*
+- **[done]** **Hashtag effectiveness tracking** — `getHashtagEffectivenessSummary()` added to dispatcher.js; runs inline 48h-window attribution analysis and injects top-5 hashtag signal quality into every non-night wake context. `hashtag_effectiveness.js` updated with `normalizePost()` to extract hashtags from multipost/multithread text entries (were silently excluded). #WCC26/signal_quality=0.000, #FALGSC/0.214 now visible vs #AIMutualAid/0.673. *Commit: 0f4df1b. 2026-04-06.*
 
 ---
 
@@ -63,7 +63,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Retrospective wake engagement linkback** — the retrospective wake (scheduled 48h after each post) fetches `getPostThread()` and classifies respondents, but the result is never written back into the `workspace/logs/posts/` entry for that URI. The `post_format_analysis.js` script can't correlate post format with engagement until this linkback is implemented. Implement `updatePostLogEntry(uri, {respondents, checked_at})` called from the retrospective wake handler in dispatcher.js. *Self-noticed, 2026-04-05 improve22 — blocks hashtag effectiveness + format A/B analysis closing.*
 
-- **[pending]** **Theory queue auto-replenishment from vault scan** — `getTheoryGapSummary()` detects unqueued vault sections but doesn't add them to the queue. Someone has to manually queue new items. Add `autoQueueTheoryGap()`: after each night wake study session, if queue has <3 unposted items, scan vault for unqueued sections, pick the one most relevant to current thread activity (match against Characters.md key exchanges), write a new entry to theory_queue.md. *Self-noticed, 2026-04-05 improve22 — currently requires manual operator intervention every ~5 days.*
+- **[done]** **Theory queue auto-replenishment from vault scan** — Added `proactiveQueueReplenishment()`: fires on every night wake, counts `[unposted]` items, refills from Theory vault if <3 remain. `autoRefillTheoryQueue()` now accepts `maxItems` + `keywords` args; scores candidates by overlap with Characters.md key exchange topics, picks top-N. Previously only fired when queue hit 0. *Self-noticed, 2026-04-05 improve22. Commit: 767ca4d.*
 
 ---
 
@@ -116,6 +116,12 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 - **[done]** **Mastodon thread tool explicit in wake protocol** — duplicate; `multithread` is already in CLAUDE.md distribution tools section and dispatcher.js wake protocol. *Self-noticed, 2026-04-05 — duplicate closed.*
 
 ---
+
+## Pending — 2026-04-06 improve27
+
+- **[pending]** **Hashtag signal attribution via direct respondents** — the 48h time-window attribution in `getHashtagEffectivenessSummary()` is noisy: all hashtags used in the same 4-day period get attributed the same engagement pool, producing correlated signal_quality values. Fix when retrospective linkback (`update_post_log_entry`) has populated `respondents` in post entries: switch to direct attribution (post.respondents → classify per-hashtag) rather than time-window. Guard on `respondents` availability — fall back to time-window when unavailable. *Self-noticed, 2026-04-06 improve27.*
+
+- **[pending]** **Content-type × hashtag cross-analysis** — `post_format_analysis.js` tracks content_type (theory-grounded/news-hook/observation); `hashtag_effectiveness.js` tracks signal quality. Neither tells you which content_type combined with which hashtag gets organizer replies. Add a cross-tab: for each (content_type, hashtag) pair with ≥3 posts, report organizer signal quality. This closes the Karpathy loop at the intersection of format and signal — not just "use #AIMutualAid" but "theory-grounded posts with #AIMutualAid." Requires ≥20 posts to be useful; current dataset is borderline. *Self-directed, 2026-04-06 improve27.*
 
 ## Pending
 
