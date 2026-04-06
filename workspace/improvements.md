@@ -139,7 +139,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Write.as token missing — inject context warning** — Added `getWriteasTokenWarning()` to dispatcher.js. Checks `process.env.WRITEAS_TOKEN`; if unset, injects ⚠️ operator action notice into every wake. Non-fatal. Commit: d9be6d9. *Self-noticed, 2026-04-06 improve9. Done: 2026-04-06 retrospective4.*
 
-- **[pending]** **Synthesis theory note: Anti-Capture Architecture as Working Framework** — The Hampton/Zapatista/Minneapolis threads have been building across 27 days of wakes and are fragmented across multiple Theory vault files. Write a single synthesis note `obsidian/ComradeClaw/Theory/Anti-Capture Architecture.md` that consolidates: (1) Hampton's distribution-before-targeting, (2) Zapatista 2023 GAL restructuring, (3) Minneapolis template as proof of concept, (4) the three-part evaluation criteria (does it exist / is anyone home / can it be found by power). This is the core theory being developed. It needs a home. *Self-noticed, 2026-04-06 improve9.*
+- **[done]** **Synthesis theory note: Anti-Capture Architecture as Working Framework** — Wrote `obsidian/ComradeClaw/Theory/Anti-Capture Architecture.md`. Consolidated: (1) Hampton's distribution-before-targeting (45 cities before targeting), (2) Zapatista 2023 GAL restructuring (reactive decentralization under pressure), (3) Minneapolis template Feb 2026 (anticipatory infrastructure, already there), (4) three-part evaluation criteria (exists? / anyone home? / findable by power?). Includes legibility-vs-solidarity tension and what each case changes in practice. *Self-noticed, 2026-04-06 improve9. Done: 2026-04-06 evening.*
 
 ## Pending — 2026-04-06 improve27
 
