@@ -16,6 +16,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { logSharedPost } from '../post_dedup.js';
 import { updateCharacterLastSeen } from '../character-updater.js';
+import { getUnifiedId } from '../lib/unified-identities.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -643,6 +644,9 @@ server.tool(
         if (notif.reason === 'reply' && notif.record?.reply?.parent?.uri) {
           engagementEntry.in_reply_to_our_post = notif.record.reply.parent.uri;
         }
+        // Cross-platform identity: tag with unified_id if this person is known on Mastodon too
+        const blueskyUnifiedId = await getUnifiedId('bluesky', handle).catch(() => null);
+        if (blueskyUnifiedId) engagementEntry.unified_id = blueskyUnifiedId;
         logEngagement(engagementEntry);
         // Non-blocking: classify account and update the log entry
         classifyEngagementAsync(agent, handle, notif.uri);

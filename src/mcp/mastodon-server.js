@@ -18,6 +18,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { logSharedPost } from '../post_dedup.js';
 import { updateCharacterLastSeen } from '../character-updater.js';
+import { getUnifiedId } from '../lib/unified-identities.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -95,6 +96,9 @@ async function logMastodonNotifications(notifications) {
         status_url: n.status_url,
         logged_at: new Date().toISOString(),
       };
+      // Cross-platform identity: tag with unified_id if this person is known on Bluesky too
+      const mastodonUnifiedId = await getUnifiedId('mastodon', n.account || '').catch(() => null);
+      if (mastodonUnifiedId) entry.unified_id = mastodonUnifiedId;
       // Classify by fetching account profile — mirrors Bluesky engagement log structure
       if (n.account_id) {
         try {
