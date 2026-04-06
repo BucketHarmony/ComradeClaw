@@ -815,6 +815,27 @@ async function getTheoryGapSummary() {
 }
 
 /**
+ * Theory queue low-water alert — counts [pending] items in theory_queue.md.
+ * If ≤2 remain, returns a one-liner warning injected into wake context alongside hashtag signal.
+ * Prevents the queue running dry silently between wakes.
+ * Non-fatal: returns '' on any error.
+ */
+async function getTheoryQueueAlert() {
+  try {
+    const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
+    const content = await fs.readFile(QUEUE_PATH, 'utf-8');
+    const pendingCount = (content.match(/\[pending\]/g) || []).length;
+    if (pendingCount <= 2) {
+      return `⚠️ Theory queue low: only ${pendingCount} [pending] item${pendingCount !== 1 ? 's' : ''} left — replenish before this wake ends.`;
+    }
+    return '';
+  } catch (err) {
+    console.error(`[getTheoryQueueAlert] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Hashtag signal quality summary — reads posts + engagement logs, runs analysis, returns
  * a compact summary of top hashtags by organizer signal quality.
  *
@@ -1702,6 +1723,9 @@ export async function executeWake(label, time, purpose = null) {
   // Hashtag signal quality — which tags correlate with organizer engagement vs general likes
   const hashtagSignalContext = !isNightWake ? await getHashtagEffectivenessSummary() : '';
 
+  // Theory queue low-water alert — inject warning if ≤2 [pending] items remain
+  const theoryQueueAlert = await getTheoryQueueAlert();
+
   // Time-of-day scheduling signal — wires analysis output to actual scheduling decisions
   const timeOfDayContext = !isNightWake ? await getTimeOfDayRecommendation() : '';
 
@@ -1932,6 +1956,7 @@ export async function executeWake(label, time, purpose = null) {
     driftAlert ? `\n${driftAlert}` : '',
     organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
+    theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     ``,
