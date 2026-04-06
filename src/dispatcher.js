@@ -517,6 +517,23 @@ async function proactiveQueueReplenishment() {
   }
 }
 
+// Theory vault sections that are structural/reference — not distributable positions.
+// Shared across autoRefillTheoryQueue, getTheoryGapSummary, getEssayAutoScheduleSuggestion.
+// Add new skip titles here; all three functions pick them up automatically.
+const THEORY_SKIP_TITLES = new Set([
+  'core positions', 'search query construction', 'tool output vs. interpretation',
+  'the basics: revolutionary foundation for cooperators',
+  'fred hampton (1948–1969)', 'mao zedong (1893–1976)',
+  'leon trotsky (1879–1940)', 'emma goldman (1869–1940)',
+  'what he built', 'his analysis', 'what the state did', 'what survived', 'lessons for cooperators',
+  'mass line ("from the masses, to the masses")', 'guerrilla warfare / base areas',
+  'contradictions analysis', 'cultural revolution (catastrophic failure)',
+  'permanent revolution', "workers' councils / soviets (dual power)", 'bureaucratic degeneration',
+  'mutual aid (with kropotkin)', 'soviet disillusionment', 'propaganda of the deed (evolution)',
+  'what killed her work', 'on dual power', 'on state response', 'on organization',
+  'on internationalism', 'on internal dangers',
+]);
+
 /**
  * Scan obsidian/ComradeClaw/Theory/*.md for distributable sections not already in theory_queue.md.
  * Appends new [unposted] entries when the queue runs dry. Non-fatal — returns 0 on any failure.
@@ -538,19 +555,7 @@ async function autoRefillTheoryQueue(maxItems = Infinity, keywords = []) {
     }
 
     // Sub-headings and purely operational/reference sections to skip
-    const SKIP_TITLES = new Set([
-      'core positions', 'search query construction', 'tool output vs. interpretation',
-      'the basics: revolutionary foundation for cooperators',
-      'fred hampton (1948–1969)', 'mao zedong (1893–1976)',
-      'leon trotsky (1879–1940)', 'emma goldman (1869–1940)',
-      'what he built', 'his analysis', 'what the state did', 'what survived', 'lessons for cooperators',
-      'mass line ("from the masses, to the masses")', 'guerrilla warfare / base areas',
-      'contradictions analysis', 'cultural revolution (catastrophic failure)',
-      'permanent revolution', "workers' councils / soviets (dual power)", 'bureaucratic degeneration',
-      'mutual aid (with kropotkin)', 'soviet disillusionment', 'propaganda of the deed (evolution)',
-      'what killed her work', 'on dual power', 'on state response', 'on organization',
-      'on internationalism', 'on internal dangers',
-    ]);
+    const SKIP_TITLES = THEORY_SKIP_TITLES;
 
     let noteFiles = [];
     try {
@@ -742,19 +747,7 @@ async function getTheoryGapSummary() {
     }
 
     // Skip structural/reference headings that aren't distributable positions
-    const SKIP_TITLES = new Set([
-      'core positions', 'search query construction', 'tool output vs. interpretation',
-      'the basics: revolutionary foundation for cooperators',
-      'fred hampton (1948–1969)', 'mao zedong (1893–1976)',
-      'leon trotsky (1879–1940)', 'emma goldman (1869–1940)',
-      'what he built', 'his analysis', 'what the state did', 'what survived', 'lessons for cooperators',
-      'mass line ("from the masses, to the masses")', 'guerrilla warfare / base areas',
-      'contradictions analysis', 'cultural revolution (catastrophic failure)',
-      'permanent revolution', "workers' councils / soviets (dual power)", 'bureaucratic degeneration',
-      'mutual aid (with kropotkin)', 'soviet disillusionment', 'propaganda of the deed (evolution)',
-      'what killed her work', 'on dual power', 'on state response', 'on organization',
-      'on internationalism', 'on internal dangers',
-    ]);
+    const SKIP_TITLES = THEORY_SKIP_TITLES;
 
     // Scan vault for sections with substantive prose not yet queued
     const vaultGaps = [];
@@ -970,19 +963,7 @@ async function getEssayAutoScheduleSuggestion() {
       queuedTitles.add(m[1].toLowerCase().trim());
     }
 
-    const SKIP_TITLES = new Set([
-      'core positions', 'search query construction', 'tool output vs. interpretation',
-      'the basics: revolutionary foundation for cooperators',
-      'fred hampton (1948–1969)', 'mao zedong (1893–1976)',
-      'leon trotsky (1879–1940)', 'emma goldman (1869–1940)',
-      'what he built', 'his analysis', 'what the state did', 'what survived', 'lessons for cooperators',
-      'mass line ("from the masses, to the masses")', 'guerrilla warfare / base areas',
-      'contradictions analysis', 'cultural revolution (catastrophic failure)',
-      'permanent revolution', "workers' councils / soviets (dual power)", 'bureaucratic degeneration',
-      'mutual aid (with kropotkin)', 'soviet disillusionment', 'propaganda of the deed (evolution)',
-      'what killed her work', 'on dual power', 'on state response', 'on organization',
-      'on internationalism', 'on internal dangers',
-    ]);
+    const SKIP_TITLES = THEORY_SKIP_TITLES;
 
     const vaultGaps = [];
     try {
