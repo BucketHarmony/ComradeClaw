@@ -2137,8 +2137,13 @@ export async function executeWake(label, time, purpose = null) {
     `- Not skippable if the queue item "doesn't feel ready" — the queue item is already the argument; your job is to expand it, not approve it`,
   ].join('\n') : '';
 
+  // For essay wakes, append the *live* first unposted item so the purpose field
+  // (set at schedule time) never shows a stale topic that was already posted.
+  const essayLiveItem = isEssayWake && theoryQueueItem && theoryQueueItem.title
+    ? `Current first unposted item: '${theoryQueueItem.title}' — ${theoryQueueItem.description.substring(0, 120)}...`
+    : null;
   const selfWakeContext = purpose
-    ? [`## Self-Scheduled Wake`, `This wake was self-scheduled for a specific purpose:`, `**${purpose}**`, `Complete this before the standard wake protocol. This is why you woke up.`, ``].join('\n')
+    ? [`## Self-Scheduled Wake`, `This wake was self-scheduled for a specific purpose:`, `**${purpose}**`, essayLiveItem || '', `Complete this before the standard wake protocol. This is why you woke up.`, ``].filter(l => l !== null).join('\n')
     : '';
 
   const dynamicContext = [
