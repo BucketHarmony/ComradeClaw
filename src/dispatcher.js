@@ -928,6 +928,19 @@ async function autoQueueFromJournal() {
  * Prevents the queue running dry silently between wakes.
  * Non-fatal: returns '' on any error.
  */
+/**
+ * Write.as token missing warning.
+ * If WRITEAS_TOKEN is not set in env, injects an operator action notice so the
+ * token gap is visible at wake time rather than discovered at publish time.
+ * Non-fatal: always returns a string (empty or warning).
+ */
+function getWriteasTokenWarning() {
+  if (!process.env.WRITEAS_TOKEN) {
+    return `⚠️ WRITEAS_TOKEN not configured — long-form essays will publish to Mastodon thread only. Operator: provision Write.as Pro account + add WRITEAS_TOKEN to .env to enable writeas_publish.`;
+  }
+  return '';
+}
+
 async function getTheoryQueueAlert() {
   try {
     const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
@@ -1954,6 +1967,9 @@ export async function executeWake(label, time, purpose = null) {
   // Theory queue low-water alert — inject warning if ≤2 [pending] items remain
   const theoryQueueAlert = await getTheoryQueueAlert();
 
+  // Write.as token warning — surface missing token at wake time, not publish time
+  const writeasTokenWarning = getWriteasTokenWarning();
+
   // Engagement velocity alert — post gaining traction within 12h = join while live
   const tractionAlert = !isNightWake ? await getTractionAlert() : '';
 
@@ -2197,6 +2213,7 @@ export async function executeWake(label, time, purpose = null) {
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
     crossTabContext ? `\n${crossTabContext}` : '',
     theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
+    writeasTokenWarning ? `\n${writeasTokenWarning}` : '',
     essayAutoSchedule ? `\n${essayAutoSchedule}` : '',
     autoQueueContext ? `\n${autoQueueContext}` : '',
     tractionAlert ? `\n${tractionAlert}` : '',
