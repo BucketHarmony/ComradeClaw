@@ -1719,12 +1719,15 @@ export async function executeWake(label, time, purpose = null) {
   try {
     await fs.mkdir(PLANS_PATH, { recursive: true });
     const files = await fs.readdir(PLANS_PATH);
-    const matches = files
-      .filter(f => f.startsWith(`${today}_${label}`) && f.endsWith('.json'))
-      .sort()
-      .reverse();
-    if (matches.length > 0) {
-      planFile = path.join(PLANS_PATH, matches[0]);
+    const candidates = files.filter(f => f.startsWith(`${today}_${label}`) && f.endsWith('.json'));
+    if (candidates.length > 0) {
+      // Sort by mtime (newest first) — string sort fails on improve9 vs improve21
+      const withMtime = await Promise.all(candidates.map(async f => {
+        const stat = await fs.stat(path.join(PLANS_PATH, f));
+        return { f, mtime: stat.mtimeMs };
+      }));
+      withMtime.sort((a, b) => b.mtime - a.mtime);
+      planFile = path.join(PLANS_PATH, withMtime[0].f);
     }
   } catch (err) {
     console.error(`[dispatcher] Failed to locate plan file: ${err.message}`);

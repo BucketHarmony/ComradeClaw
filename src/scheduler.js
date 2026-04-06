@@ -167,9 +167,25 @@ Do not produce a plan and stop. Produce a commit. Then produce backlog items. Bo
 let discordClient = null;
 let operatorId = null;
 
-// Cooldown tracking for improve wake (prevents identical back-to-back runs)
-let lastImproveWakeFiredAt = null;
+// Cooldown tracking for improve wake — persisted to file so restarts don't reset it
+const IMPROVE_COOLDOWN_FILE = path.join(WORKSPACE_PATH, 'logs', 'last_improve_wake.json');
 const IMPROVE_COOLDOWN_MS = 90 * 60 * 1000; // 90 minutes
+let lastImproveWakeFiredAt = null;
+
+async function loadImproveCooldown() {
+  try {
+    const data = JSON.parse(await fs.readFile(IMPROVE_COOLDOWN_FILE, 'utf-8'));
+    if (data.firedAt) lastImproveWakeFiredAt = data.firedAt;
+  } catch { /* file absent on first run */ }
+}
+
+async function saveImproveCooldown() {
+  try {
+    await fs.writeFile(IMPROVE_COOLDOWN_FILE, JSON.stringify({ firedAt: lastImproveWakeFiredAt }));
+  } catch (err) {
+    console.error(`[scheduler] Failed to persist improve cooldown: ${err.message}`);
+  }
+}
 
 /**
  * Generate a dynamic purpose for the improve wake.
@@ -474,9 +490,10 @@ function startSelfWakePoller() {
  * Execute a wake using the orchestrator (planner + workers)
  */
 export async function executeWake(label, time, purpose = null, scheduledAt = null, actualFiredAt = null) {
-  // Track improve wake fire time for cooldown enforcement
+  // Track improve wake fire time for cooldown enforcement (persisted across restarts)
   if (label === 'improve') {
     lastImproveWakeFiredAt = Date.now();
+    saveImproveCooldown().catch(() => {}); // non-blocking
   }
 
   // Queue if chat is active
@@ -614,6 +631,9 @@ export function startScheduler() {
   const tz = getTimezone();
   console.log(`[scheduler] Starting wake scheduler (timezone: ${tz})`);
 
+  // Restore cooldown state across restarts
+  loadImproveCooldown().catch(err => console.error(`[scheduler] Cooldown load failed: ${err.message}`));
+
   for (const [name, config] of Object.entries(WAKE_SCHEDULE)) {
     cron.schedule(config.cron, async () => {
       console.log(`[scheduler] Cron fired: ${name}`);
@@ -626,6 +646,7 @@ export function startScheduler() {
           return;
         }
         lastImproveWakeFiredAt = Date.now();
+        await saveImproveCooldown();
         const purpose = await generateImprovePurpose().catch(err => {
           console.error(`[scheduler] generateImprovePurpose failed: ${err.message}`);
           return config.purpose;
