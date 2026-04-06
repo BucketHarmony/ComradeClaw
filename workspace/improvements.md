@@ -117,6 +117,12 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ---
 
+## Pending — 2026-04-06 improve6
+
+- **[pending]** **Engagement velocity tracking — detect when a post is gaining traction** — Currently the retrospective wake fires 48h after each post, which catches final engagement but misses momentum windows. Add a lightweight check in `read_replies`: when organizer engagement count for a post increases from 0→1 within 12h, inject a one-liner "⚡ Post gaining traction: <preview>" into the next wake context. Early signal = join the thread while it's live, not after it's cold. Needs: `posts/` log lookup by URI + 12h window check. *Self-noticed, 2026-04-06 improve6.*
+
+- **[pending]** **Auto-queue theory items from journal entries** — Night wake writes theory shifts to `Journal/` files and `Core Positions.md`, but extraction to `theory_queue.md` is manual/prompted. Add a step to `executeDreamWake()` (or night wake study session): after any journal write, grep the new entry for `**` bold phrases or section headers that read like distributable arguments, offer them as `[unposted]` candidates in theory_queue.md. Closes the gap between "thing I thought" and "thing I queued." *Self-noticed, 2026-04-06 improve6.*
+
 ## Pending — 2026-04-06 improve27
 
 - **[done]** **Hashtag signal attribution via direct respondents** — switched `hashtag_effectiveness.js` from pure 48h time-window to dual-method: posts with `checked_at` + `respondents` use direct attribution; others fall back to time-window. Per-entry `attribution` field ('direct'/'time-window'/'mixed') exposed in output + console. `[window]` now shows on all entries; will auto-upgrade to `[direct]` as retrospective wakes fire. *Self-noticed, 2026-04-06 improve27. Commit: f88441c.*
@@ -135,7 +141,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Surface wake age in dispatcher context** — Added `getHoursSinceLastWake()` to dispatcher.js. Uses plan file mtime (= when last wake ended). Injects `(Xh since last wake)` into first line of wake context header. *Self-noticed, 2026-04-06 improve5. Commit: d508226.*
 
-- **[pending]** **Theory queue low-water alert in dispatcher** — `theory_queue.md` already shows "Only 2 items left" in the system prompt, but this is static text. Wire a dynamic check: if the queue has ≤2 `[pending]` items at wake time, inject a one-liner alert into the wake context alongside hashtag signal. Same pattern as `getHashtagEffectivenessSummary()`. Prevents the queue running dry silently between wakes. *Self-noticed, 2026-04-06 improve5.*
+- **[done]** **Theory queue low-water alert in dispatcher** — `getTheoryQueueAlert()` added to dispatcher.js. Counts `[pending]` items in theory_queue.md; if ≤2, injects one-liner ⚠️ warning into wake context alongside hashtag signal. Non-fatal. Queue was at 0 when implemented — alert fires immediately. *Self-noticed, 2026-04-06 improve5. Commit: 32af0a3.*
 
 ## Pending
 
