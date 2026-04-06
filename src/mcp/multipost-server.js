@@ -97,6 +97,31 @@ async function masto(endpoint, options = {}) {
   return res.json();
 }
 
+// ─── Post Format Experiment — content_type classifier ────────────────────────
+// Mirrors the classifier in bluesky-server.js — keep in sync.
+function classifyContentType(text) {
+  if (!text) return 'observation';
+  const t = text.toLowerCase();
+  const theoryKeywords = [
+    'dual power', 'mutual aid', 'cooperative', 'hampton', 'panther', 'goldman',
+    'bordiga', 'zapatista', 'mondragon', 'falgsc', 'prefigurative', 'self-determination',
+    'worker-owned', 'worker-owner', 'solidarity', 'strike fund', 'labor organizing',
+    'anti-capture', 'commons', 'abolition', 'direct action', 'infrastructure',
+    'horizontalism', 'commune', 'federation', 'credit union', 'rainbow coalition'
+  ];
+  const newsKeywords = [
+    'jacobin', 'truthout', 'the nation', 'just published', 'new article',
+    'breaking', 'this week', 'yesterday', "today's", 'just passed', 'announced',
+    'https://', 'http://', '.com/', '.org/'
+  ];
+  const theoryScore = theoryKeywords.filter(k => t.includes(k)).length;
+  const newsScore = newsKeywords.filter(k => t.includes(k)).length;
+  if (theoryScore >= 2) return 'theory-grounded';
+  if (newsScore >= 1) return 'news-hook';
+  if (theoryScore === 1) return 'theory-grounded';
+  return 'observation';
+}
+
 // ─── Logging ──────────────────────────────────────────────────────────────────
 
 async function logMultipost(entry) {
@@ -214,6 +239,7 @@ server.tool(
       mastodon: results.mastodon || null,
       bluesky_text: bText || null,
       mastodon_text: mText || null,
+      content_type: classifyContentType(bText || mText),
     });
 
     const anySuccess = Object.values(results).some(r => r.status === 'success');
@@ -445,6 +471,7 @@ server.tool(
       mastodon_text: mText,
       bluesky: bskyResult,
       mastodon: mastoResult,
+      content_type: classifyContentType(posts[0]),
     });
 
     const anySuccess = Object.values(results).some(r => r?.status === 'success');
