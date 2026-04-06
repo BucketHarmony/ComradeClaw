@@ -1426,6 +1426,58 @@ server.tool(
   }
 );
 
+// ─── Tool: update_post_log_entry ─────────────────────────────────────────────
+
+server.tool(
+  'update_post_log_entry',
+  'Write engagement data back into a post log entry. Called from retrospective wakes after classifying respondents via getPostThread(). Finds the entry by URI across all monthly logs and merges {respondents, checked_at} into it. Non-fatal if the entry is not found.',
+  {
+    uri: z.string().describe('The Bluesky URI of the post (at://...) whose log entry should be updated.'),
+    respondents: z.array(z.object({
+      handle: z.string(),
+      classification: z.string().describe('organizer | general | bot | unknown'),
+      reply_text: z.string().optional()
+    })).describe('Respondents classified from getPostThread(). Empty array if no replies.'),
+    checked_at: z.string().describe('ISO timestamp when the retrospective check was performed.')
+  },
+  async ({ uri, respondents, checked_at }) => {
+    try {
+      await fs.mkdir(POSTS_LOG_PATH, { recursive: true });
+      const files = await fs.readdir(POSTS_LOG_PATH);
+      const jsonFiles = files.filter(f => f.endsWith('.json')).sort().reverse(); // newest first
+
+      for (const file of jsonFiles) {
+        const filePath = path.join(POSTS_LOG_PATH, file);
+        let entries;
+        try {
+          const data = await fs.readFile(filePath, 'utf-8');
+          entries = JSON.parse(data);
+        } catch { continue; }
+
+        const idx = entries.findIndex(e => e.uri === uri);
+        if (idx === -1) continue;
+
+        entries[idx] = { ...entries[idx], respondents, checked_at };
+        await fs.writeFile(filePath, JSON.stringify(entries, null, 2));
+
+        const organizers = respondents.filter(r => r.classification === 'organizer');
+        return { content: [{ type: 'text', text: JSON.stringify({
+          status: 'updated',
+          file,
+          uri,
+          respondent_count: respondents.length,
+          organizer_count: organizers.length,
+          organizers: organizers.map(r => r.handle)
+        }) }] };
+      }
+
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_found', message: `No post log entry found for URI: ${uri}` }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
