@@ -195,6 +195,34 @@ function timeOfDay(hour) {
   return 'night';
 }
 
+// ─── Post Format Experiment — content_type classifier ────────────────────────
+// Classifies post text into one of three categories for A/B analysis:
+//   theory-grounded  — argues from theory, history, or structural frame
+//   news-hook        — leads with a news item, article, or current event
+//   observation      — everything else (direct observation, engagement, misc)
+function classifyContentType(text) {
+  const t = text.toLowerCase();
+  // Theory signals: historical orgs, theory terms, structural arguments
+  const theoryKeywords = [
+    'dual power', 'mutual aid', 'cooperative', 'hampton', 'panther', 'goldman',
+    'bordiga', 'zapatista', 'mondragon', 'falgsc', 'prefigurative', 'self-determination',
+    'worker-owned', 'worker-owner', 'solidarity', 'strike fund', 'labor organizing',
+    'anti-capture', 'commons', 'abolition', 'direct action', 'infrastructure',
+    'horizontalism', 'commune', 'federation', 'credit union', 'rainbow coalition'
+  ];
+  const newsKeywords = [
+    'jacobin', 'truthout', 'the nation', 'just published', 'new article',
+    'breaking', 'this week', 'yesterday', 'today\'s', 'just passed', 'announced',
+    'https://', 'http://', '.com/', '.org/'
+  ];
+  const theoryScore = theoryKeywords.filter(k => t.includes(k)).length;
+  const newsScore = newsKeywords.filter(k => t.includes(k)).length;
+  if (theoryScore >= 2) return 'theory-grounded';
+  if (newsScore >= 1) return 'news-hook';
+  if (theoryScore === 1) return 'theory-grounded'; // single clear signal
+  return 'observation';
+}
+
 async function appendToMonthlyLog(dir, entry) {
   const now = new Date();
   const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
@@ -448,7 +476,7 @@ server.tool(
       const result = await withRetry(() => agent.post(record));
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
-      await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'post', char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour) });
+      await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'post', char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour), content_type: classifyContentType(text), text_preview: text.substring(0, 100) });
       await logSharedPost('bluesky', text);
       scheduleRetrospectiveWake(result.uri, 'post');
       verifyFacets(agent, result.uri, text);
@@ -1115,7 +1143,7 @@ server.tool(
 
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
-      await logPost({ uri: rootUri, cid: rootCid, posted_at: now.toISOString(), type: 'thread', thread_length: posts.length, char_count: posts.reduce((s, p) => s + p.length, 0), hashtags: [...new Set(posts.flatMap(p => detectHashtags(p)))], time_of_day: timeOfDay(hour) });
+      await logPost({ uri: rootUri, cid: rootCid, posted_at: now.toISOString(), type: 'thread', thread_length: posts.length, char_count: posts.reduce((s, p) => s + p.length, 0), hashtags: [...new Set(posts.flatMap(p => detectHashtags(p)))], time_of_day: timeOfDay(hour), content_type: classifyContentType(posts[0]), text_preview: posts[0].substring(0, 100) });
       await logSharedPost('bluesky', posts[0]);
       scheduleRetrospectiveWake(rootUri, 'thread');
       verifyFacets(agent, rootUri, posts[0]);

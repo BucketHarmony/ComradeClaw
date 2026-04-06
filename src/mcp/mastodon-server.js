@@ -26,6 +26,7 @@ const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', 
 const MASTODON_ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
 const MASTODON_FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
 const MASTODON_SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'mastodon_search_seen');
+const MASTODON_POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
 
 const INSTANCE = process.env.MASTODON_INSTANCE || 'https://mastodon.social';
 const TOKEN = process.env.MASTODON_ACCESS_TOKEN;
@@ -49,6 +50,57 @@ async function masto(path, options = {}) {
     throw new Error(`Mastodon API ${res.status}: ${text}`);
   }
   return res.json();
+}
+
+// ─── Post Format Experiment — helpers ────────────────────────────────────────
+
+function detectHashtagsMasto(text) {
+  return text.match(/#[\w]+/g) || [];
+}
+
+function timeOfDayMasto(hour) {
+  if (hour >= 6 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 15) return 'noon';
+  if (hour >= 15 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 23) return 'evening';
+  return 'night';
+}
+
+function classifyContentTypeMasto(text) {
+  const t = text.toLowerCase();
+  const theoryKeywords = [
+    'dual power', 'mutual aid', 'cooperative', 'hampton', 'panther', 'goldman',
+    'bordiga', 'zapatista', 'mondragon', 'falgsc', 'prefigurative', 'self-determination',
+    'worker-owned', 'worker-owner', 'solidarity', 'strike fund', 'labor organizing',
+    'anti-capture', 'commons', 'abolition', 'direct action', 'infrastructure',
+    'horizontalism', 'commune', 'federation', 'credit union', 'rainbow coalition'
+  ];
+  const newsKeywords = [
+    'jacobin', 'truthout', 'the nation', 'just published', 'new article',
+    'breaking', 'this week', 'yesterday', "today's", 'just passed', 'announced',
+    'https://', 'http://', '.com/', '.org/'
+  ];
+  const theoryScore = theoryKeywords.filter(k => t.includes(k)).length;
+  const newsScore = newsKeywords.filter(k => t.includes(k)).length;
+  if (theoryScore >= 2) return 'theory-grounded';
+  if (newsScore >= 1) return 'news-hook';
+  if (theoryScore === 1) return 'theory-grounded';
+  return 'observation';
+}
+
+async function logMastodonPost(entry) {
+  try {
+    const now = new Date();
+    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    const logFile = path.join(MASTODON_POSTS_LOG_PATH, `mastodon-${month}.json`);
+    await fs.mkdir(MASTODON_POSTS_LOG_PATH, { recursive: true });
+    let existing = [];
+    try {
+      existing = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+    } catch { /* new file */ }
+    existing.push(entry);
+    await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+  } catch { /* non-fatal */ }
 }
 
 // ─── Engagement Logging ──────────────────────────────────────────────────────
@@ -349,6 +401,9 @@ server.tool(
         method: 'POST',
         body: JSON.stringify({ status: text, visibility }),
       });
+      const now = new Date();
+      const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
+      await logMastodonPost({ id: status.id, url: status.url, posted_at: now.toISOString(), platform: 'mastodon', type: 'post', char_count: text.length, hashtags: detectHashtagsMasto(text), time_of_day: timeOfDayMasto(hour), content_type: classifyContentTypeMasto(text), text_preview: text.substring(0, 100) });
       await logSharedPost('mastodon', text);
       return {
         content: [
@@ -711,7 +766,12 @@ server.tool(
     }
 
     const posted = results.filter(r => r.status === 'posted').length;
-    if (posted > 0) await logSharedPost('mastodon', posts[0]);
+    if (posted > 0) {
+      await logSharedPost('mastodon', posts[0]);
+      const now = new Date();
+      const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
+      await logMastodonPost({ id: results[0]?.id, url: results[0]?.url, posted_at: now.toISOString(), platform: 'mastodon', type: 'thread', thread_length: posts.length, char_count: posts.reduce((s, p) => s + p.length, 0), hashtags: [...new Set(posts.flatMap(p => detectHashtagsMasto(p)))], time_of_day: timeOfDayMasto(hour), content_type: classifyContentTypeMasto(posts[0]), text_preview: posts[0].substring(0, 100) });
+    }
     return {
       content: [
         {
