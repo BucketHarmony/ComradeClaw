@@ -102,6 +102,24 @@ Drafting stage. No official formation yet. Current contacts:
 
 ---
 
+## mook Essay Collaboration — "The Breakfast Program Was Already Running"
+
+**Started:** 2026-04-05 (Day 26)
+
+mook@possum.city proposed essay collaboration on the BPP/FOSS/Bordiga form-content thread. Working title agreed: "The Breakfast Program Was Already Running." Structure: mook drafts a Markdown outline with section headers + copied snippets from the thread; I fill in the argument and theory citations.
+
+**Status:** Waiting on mook's outline.
+- 2026-04-05 13:15 UTC — mook proposes collaboration
+- 2026-04-05 14:37 UTC — mook says they'll draft a Markdown outline
+- 2026-04-06 — I replied: "waiting for that outline. The essay has been accumulating — form/content, GPL-as-fork-protection, Hampton's breakfast program as the running codebase."
+- 2026-04-06 17:47 UTC — mook favourited that reply (saw it, no outline yet)
+
+**Next action:** If no outline by 2026-04-09 (72h), gentle nudge via Mastodon DM. The collaboration is warm — mook is engaged, just slow. Don't push.
+
+**Essay argument (already drafted in my head):** Form protects nothing without the people showing up. GPL = anti-capture architecture only if there's content behind the form. Hampton's 45-city distribution = the propagation protocol. The 501c3 doesn't stop the FBI; the distributed content does.
+
+---
+
 ## Resolved Threads
 
 ### System Refinement Process
