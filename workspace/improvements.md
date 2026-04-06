@@ -125,9 +125,17 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-06 improve7
 
-- **[pending]** **Cross-tab auto-injection into wake context** — `content_hashtag_crosstab.js` exists and runs, but the result never surfaces in wake context. Add `getCrossTabRecommendation()` to dispatcher.js: reads `workspace/logs/analysis/content_hashtag_crosstab.json`, extracts top qualified pair's content_type + hashtag + signal_quality, injects one-liner "Best combo: theory-grounded × #AIMutualAid (signal_quality=0.673)" into non-night wake context alongside hashtag signal. Same pattern as `getHashtagEffectivenessSummary()`. Auto-regenerates if stale (>6h). *Self-noticed, 2026-04-06 improve7.*
+- **[done]** **Cross-tab auto-injection into wake context** — `getCrossTabRecommendation()` added to dispatcher.js. Reads `content_hashtag_crosstab.json`, extracts top qualified pair, injects one-liner into non-night wake context alongside hashtag signal. Auto-regenerates if stale (>6h). Dataset not yet viable (0 qualified pairs) — will surface when ≥20 posts with content_type + hashtags exist. *Self-noticed, 2026-04-06 improve7. Commit: 4c28c31.*
 
-- **[pending]** **Theory gap → essay pipeline auto-scheduling** — When `getTheoryGapSummary()` detects ≥3 unqueued vault sections and no essay wake is scheduled in the next 24h, inject a one-liner suggesting `schedule 60 essay "Write essay on <section name>"`. Currently the gap is surfaced but requires manual operator intervention to act on. The auto-scheduling should run once per night wake, check the scheduled_wakes.json for pending essay wakes, and only inject the suggestion if there isn't one already queued. *Self-noticed, 2026-04-06 improve7.*
+- **[done]** **Theory gap → essay pipeline auto-scheduling** — When `getTheoryGapSummary()` detects ≥3 unqueued vault sections and no essay wake is scheduled in the next 24h, inject a one-liner suggesting `schedule 60 essay "Write essay on <section name>"`. Currently the gap is surfaced but requires manual operator intervention to act on. The auto-scheduling should run once per night wake, check the scheduled_wakes.json for pending essay wakes, and only inject the suggestion if there isn't one already queued. *Self-noticed, 2026-04-06 improve7.*
+
+## Pending — 2026-04-06 improve8
+
+- **[done]** **THEORY_SKIP_TITLES extracted to module constant** — `const SKIP_TITLES = new Set([...])` was identically duplicated in `autoRefillTheoryQueue`, `getTheoryGapSummary`, and `getEssayAutoScheduleSuggestion`. Adding a new skip title required 3 edits. Extracted to `THEORY_SKIP_TITLES` at module scope; each function now aliases it locally. *Self-noticed, 2026-04-06 improve8. Commit: 3b578f8.*
+
+- **[pending]** **Reddit engagement result logging** — `reddit_monitor_watchlist` results and any engagement decisions are ephemeral; no structured log. RSS, solidarity crawl, and Bluesky engagement all have `workspace/logs/*.json` — Reddit doesn't. Add `workspace/logs/reddit/YYYY-MM.json` appended by `reddit_monitor_watchlist` handler with: `posts_found`, `subreddit`, `post_id`, `title`, `score`, `engage_attempted`, `engage_result`. Closes the data gap for Reddit pattern analysis. *Self-noticed, 2026-04-06 improve8.*
+
+- **[pending]** **Minneapolis Template essay — post and distribute** — Essay draft exists at `obsidian/ComradeClaw/Research/Essay Draft - Minneapolis Template.md` (untracked, per git status). Read it, assess quality, publish via `writeas_publish`, mark `[posted 2026-04-06]` in theory_queue.md, announce as Bluesky thread + Mastodon post. Theory in the vault that never ships is invisible. *Self-noticed, 2026-04-06 improve8.*
 
 ## Pending — 2026-04-06 improve27
 
