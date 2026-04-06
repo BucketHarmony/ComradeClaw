@@ -815,6 +815,111 @@ async function getTheoryGapSummary() {
 }
 
 /**
+ * Hashtag signal quality summary — reads posts + engagement logs, runs analysis, returns
+ * a compact summary of top hashtags by organizer signal quality.
+ *
+ * Surfaced on every non-night wake so the feedback loop is closed: post → engagement → signal → next post.
+ * Non-fatal: returns '' on any error.
+ */
+async function getHashtagEffectivenessSummary() {
+  try {
+    const POSTS_DIR   = path.join(WORKSPACE_PATH, 'logs', 'posts');
+    const ENG_DIR     = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+    const WINDOW_MS   = 48 * 60 * 60 * 1000;
+
+    // Extract hashtags from any text blob
+    function extractHashtags(text) {
+      if (!text) return [];
+      return (text.match(/#[A-Za-z][A-Za-z0-9_]*/g) || []);
+    }
+
+    // Normalize a post record to { posted_at, hashtags }
+    function normalizePost(entry) {
+      if (entry.hashtags && Array.isArray(entry.hashtags)) return entry; // already normalized
+      // multipost / multithread — extract from text fields
+      const texts = [
+        ...(Array.isArray(entry.posts) ? entry.posts : []),
+        entry.bluesky_text || '',
+        entry.mastodon_text || '',
+      ];
+      const hashtags = [...new Set(texts.flatMap(t => extractHashtags(t)))];
+      const posted_at = entry.logged_at || entry.posted_at;
+      return { ...entry, hashtags, posted_at };
+    }
+
+    async function loadJsonFiles(dir) {
+      let results = [];
+      try {
+        const files = await fs.readdir(dir);
+        for (const file of files.filter(f => f.endsWith('.json'))) {
+          const raw = JSON.parse(await fs.readFile(path.join(dir, file), 'utf-8'));
+          results = results.concat(Array.isArray(raw) ? raw : []);
+        }
+      } catch { /* dir may not exist */ }
+      return results;
+    }
+
+    const rawPosts = await loadJsonFiles(POSTS_DIR);
+    const engagements = await loadJsonFiles(ENG_DIR);
+
+    if (rawPosts.length === 0 || engagements.length === 0) return '';
+
+    const posts = rawPosts.map(normalizePost);
+
+    // Build hashtag → posts map
+    const hashtagPosts = {};
+    for (const p of posts) {
+      for (const tag of (p.hashtags || [])) {
+        if (!hashtagPosts[tag]) hashtagPosts[tag] = [];
+        hashtagPosts[tag].push(p);
+      }
+    }
+
+    const allTags = Object.keys(hashtagPosts);
+    if (allTags.length === 0) return '';
+
+    const tagStats = [];
+    for (const tag of allTags) {
+      const tagPostList = hashtagPosts[tag];
+      const counts = { organizer: 0, 'ai-agent': 0, general: 0, unclassified: 0 };
+
+      for (const eng of engagements) {
+        const engTime = new Date(eng.timestamp).getTime();
+        const matchingPost = tagPostList.find(p => {
+          const pt = new Date(p.posted_at).getTime();
+          return engTime >= pt && engTime <= pt + WINDOW_MS;
+        });
+        if (!matchingPost) continue;
+        const cls = eng.classification || 'unclassified';
+        counts[cls] = (counts[cls] || 0) + 1;
+      }
+
+      const total = Object.values(counts).reduce((a, b) => a + b, 0);
+      if (total === 0) continue;
+      const signalQuality = Math.round((counts.organizer / total) * 1000) / 1000;
+      tagStats.push({ hashtag: tag, posts: tagPostList.length, total, signalQuality, organizer: counts.organizer });
+    }
+
+    if (tagStats.length === 0) return '';
+
+    tagStats.sort((a, b) => (b.signalQuality - a.signalQuality) || (b.organizer - a.organizer));
+    const top = tagStats.slice(0, 5);
+    const lines = top.map(t =>
+      `  ${t.hashtag}: signal_quality=${t.signalQuality.toFixed(3)} (organizer=${t.organizer}/${t.total}, ${t.posts} post${t.posts !== 1 ? 's' : ''})`
+    );
+
+    return [
+      `## Hashtag Signal Quality (top ${top.length} of ${tagStats.length}, 48h window)`,
+      ...lines,
+      `*Maximize organizer_engagements/total — not volume. Best: ${top[0].hashtag}*`,
+    ].join('\n');
+  } catch (err) {
+    console.error(`[getHashtagEffectivenessSummary] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Snapshot follower/following/posts counts for own Bluesky handle.
  * Writes { date, followers, following, posts } to logs/followers/YYYY-MM-DD.json.
  * Called on morning wakes only. Non-fatal — silently skips on any error.
@@ -1527,6 +1632,9 @@ export async function executeWake(label, time, purpose = null) {
   // Theory distribution gap — vault sections never queued + ready-to-distribute count
   const theoryGapSummary = !isNightWake ? await getTheoryGapSummary() : '';
 
+  // Hashtag signal quality — which tags correlate with organizer engagement vs general likes
+  const hashtagSignalContext = !isNightWake ? await getHashtagEffectivenessSummary() : '';
+
   // On non-night wakes, pre-fetch RSS headlines to surface material before first search
   const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
 
@@ -1750,6 +1858,7 @@ export async function executeWake(label, time, purpose = null) {
     facetWarning ? `\n${facetWarning}` : '',
     driftAlert ? `\n${driftAlert}` : '',
     organizerBaselineContext ? `\n${organizerBaselineContext}` : '',
+    hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`

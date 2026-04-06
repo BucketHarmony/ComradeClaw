@@ -39,8 +39,25 @@ function loadJsonFiles(dir) {
   return results;
 }
 
+// Normalize a post entry to have a hashtags array.
+// multipost/multithread entries store hashtags inline in text — extract them.
+function normalizePost(entry) {
+  if (entry.hashtags && Array.isArray(entry.hashtags)) return entry;
+  const texts = [
+    ...(Array.isArray(entry.posts) ? entry.posts : []),
+    entry.bluesky_text || '',
+    entry.mastodon_text || '',
+  ];
+  const hashtags = [...new Set(
+    texts.flatMap(t => (t.match(/#[A-Za-z][A-Za-z0-9_]*/g) || []))
+  )];
+  const posted_at = entry.logged_at || entry.posted_at;
+  return { ...entry, hashtags, posted_at };
+}
+
 function run() {
-  const posts       = loadJsonFiles(POSTS_DIR);
+  const rawPosts    = loadJsonFiles(POSTS_DIR);
+  const posts       = rawPosts.map(normalizePost);
   const engagements = loadJsonFiles(ENG_DIR);
 
   if (posts.length === 0) {
