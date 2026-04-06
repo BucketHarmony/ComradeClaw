@@ -119,7 +119,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-06 improve6
 
-- **[pending]** **Engagement velocity tracking — detect when a post is gaining traction** — Currently the retrospective wake fires 48h after each post, which catches final engagement but misses momentum windows. Add a lightweight check in `read_replies`: when organizer engagement count for a post increases from 0→1 within 12h, inject a one-liner "⚡ Post gaining traction: <preview>" into the next wake context. Early signal = join the thread while it's live, not after it's cold. Needs: `posts/` log lookup by URI + 12h window check. *Self-noticed, 2026-04-06 improve6.*
+- **[done]** **Engagement velocity tracking — detect when a post is gaining traction** — Added `getTractionAlert()` to dispatcher.js. Reads posts log for original posts made within last 12h, checks engagement log for replies referencing those posts. If ≥1 engagement found, injects ⚡ alert with age and reply count into wake context. Non-fatal. *Self-noticed, 2026-04-06 improve6. Commit: 719d7c1.*
 
 - **[pending]** **Auto-queue theory items from journal entries** — Night wake writes theory shifts to `Journal/` files and `Core Positions.md`, but extraction to `theory_queue.md` is manual/prompted. Add a step to `executeDreamWake()` (or night wake study session): after any journal write, grep the new entry for `**` bold phrases or section headers that read like distributable arguments, offer them as `[unposted]` candidates in theory_queue.md. Closes the gap between "thing I thought" and "thing I queued." *Self-noticed, 2026-04-06 improve6.*
 
