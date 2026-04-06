@@ -462,10 +462,68 @@ ${item.description}
 }
 
 /**
+ * Count [unposted] items in theory_queue.md. Returns 0 on any error.
+ */
+async function countUnpostedQueueItems() {
+  try {
+    const content = await fs.readFile(path.join(WORKSPACE_PATH, 'theory_queue.md'), 'utf-8');
+    return (content.match(/\[unposted\]/g) || []).length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Extract topic keywords from Characters.md key exchanges for relevance scoring.
+ * Returns lowercase word array from "Key exchange" / "Why they matter" sections.
+ */
+async function getCharacterKeywords() {
+  try {
+    const content = await fs.readFile(
+      path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw', 'Characters.md'), 'utf-8'
+    );
+    // Pull lines that describe key exchanges and why people matter
+    const relevant = content.split('\n')
+      .filter(l => /Key exchange|Why they matter|key exchange|Status/i.test(l))
+      .join(' ');
+    // Extract meaningful words (≥5 chars, skip common words)
+    const STOP = new Set(['their','which','about','after','where','there','these','those','being','would','could','should','comrade','status','matter','first','appeared']);
+    return [...relevant.matchAll(/\b([a-z]{5,})\b/gi)]
+      .map(m => m[1].toLowerCase())
+      .filter(w => !STOP.has(w));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Proactive theory queue replenishment — runs on night wakes.
+ * If fewer than 3 [unposted] items remain, refills from Theory vault with
+ * relevance scoring against current Characters.md thread topics.
+ * Non-fatal.
+ */
+async function proactiveQueueReplenishment() {
+  try {
+    const count = await countUnpostedQueueItems();
+    if (count >= 3) return; // queue healthy
+    const needed = Math.max(3 - count, 1);
+    const keywords = await getCharacterKeywords();
+    const added = await autoRefillTheoryQueue(needed, keywords);
+    if (added > 0) {
+      console.log(`[proactiveQueueReplenishment] Added ${added} items (queue was at ${count}, threshold <3)`);
+    }
+  } catch (err) {
+    console.error(`[proactiveQueueReplenishment] Failed (non-fatal): ${err.message}`);
+  }
+}
+
+/**
  * Scan obsidian/ComradeClaw/Theory/*.md for distributable sections not already in theory_queue.md.
  * Appends new [unposted] entries when the queue runs dry. Non-fatal — returns 0 on any failure.
+ * @param {number} maxItems - max items to add (default: add all found)
+ * @param {string[]} keywords - optional relevance keywords; items scored by overlap, top-N picked
  */
-async function autoRefillTheoryQueue() {
+async function autoRefillTheoryQueue(maxItems = Infinity, keywords = []) {
   try {
     const VAULT_THEORY_PATH = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw', 'Theory');
     const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
@@ -541,15 +599,29 @@ async function autoRefillTheoryQueue() {
 
     if (newItems.length === 0) return 0;
 
+    // Relevance scoring: count keyword overlaps in title+description
+    if (keywords.length > 0) {
+      const kwSet = new Set(keywords.map(k => k.toLowerCase()));
+      for (const item of newItems) {
+        const text = (item.title + ' ' + item.description).toLowerCase();
+        const words = text.match(/\b[a-z]{4,}\b/g) || [];
+        item._score = words.filter(w => kwSet.has(w)).length;
+      }
+      newItems.sort((a, b) => (b._score || 0) - (a._score || 0));
+    }
+
+    // Limit to maxItems
+    const selected = isFinite(maxItems) ? newItems.slice(0, maxItems) : newItems;
+
     const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
     const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
-    const additions = '\n' + newItems.map(item =>
+    const additions = '\n' + selected.map(item =>
       `- **[unposted]** **${item.title}** — ${item.description}`
-    ).join('\n') + `\n\n<!-- auto-refilled ${today} — ${newItems.length} items from Theory vault -->`;
+    ).join('\n') + `\n\n<!-- auto-refilled ${today} — ${selected.length} items from Theory vault, relevance-scored -->`;
 
     await fs.appendFile(QUEUE_PATH, additions);
-    console.log(`[autoRefillTheoryQueue] Added ${newItems.length} items from Theory vault`);
-    return newItems.length;
+    console.log(`[autoRefillTheoryQueue] Added ${selected.length} items from Theory vault`);
+    return selected.length;
   } catch (err) {
     console.error(`[autoRefillTheoryQueue] Failed: ${err.message}`);
     return 0;
@@ -1439,6 +1511,9 @@ export async function executeWake(label, time, purpose = null) {
     }
     provenQueriesContext = await getProvenQueries();
   }
+
+  // Proactively replenish theory queue on night wakes (before prompt is built)
+  if (isNightWake) await proactiveQueueReplenishment();
 
   // Load next unposted theory item for distribution prompt
   const theoryQueueItem = isNightWake ? null : await getTheoryQueueItem();
