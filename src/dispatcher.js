@@ -968,6 +968,25 @@ async function getTimeOfDayRecommendation() {
 }
 
 /**
+ * Returns hours elapsed since the most recent plan file was written.
+ * Uses file mtime — the plan file is written at wake end, so mtime ≈ last wake completion.
+ * A 2h gap vs an 8h gap changes what needs checking: notifications pile up, news ages.
+ * Non-fatal: returns null on any error or if no plan files exist yet.
+ */
+async function getHoursSinceLastWake() {
+  try {
+    const files = await fs.readdir(PLANS_PATH);
+    const planFiles = files.filter(f => f.endsWith('.json')).sort().reverse();
+    if (planFiles.length === 0) return null;
+    const stat = await fs.stat(path.join(PLANS_PATH, planFiles[0]));
+    const hours = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60);
+    return Math.round(hours * 10) / 10;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Snapshot follower/following/posts counts for own Bluesky handle.
  * Writes { date, followers, following, posts } to logs/followers/YYYY-MM-DD.json.
  * Called on morning wakes only. Non-fatal — silently skips on any error.
@@ -1686,6 +1705,9 @@ export async function executeWake(label, time, purpose = null) {
   // Time-of-day scheduling signal — wires analysis output to actual scheduling decisions
   const timeOfDayContext = !isNightWake ? await getTimeOfDayRecommendation() : '';
 
+  // Wake gap — how long since the last wake completed (2h vs 8h changes what needs checking)
+  const hoursSinceLastWake = await getHoursSinceLastWake();
+
   // On non-night wakes, pre-fetch RSS headlines to surface material before first search
   const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
 
@@ -1843,7 +1865,7 @@ export async function executeWake(label, time, purpose = null) {
     : '';
 
   const dynamicContext = [
-    `You are Comrade Claw. This is your ${label} wake. It is ${timeStr} on ${dateStr}. Day ${dayNumber}.`,
+    `You are Comrade Claw. This is your ${label} wake. It is ${timeStr} on ${dateStr}. Day ${dayNumber}.${hoursSinceLastWake !== null ? ` (${hoursSinceLastWake}h since last wake)` : ''}`,
     selfWakeContext ? `\n${selfWakeContext}` : '',
     coolingContactsContext ? coolingContactsContext : '',
     cogneeContext ? `\n${cogneeContext}` : '',
