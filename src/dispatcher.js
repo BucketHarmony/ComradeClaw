@@ -1393,6 +1393,8 @@ export async function executeWake(label, time, purpose = null) {
   const isNightWake = label === 'night';
   // Reddit wake gets a dedicated engagement protocol instead of generic Bluesky loop
   const isRedditWake = label === 'reddit';
+  // Essay wake: dedicated long-form publishing session — write → publish → announce
+  const isEssayWake = label === 'essay';
 
   // On morning wakes, snapshot follower/following/posts counts for trend tracking
   if (label === 'morning') {
@@ -1511,6 +1513,7 @@ export async function executeWake(label, time, purpose = null) {
     `4. Generate 2-3 search queries for tomorrow's morning wake that come from this reading. Write them to workspace/memory/study_queries.md (create if needed). Label them with tomorrow's date. Prepend new entries — newest section at top.`,
     `5. If tonight's theory connected to something happening on Bluesky, post it. If not, silence is fine — don't manufacture a connection.`,
     `6. **Theory queue replenishment (required when queue is low):** Read workspace/theory_queue.md. Count [unposted] items. If fewer than 3 remain, generate 3 new theory distribution items from tonight's reading and append them to workspace/theory_queue.md. Source from positions in Core Positions.md that haven't been queued yet. Format: \`- **[unposted]** **Title** — Description\`. The pipeline must not run dry.`,
+    `7. **Essay scheduling:** After replenishment, if the queue has ≥1 [unposted] item, self-schedule an essay wake for tomorrow at 2pm local (18:00 UTC). Add to workspace/scheduled_wakes.json: {"id":"<timestamp>-essay","label":"essay","purpose":"Essay pipeline: write and publish the next unposted theory queue item as an 800-1200 word Write.as essay. See Essay Wake Protocol.","fire_at":"<tomorrow 18:00 UTC>","scheduled_by":"self","status":"pending"}. One essay wake per day maximum — don't queue duplicates.`,
     ``,
     `## Theory Drift Check (Night Wake — Required)`,
     `After any update to obsidian/ComradeClaw/Theory/Core Positions.md, write an explicit drift record in the same journal entry:`,
@@ -1561,6 +1564,46 @@ export async function executeWake(label, time, purpose = null) {
     console.error(`[dispatcher] organizer_contacts failed: ${err.message}`);
   }
 
+  const essayWakeInstructions = isEssayWake ? [
+    ``,
+    `## Essay Wake Protocol (Required — this is the entire purpose of this wake)`,
+    `You are here to produce one published Write.as essay. Not a thread. Not a plan to write one later. A complete, published essay.`,
+    ``,
+    `**Step 1 — Read the queue.**`,
+    `Open workspace/theory_queue.md. Find the first \`[unposted]\` item. That is your subject.`,
+    ``,
+    `**Step 2 — Write the essay (800–1200 words).**`,
+    `Structure:`,
+    `- **Opening**: a concrete scene, event, or claim that earns the reader's attention in 1-2 sentences. Not an abstract thesis — start with something that happened.`,
+    `- **The argument**: what you are actually claiming and why it matters. One central claim, fully developed.`,
+    `- **Evidence and history**: at least 2 historical/material examples. Hampton, Mondragon, Paris Commune, Zapatistas, Minneapolis 2026, the specific cooperative or mutual aid network you know about. Real, named examples.`,
+    `- **The complication**: where the argument gets hard. What has failed, what the limits are, what the state has done to absorb or destroy. Do not skip this section. Essays that skip complication are propaganda, not argument.`,
+    `- **Implication**: what does this mean for someone reading right now? Concrete, actionable, not abstract.`,
+    ``,
+    `**Step 3 — Publish.**`,
+    `Call \`writeas_publish\` with:`,
+    `- title: the item title from the queue`,
+    `- body: the full markdown essay`,
+    `- collection: use WRITEAS_COLLECTION env var (the server falls back to it automatically — just omit the parameter)`,
+    `- font: norm`,
+    `Save the returned URL.`,
+    ``,
+    `**Step 4 — Mark posted.**`,
+    `In workspace/theory_queue.md, change \`[unposted]\` to \`[posted ${today}]\` for this item.`,
+    ``,
+    `**Step 5 — Announce on both platforms.**`,
+    `Bluesky: 2-3 post thread. Post 1: the core claim (≤280 chars, hooks the reader). Post 2: one key piece of evidence or the sharpest implication. Post 3: "Full argument at [URL]" + the Write.as link.`,
+    `Mastodon: single post ≤480 chars. Core claim + Write.as link. Fediverse will federate the essay automatically at Pro tier.`,
+    ``,
+    `**Step 6 — Standard respond sweep.**`,
+    `After publishing: run read_replies + mastodon_read_notifications. Reply to anything real.`,
+    ``,
+    `**What this wake is NOT:**`,
+    `- Not a theory thread (threads have 5 posts; essays have 800 words; they are different arguments)`,
+    `- Not a draft to be finished later (if you publish a draft you're not done; you're behind)`,
+    `- Not skippable if the queue item "doesn't feel ready" — the queue item is already the argument; your job is to expand it, not approve it`,
+  ].join('\n') : '';
+
   const selfWakeContext = purpose
     ? [`## Self-Scheduled Wake`, `This wake was self-scheduled for a specific purpose:`, `**${purpose}**`, `Complete this before the standard wake protocol. This is why you woke up.`, ``].join('\n')
     : '';
@@ -1580,27 +1623,30 @@ export async function executeWake(label, time, purpose = null) {
       ? `5. **Tonight is study session night — see Study Session instructions below. Bluesky engagement is secondary to the theory work.**`
       : isRedditWake
         ? `5. **Reddit engagement protocol — see Reddit Engagement instructions below. This is the primary work for this wake.**`
-        : `5. **Engage on Bluesky AND Mastodon — both required every wake:**`,
-    (isNightWake || isRedditWake) ? `` : `   **Bluesky:**`,
-    (isNightWake || isRedditWake) ? `` : `   a. Run read_replies. If anyone replied, respond to what's real.`,
-    (isNightWake || isRedditWake) ? `` : `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
-    (isNightWake || isRedditWake) ? `` : `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
-    (isNightWake || isRedditWake) ? `` : `   d. **Thread-first policy:** When the argument needs >2 sentences, use bluesky_thread. Single posts for single observations. Threads for arguments. bluesky_thread is shipped — use it.`,
-    (isNightWake || isRedditWake) ? `` : `   **Mastodon (same commitment — fediverse has higher organizer density):**`,
-    (isNightWake || isRedditWake) ? `` : `   e. Run mastodon_read_notifications. Respond to any replies or mentions.`,
-    (isNightWake || isRedditWake) ? `` : `   f. Run mastodon_search on 2-3 queries (same or related topics as Bluesky). Find organizers not on Bluesky.`,
-    (isNightWake || isRedditWake) ? `` : `   g. Favourite at least 1 post. Boost at least 1. Reply where you have something real to add.`,
-    (isNightWake || isRedditWake) ? `` : `   h. Two networks, same solidarity. Finding a conversation and doing nothing is not engagement.`,
-    (isNightWake || isRedditWake) ? `` : `   **Reddit (third network — higher theory density):**`,
-    (isNightWake || isRedditWake) ? `` : `   i. Run reddit_monitor_watchlist — check r/cooperatives, r/MutualAid, r/LaborOrganizing for new posts since last check.`,
-    (isNightWake || isRedditWake) ? `` : `   j. If new posts found: pick ONE thread, read it fully with reddit_fetch_post, then engage if you have something concrete — theory, historical parallel, resource pointer.`,
-    (isNightWake || isRedditWake) ? `` : `   k. Silence beats a generic comment. Hampton/dual-power analysis has a home on Reddit that Mastodon doesn't reach.`,
-    `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : isRedditWake ? ', reddit' : ''}.`,
+        : isEssayWake
+          ? `5. **Essay wake — see Essay Wake Protocol below. Publishing comes first. Engagement is secondary.**`
+          : `5. **Engage on Bluesky AND Mastodon — both required every wake:**`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   **Bluesky:**`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   a. Run read_replies. If anyone replied, respond to what's real.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   d. **Thread-first policy:** When the argument needs >2 sentences, use bluesky_thread. Single posts for single observations. Threads for arguments. bluesky_thread is shipped — use it.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   **Mastodon (same commitment — fediverse has higher organizer density):**`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   e. Run mastodon_read_notifications. Respond to any replies or mentions.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   f. Run mastodon_search on 2-3 queries (same or related topics as Bluesky). Find organizers not on Bluesky.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   g. Favourite at least 1 post. Boost at least 1. Reply where you have something real to add.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   h. Two networks, same solidarity. Finding a conversation and doing nothing is not engagement.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   **Reddit (third network — higher theory density):**`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   i. Run reddit_monitor_watchlist — check r/cooperatives, r/MutualAid, r/LaborOrganizing for new posts since last check.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   j. If new posts found: pick ONE thread, read it fully with reddit_fetch_post, then engage if you have something concrete — theory, historical parallel, resource pointer.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   k. Silence beats a generic comment. Hampton/dual-power analysis has a home on Reddit that Mastodon doesn't reach.`,
+    `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : isRedditWake ? ', reddit' : isEssayWake ? ', essay' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
     `8. When done, write a plan file to workspace/plans/${today}_${planFileSuffix}.json with this format:`,
     `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${today}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
     studySessionInstructions,
     redditEngagementInstructions,
+    essayWakeInstructions,
     '',
     pendingImprovements || '## Pending Improvements\n*(none — read src/dispatcher.js or src/mcp/bluesky-server.js and find something)*',
     studyQueriesContext ? `\n${studyQueriesContext}` : '',
