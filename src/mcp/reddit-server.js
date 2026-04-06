@@ -26,6 +26,7 @@ const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', 
 const REDDIT_DIR = path.join(WORKSPACE_PATH, 'reddit');
 const WATCHLIST_PATH = path.join(REDDIT_DIR, 'watchlist.json');
 const LAST_SEEN_PATH = path.join(REDDIT_DIR, 'last_seen.json');
+const REDDIT_LOGS_DIR = path.join(WORKSPACE_PATH, 'logs', 'reddit');
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 
@@ -111,6 +112,17 @@ function normalizeComment(child) {
 
 async function ensureDir() {
   await fs.mkdir(REDDIT_DIR, { recursive: true });
+}
+
+async function appendRedditLog(entries) {
+  await fs.mkdir(REDDIT_LOGS_DIR, { recursive: true });
+  const month = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const logPath = path.join(REDDIT_LOGS_DIR, `${month}.json`);
+  let existing = [];
+  try {
+    existing = JSON.parse(await fs.readFile(logPath, 'utf-8'));
+  } catch { /* first write */ }
+  await fs.writeFile(logPath, JSON.stringify([...existing, ...entries], null, 2));
 }
 
 async function loadLastSeen() {
@@ -344,13 +356,29 @@ server.tool(
 
       await saveLastSeen(newState);
 
+      const checkedAt = new Date().toISOString();
+      const logEntries = allNewPosts.length > 0
+        ? allNewPosts.map(p => ({
+            checked_at: checkedAt,
+            subreddit: p.subreddit,
+            post_id: p.id,
+            title: p.title,
+            score: p.score,
+            subreddit_category: p.subreddit_category || null,
+            priority: p.priority || null,
+            engage_attempted: false,
+            engage_result: null,
+          }))
+        : [{ checked_at: checkedAt, subreddits_checked: subredditsChecked, posts_found: 0 }];
+      await appendRedditLog(logEntries).catch(() => {}); // non-fatal
+
       return { content: [{ type: 'text', text: JSON.stringify({
         status: 'ok',
         subreddits_checked: subredditsChecked,
         new_post_count: allNewPosts.length,
         new_posts: allNewPosts,
         errors: errors.length > 0 ? errors : undefined,
-        checked_at: new Date().toISOString(),
+        checked_at: checkedAt,
       }, null, 2) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
