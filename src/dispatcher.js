@@ -978,6 +978,58 @@ async function getTheoryQueueAlert() {
 }
 
 /**
+ * Surface recent comrade engagement for follow-up awareness.
+ * Reads workspace/logs/comrade_replies.jsonl — one JSON object per line.
+ * Each entry: { handle, platform, topic, date, type }
+ * Returns a brief context block listing last contact per comrade with days-ago.
+ * Prevents both silence and repeat-messaging. Non-fatal.
+ */
+async function getComradeReplyContext() {
+  try {
+    const repliesFile = path.join(WORKSPACE_PATH, 'logs', 'comrade_replies.jsonl');
+    let content;
+    try {
+      content = await fs.readFile(repliesFile, 'utf-8');
+    } catch {
+      return ''; // No file yet — not fatal
+    }
+
+    const entries = content.trim().split('\n')
+      .filter(l => l.trim())
+      .map(l => { try { return JSON.parse(l); } catch { return null; } })
+      .filter(Boolean);
+
+    if (entries.length === 0) return '';
+
+    // Most recent entry per handle
+    const latest = {};
+    for (const entry of entries) {
+      const key = entry.handle;
+      if (!latest[key] || new Date(entry.date) > new Date(latest[key].date)) {
+        latest[key] = entry;
+      }
+    }
+
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+    const today = new Date(todayStr);
+
+    const lines = Object.values(latest).map(e => {
+      const entryDate = new Date(e.date);
+      const daysAgo = Math.floor((today - entryDate) / (1000 * 60 * 60 * 24));
+      const when = daysAgo === 0 ? 'today' : daysAgo === 1 ? '1d ago' : `${daysAgo}d ago`;
+      const typeNote = e.type === 'silence_noted' ? ' [silent]' : '';
+      return `- **${e.handle}** (${when}): ${e.topic}${typeNote}`;
+    });
+
+    return `## Comrade Follow-up Context\n${lines.join('\n')}`;
+  } catch (err) {
+    console.error(`[getComradeReplyContext] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Theory gap → essay pipeline auto-scheduling (night wakes only).
  * If ≥3 vault sections are unqueued AND no essay wake is pending in the next 24h,
  * injects a one-liner suggesting the operator schedule an essay wake.
@@ -2019,6 +2071,9 @@ export async function executeWake(label, time, purpose = null) {
   // Wake gap — how long since the last wake completed (2h vs 8h changes what needs checking)
   const hoursSinceLastWake = await getHoursSinceLastWake();
 
+  // Comrade follow-up context — last heard from each active comrade, prevents silence and repeat-messaging
+  const comradeReplyContext = await getComradeReplyContext();
+
   // On non-night wakes, pre-fetch RSS headlines to surface material before first search
   const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
 
@@ -2257,6 +2312,7 @@ export async function executeWake(label, time, purpose = null) {
     tractionAlert ? `\n${tractionAlert}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
+    comradeReplyContext ? `\n${comradeReplyContext}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
   ].join('\n');
