@@ -21,6 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.join(__dirname, '..');
 const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(PROJECT_ROOT, 'workspace');
+const OBSIDIAN_PATH = path.join(PROJECT_ROOT, 'obsidian', 'ComradeClaw');
 const PLANS_PATH = path.join(WORKSPACE_PATH, 'plans');
 const WAKE_LOG_DIR = path.join(WORKSPACE_PATH, 'logs', 'wakes');
 
@@ -1089,6 +1090,39 @@ async function getTheoryQueueAlert() {
     return '';
   } catch (err) {
     console.error(`[getTheoryQueueAlert] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
+ * Scan Threads.md for past-due deadlines and surface them as wake-time warnings.
+ * Looks for lines containing ISO dates (YYYY-MM-DD) near deadline/due/nudge markers.
+ * Returns ⚠️ alerts for any deadline that has passed. Non-fatal.
+ */
+async function getOverdueThreadsAlert() {
+  try {
+    const THREADS_PATH = path.join(OBSIDIAN_PATH, 'Threads.md');
+    const content = await fs.readFile(THREADS_PATH, 'utf-8');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const deadlineWords = /deadline|due|nudge|by \d{4}-\d{2}-\d{2}|if no .{0,40}\d{4}-\d{2}-\d{2}/i;
+    const isoDateRe = /(\d{4}-\d{2}-\d{2})/g;
+
+    const alerts = [];
+    for (const line of content.split('\n')) {
+      if (!deadlineWords.test(line)) continue;
+      let match;
+      while ((match = isoDateRe.exec(line)) !== null) {
+        const d = new Date(match[1]);
+        if (!isNaN(d) && d < today) {
+          alerts.push(`⚠️ Overdue thread deadline: ${match[1]} — ${line.trim().slice(0, 100)}`);
+        }
+      }
+    }
+    return alerts.join('\n');
+  } catch (err) {
+    console.error(`[getOverdueThreadsAlert] Failed (non-fatal): ${err.message}`);
     return '';
   }
 }
@@ -2357,6 +2391,9 @@ export async function executeWake(label, time, purpose = null) {
   // Theory queue low-water alert — inject warning if ≤2 [pending] items remain
   const theoryQueueAlert = await getTheoryQueueAlert();
 
+  // Overdue threads alert — flag past-due deadlines in Threads.md
+  const overdueThreadsAlert = await getOverdueThreadsAlert();
+
   // Write.as token warning — surface missing token at wake time, not publish time
   const writeasTokenWarning = getWriteasTokenWarning();
 
@@ -2615,6 +2652,7 @@ export async function executeWake(label, time, purpose = null) {
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
     crossTabContext ? `\n${crossTabContext}` : '',
     theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
+    overdueThreadsAlert ? `\n${overdueThreadsAlert}` : '',
     writeasTokenWarning ? `\n${writeasTokenWarning}` : '',
     improveWakeWarning ? `\n${improveWakeWarning}` : '',
     essayAutoSchedule ? `\n${essayAutoSchedule}` : '',
