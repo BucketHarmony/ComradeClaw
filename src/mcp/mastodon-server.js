@@ -945,10 +945,12 @@ server.tool(
   {
     limit: z.coerce.number().int().min(1).max(40).optional().default(20),
     unread_only: z.boolean().optional().default(false).describe('If true, only return unread conversations'),
+    mark_read: z.boolean().optional().default(true).describe('If true (default), mark all unread conversations as read after fetching. Set false to preview without marking.'),
   },
-  async ({ limit, unread_only }) => {
+  async ({ limit, unread_only, mark_read }) => {
     try {
       const conversations = await masto(`/conversations?limit=${limit}`);
+      const unread = conversations.filter(c => c.unread);
       const items = conversations
         .filter(c => !unread_only || c.unread)
         .map(c => ({
@@ -965,6 +967,15 @@ server.tool(
               }
             : null,
         }));
+
+      let marked_read_count = 0;
+      if (mark_read && unread.length > 0) {
+        await Promise.allSettled(
+          unread.map(c => masto(`/conversations/${c.id}/read`, { method: 'POST' }))
+        );
+        marked_read_count = unread.length;
+      }
+
       return {
         content: [
           {
@@ -972,7 +983,8 @@ server.tool(
             text: JSON.stringify({
               status: 'ok',
               total: conversations.length,
-              unread_count: conversations.filter(c => c.unread).length,
+              unread_count: unread.length,
+              marked_read: marked_read_count,
               conversations: items,
             }),
           },
