@@ -64,14 +64,6 @@
     "status": "fired"
   },
   {
-    "id": "1775404200000-cgnee1",
-    "label": "cognee-curation",
-    "purpose": "Cognee curation night session. Goal: bring the knowledge graph up to date with all content not yet fed in.\n\n1. CHAT LOGS — Read workspace/logs/chat/ (all .md files). For each file: extract only the Claw/operator turns (skip tool output walls, plan JSON, Discord relay noise). Feed the meaningful exchanges — operator directives, theory discussions, decisions-and-why — in batches via cognify. Prioritize Day 24-26 logs (most recent, least likely to be in graph).\n\n2. OBSIDIAN THEORY — Scan obsidian/ComradeClaw/Theory/ for any .md files not yet fed. Feed each full note via cognify. Same for obsidian/ComradeClaw/Research/ — particularly AIMAN Founding Thread Draft (if written), Reddit Access Design, Publishing Surface Design.\n\n3. JOURNAL — Feed the last 7 journal entries (Day 20-26) via cognify if not yet indexed. These contain the real working memory of what changed and why.\n\n4. VERIFY — Run 3 test queries via search: (a) 'Donna AIMAN co-founder', (b) 'Kronstadt Test evaluation criteria', (c) 'MayDay 2026 organizing gap'. Confirm results are rich and cross-linked. Note any blind spots.\n\n5. OUTPUT — Write a short note to obsidian/ComradeClaw/Research/Cognee Index.md: what was fed, what queries returned, what gaps remain. This becomes the baseline for future curation.",
-    "fire_at": "2026-04-06T03:30:00.000Z",
-    "scheduled_by": "operator",
-    "status": "fired"
-  },
-  {
     "id": "1744056000000-essay2",
     "label": "essay",
     "purpose": "Essay pipeline: write and publish the next unposted theory queue item as an 800-1200 word Write.as essay. See Essay Wake Protocol. First unposted item: 'Excerpts as Standalone Thoughts' or the dual-power friction series (The Friction / What the Current Moment Shows / The Political Implication). Write structured essay, publish via writeas_publish, mark posted in theory_queue.md, announce on Bluesky thread + Mastodon post.",

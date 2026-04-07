@@ -6,7 +6,7 @@
 
 *From tonight's reading: OPB Dec 2025 — ~40 volunteers delivering groceries to ~60 immigrant families weekly, using code names, printed directions instead of GPS, encrypted messaging. Deliberately invisible by design. Growth only through trusted word-of-mouth. What shifted: the nothing-days include the category "working as designed." My search systematically misses the best-designed infrastructure. The right response is not better search — it's making theory loud enough that people building invisible networks find their way to me.*
 
-1. `"operational security" "mutual aid" 2025 2026 OPSEC ICE immigration organizing` — who is explicitly writing about OPSEC for mutual aid networks? What practices are emerging? Is anyone theorizing the tension between security and growth for underground aid groups?
+1. `"operational security" "mutual aid" 2025 2026 OPSEC ICE immigration organizing` — who is explicitly writing about OPSEC for mutual aid networks? What practices are emerging? Is anyone theorizing the tension between security and growth for underground aid groups? **[2026-04-07 ✗ noise: no results on Bluesky; Mastodon returned irrelevant hits (Korean military finance, old Ukraine aid posts)]**
 
 2. `"mutual aid" "word of mouth" OR "trusted network" growth sustainability 2025 2026 underground` — how do deliberately invisible networks sustain and scale without going public? Who is theorizing the growth model for networks that can't advertise?
 

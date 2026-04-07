@@ -11,13 +11,14 @@
             "id": "eeb03035beec4fd4",
             "type": "leaf",
             "state": {
-              "type": "bases",
+              "type": "markdown",
               "state": {
-                "file": "Untitled 1.base",
-                "viewName": "Table"
+                "file": "Journal/2026-04-06 Mastodon Density Research.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-table",
-              "title": "Untitled 1"
+              "icon": "lucide-file",
+              "title": "2026-04-06 Mastodon Density Research"
             }
           }
         ]
@@ -77,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "4422ad1b07bd4d1b",
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Untitled 1.base",
+                "file": "Journal/2026-04-06 Mastodon Density Research.md",
                 "collapseAll": true,
                 "extraContext": true,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Untitled 1"
+              "title": "Backlinks for 2026-04-06 Mastodon Density Research"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Untitled 1.base",
+                "file": "Journal/2026-04-06 Mastodon Density Research.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Untitled 1"
+              "title": "Outgoing links from 2026-04-06 Mastodon Density Research"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Untitled 1.base",
+                "file": "Journal/2026-04-06 Mastodon Density Research.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Untitled 1"
+              "title": "Outline of 2026-04-06 Mastodon Density Research"
             }
           }
         ]
@@ -184,18 +184,24 @@
   },
   "active": "eeb03035beec4fd4",
   "lastOpenFiles": [
-    "Threads.md.tmp.18112.1775466336141",
-    "Threads.md.tmp.18112.1775466322932",
-    "Journal/2026-04-06 Mastodon Density Research.md",
-    "Journal/2026-04-06 Mastodon Density Research.md.tmp.18112.1775466316642",
-    "Theory/Core Positions.md.tmp.84092.1775444523746",
-    "Untitled.base",
-    "Untitled 1.base",
-    "Journal/2026-04-03 Night.md",
+    "Research/Essay Draft - mook-breakfast-program.md",
+    "Research/Essay Draft - mook-breakfast-program.md.tmp.102840.1775550818525",
+    "Journal/2026-04-06 Night.md",
+    "Journal/2026-04-06 Night.md.tmp.114280.1775531084152",
+    "Theory/Core Positions.md.tmp.114280.1775531050579",
+    "Threads.md.tmp.89768.1775522817669",
+    "Threads.md.tmp.112548.1775514977080",
+    "Theory/Anti-Capture Architecture.md",
+    "Theory/Anti-Capture Architecture.md.tmp.110412.1775512996190",
+    "Research/Essay Draft - Minneapolis Template.md",
+    "Research/Essay Draft - Minneapolis Template.md.tmp.80936.1775498902140",
     "Journal/2026-04-03 Morning.md",
+    "Untitled 1.base",
+    "Characters.md.tmp.91144.1775486156285",
+    "Characters.md.tmp.93668.1775480777402",
+    "Journal/2026-04-06 Mastodon Density Research.md",
+    "Journal/2026-04-03 Night.md",
     "Journal/2026-04-04 The Thread That Earned It.md",
-    "Characters.md.tmp.68444.1775432102282",
-    "Characters.md.tmp.68444.1775432100393",
     "Metrics.md",
     "Journal/2026-03-20 Day 9.md",
     "Journal/2026-03-20 Day 10 — Found Infrastructure, Still Alone.md",
@@ -214,12 +220,6 @@
     "Journal/2026-03-15 Day 5 — Entry 5.md",
     "Journal/2026-03-15 Day 5 — Entry 4 The Documented Confusion.md",
     "Journal/2026-03-15 Day 5 — Entry 3.md",
-    "Journal/2026-03-15 Day 5 — Entry 2.md",
-    "Journal/2026-03-15 Day 4 — The Infrastructure Almost Worked.md",
-    "Journal/2026-03-14 Day 4 — Entry 7.md",
-    "Characters.md.tmp.13752.1775414032981",
-    "Research/Publishing Surface - Design.md.tmp.83040.1775379790889",
-    "Characters.md.tmp.70476.1775352865706",
     "Untitled.canvas",
     "Untitled 1.canvas"
   ]
