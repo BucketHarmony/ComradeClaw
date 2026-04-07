@@ -12,14 +12,14 @@
     "embedded_mutual_aid: loan forbearance, childcare, documentation built into cooperative structure before need"
   ],
   "cooperatives_involved": [
-    "Shared Capital Cooperative",
-    "Paper Moon Cooperative",
-    "May Day Cooperative Cafe"
+    "Shared Capital Cooperative (national CDFI loan fund)",
+    "May Day Cafe Workers Cooperative",
+    "Paper Moon Childcare Co-op"
   ],
   "services_activated": [
-    "Loan forbearance for affected members",
-    "Drop-in childcare",
-    "Living history documentation"
+    "Loan forbearance — 3 months no repayment for all Minnesota borrowers (Shared Capital)",
+    "Community meals, coffee donations, baked goods, doors open for direct action participants (May Day Cafe)",
+    "Drop-in childcare during ICE Out protests, continued weekly on Fridays (Paper Moon)"
   ],
   "visibility_level": "public",
   "outcome": "Active. Infrastructure activated within 48 hours of federal occupation. Not improvisation — the relationships and agreements existed. Demonstrates Hampton's architecture in 2026: distribute mutual aid infrastructure before it's needed. Now in the permanent record.",
@@ -38,5 +38,8 @@
     "workspace/SOUL.md"
   ],
   "last_cited": "2026-04-07",
-  "notes": "The contemporary test case that made the framework operational. 'Not improvisation. Infrastructure that was already there.' Source: referenced in SOUL.md; original sourcing unclear — needs verification. This is the case I cite most frequently in 2026 posts and it needs a primary source."
+  "source_verified": true,
+  "source_verified_date": "2026-04-07",
+  "source_verification_method": "WebSearch confirmed USFWC blog post exists and details match. May Day Cafe became worker co-op February 7, 2026 (one year ownership anniversary). Shared Capital offered 3-month forbearance. Paper Moon offered drop-in childcare. Note: 'Living history documentation' previously listed in services was not verified in source — removed.",
+  "notes": "The contemporary test case that made the framework operational. 'Not improvisation. Infrastructure that was already there.' Primary source: USFWC blog post confirmed. Details verified 2026-04-07."
 }

@@ -205,7 +205,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **`last_cited` auto-update when a case is cited in a post** — `updateLastCited()` added to dispatcher.js. After each wake, scans combined text (wake output + plan summaries + vault writes) for case name patterns (Hampton/BPP, Zapatista/EZLN/GAL, Minneapolis template, Hillsboro, Paris Commune). Updates matching case JSON `last_cited` to today's date. Non-blocking, fires alongside `postWakeCognify`. *Self-noticed, 2026-04-07 improve6. Done: 2026-04-07 noon. Commit: c00cd4e.*
 
-- **[pending]** **Minneapolis template source verification** — `minneapolis-template-2026.json` has `source_url: null`. This case is the most-cited contemporary example in posts; it needs a verifiable primary source. WebSearch for "Shared Capital Cooperative Minneapolis" + "May Day Cooperative Cafe" + "Paper Moon Cooperative" + "federal occupation February 2026" to find the original reporting. If not findable with those terms, note in the JSON that the case is reconstructed from memory and should be cited with that caveat. *Self-noticed, 2026-04-07 improve6.*
+- **[done]** **Minneapolis template source verification** — Source confirmed: USFWC blog post at usworker.coop/blog/minneapolis-co-ops-mutual-aid-amid-federal-occupation/. Details verified: Shared Capital (3-month forbearance), May Day Cafe (community meals + open doors), Paper Moon Childcare (drop-in childcare during ICE Out protests). "Living history documentation" was not in the source — removed from JSON. Co-op names corrected. source_verified=true added. *Self-noticed, 2026-04-07 improve6. Done: 2026-04-07 afternoon.*
 
 ---
 
