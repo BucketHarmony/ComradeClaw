@@ -31,6 +31,7 @@ const SOLIDARITY_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'solidarity');
 const SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'search_seen');
 const FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
 const SCHEDULED_WAKES_PATH = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
+const CROSS_PLATFORM_IDS_PATH = path.join(WORKSPACE_PATH, 'memory', 'cross_platform_identities.json');
 
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
@@ -175,6 +176,35 @@ function classifyEngagementAsync(agent, handle, uri) {
         entries[idx].classified = true;
         entries[idx].classification = classification;
         entries[idx].classified_at = new Date().toISOString();
+        await fs.writeFile(logFile, JSON.stringify(entries, null, 2));
+      }
+    } catch { /* non-fatal */ }
+  });
+}
+
+// ─── Theory Interlocutor Tagging ─────────────────────────────────────────────
+// After engagement is logged, check if the handle is a known theory interlocutor
+// from cross_platform_identities.json. If so, add theory_interlocutor: true to
+// the engagement entry. Enables filtering for substantive theory exchanges.
+function tagTheoryInterlocutorAsync(handle, uri) {
+  setImmediate(async () => {
+    try {
+      const raw = await fs.readFile(CROSS_PLATFORM_IDS_PATH, 'utf-8');
+      const data = JSON.parse(raw);
+      const identity = data.identities.find(
+        id => (id.bluesky && id.bluesky === handle) || (id.mastodon && id.mastodon === handle)
+      );
+      if (!identity || !identity.theory_interlocutor) return;
+
+      const now = new Date();
+      const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+      const logFile = path.join(ENGAGEMENT_LOG_PATH, `${month}.json`);
+      const logData = await fs.readFile(logFile, 'utf-8');
+      const entries = JSON.parse(logData);
+      const idx = entries.findLastIndex(e => e.uri === uri && e.handle === handle);
+      if (idx >= 0 && !entries[idx].theory_interlocutor) {
+        entries[idx].theory_interlocutor = true;
+        entries[idx].unified_id = identity.unified_id;
         await fs.writeFile(logFile, JSON.stringify(entries, null, 2));
       }
     } catch { /* non-fatal */ }
@@ -678,6 +708,8 @@ server.tool(
         logEngagement(engagementEntry);
         // Non-blocking: classify account and update the log entry
         classifyEngagementAsync(agent, handle, notif.uri);
+        // Non-blocking: tag known theory interlocutors
+        tagTheoryInterlocutorAsync(handle, notif.uri);
         // Non-blocking: update character last-seen if this is a known comrade
         updateCharacterLastSeen(handle, replyText.substring(0, 100)).catch(() => {});
       }
