@@ -697,40 +697,46 @@ async function autoRefillTheoryQueue(maxItems = Infinity, keywords = []) {
 }
 
 /**
- * Reads study_queries.md, extracts query lines marked ✓ productive in the last 14 days.
- * Returns a formatted context block, or '' if none found.
+ * Reads study_queries.md, extracts the top 3 oldest productive queries from past sessions.
+ * Skips the most recent dated section (already surfaced in studyQueriesContext).
+ * Returns oldest-first so that topics with the most time to develop get retried first.
  */
 async function getProvenQueries() {
   try {
     const sqPath = path.join(WORKSPACE_PATH, 'memory', 'study_queries.md');
     const content = await fs.readFile(sqPath, 'utf-8');
-    const lines = content.split('\n');
 
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 14);
+    // Split into dated sections; file is newest-first
+    const sections = content.split(/\n(?=## \d{4}-)/).filter(s => s.trim());
+    const dateSections = sections.filter(s => /^## \d{4}-/.test(s.trimStart()));
 
+    if (dateSections.length <= 1) return ''; // no cross-day history
+
+    // Skip most recent section — those queries are already in studyQueriesContext
+    const historicalSections = dateSections.slice(1);
+
+    // Collect productive queries, oldest-first (reverse since file is newest-first)
     const proven = [];
-    for (const line of lines) {
-      if (!line.includes('✓ productive')) continue;
+    for (const section of [...historicalSections].reverse()) {
+      const headerMatch = section.match(/^## (\d{4}-\d{2}-\d{2}[^\n]*)/m);
+      const sectionLabel = headerMatch ? headerMatch[1] : null;
 
-      // Extract date from annotation like **[2026-04-05 ✓ productive: ...]**
-      const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\s+✓\s+productive/);
-      if (dateMatch) {
-        const annotationDate = new Date(dateMatch[1]);
-        if (annotationDate < cutoff) continue;
-      }
-
-      // Extract query text — backtick-quoted near start of line
-      const queryMatch = line.match(/`([^`]+)`/);
-      if (queryMatch) {
-        proven.push(queryMatch[1]);
+      for (const line of section.split('\n')) {
+        if (!line.includes('✓ productive')) continue;
+        const queryMatch = line.match(/`([^`]+)`/);
+        if (queryMatch) {
+          proven.push({ query: queryMatch[1], label: sectionLabel });
+        }
       }
     }
 
     if (proven.length === 0) return '';
 
-    const list = proven.map((q, i) => `${i + 1}. \`${q}\``).join('\n');
-    return `## Proven Search Queries (verified productive in last 14 days)\n${list}\n\n*These queries surfaced real organizer conversations. Try them again — conversations evolve, new people join.*`;
+    const top3 = proven.slice(0, 3);
+    const list = top3.map(({ query, label }) =>
+      `- \`${query}\`${label ? ` *(${label})*` : ''}`
+    ).join('\n');
+    return `## Proven Queries from Past Sessions (re-try — topics evolve)\n${list}\n\n*These queries surfaced real organizer conversations in earlier sessions. Threads have had time to grow. Try them again.*`;
   } catch {
     return '';
   }
