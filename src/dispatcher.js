@@ -2086,14 +2086,36 @@ async function postWakeCognify(label, dayNumber, planFile, writeTargets) {
       signal: AbortSignal.timeout(30000), // cognify can be slow — graph processing
     });
 
+    const httpStatus = res.status;
     if (res.ok) {
       console.log(`[dispatcher] Post-wake cognify: ${text.length} chars ingested (${label} Day ${dayNumber})`);
     } else {
       console.log(`[dispatcher] Post-wake cognify: HTTP ${res.status} — non-fatal`);
     }
+    await appendCogneeLog({ wake_label: label, day: dayNumber, chars_ingested: text.length, http_status: httpStatus });
   } catch (err) {
     console.log(`[dispatcher] Post-wake cognify skipped: ${err.message}`);
+    await appendCogneeLog({ wake_label: label, day: dayNumber, chars_ingested: 0, http_status: null, error: err.message }).catch(() => {});
   }
+}
+
+/**
+ * Append one entry to workspace/logs/cognee/YYYY-MM.json.
+ * Creates the file and directory if they don't exist.
+ * Each entry: { timestamp, wake_label, day, chars_ingested, http_status, error? }
+ */
+async function appendCogneeLog(entry) {
+  const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const monthKey = new Date().toLocaleDateString('en-CA', { timeZone: tz }).substring(0, 7); // YYYY-MM
+  const logDir = path.join(WORKSPACE_PATH, 'logs', 'cognee');
+  const logFile = path.join(logDir, `${monthKey}.json`);
+  await fs.mkdir(logDir, { recursive: true });
+  let entries = [];
+  try {
+    entries = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+  } catch {}
+  entries.push({ timestamp: new Date().toISOString(), ...entry });
+  await fs.writeFile(logFile, JSON.stringify(entries, null, 2), 'utf-8');
 }
 
 // ─── Wake Interface ──────────────────────────────────────────────────────────
