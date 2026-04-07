@@ -2030,6 +2030,72 @@ async function getMookOutlineAlert() {
   }
 }
 
+// ─── Post-Wake Cognee Ingestion ─────────────────────────────────────────────
+
+/**
+ * Feed wake outputs into the Cognee knowledge graph after the wake completes.
+ * Ingests: plan summary (label, date, theory_praxis, task summaries) + any
+ * theory/journal files written to the Obsidian vault during the wake.
+ * Non-blocking — called with .catch() so failures never delay the return.
+ */
+async function postWakeCognify(label, dayNumber, planFile, writeTargets) {
+  try {
+    const health = await fetch(`${COGNEE_URL}/health`, {
+      signal: AbortSignal.timeout(2000)
+    }).then(r => r.json()).catch(() => null);
+    if (!health || health.status !== 'ok') return;
+
+    const parts = [`[Wake: ${label}, Day ${dayNumber}]`];
+
+    // Plan summary — structured outcome of this wake
+    if (planFile) {
+      try {
+        const planContent = JSON.parse(await fs.readFile(planFile, 'utf-8'));
+        const taskSummaries = (planContent.tasks || [])
+          .map(t => t.summary || '')
+          .filter(Boolean)
+          .join(' | ');
+        parts.push([
+          `## Wake Plan: ${planContent.wake} (${planContent.date})`,
+          `theory_praxis: ${planContent.theory_praxis || 'none'}`,
+          `bold_check: ${planContent.bold_check || ''}`,
+          taskSummaries ? `tasks: ${taskSummaries}` : '',
+        ].filter(Boolean).join('\n'));
+      } catch {}
+    }
+
+    // Theory and journal files written during the wake — the new knowledge
+    const vaultWrites = writeTargets
+      .filter(p => /obsidian|Theory|Journal/i.test(p))
+      .slice(0, 3);
+    for (const filePath of vaultWrites) {
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        // First 600 chars captures YAML frontmatter + opening paragraphs
+        parts.push(`## ${path.basename(filePath)}\n${content.substring(0, 600)}`);
+      } catch {}
+    }
+
+    const text = parts.join('\n\n');
+    if (text.length < 60) return; // nothing worth cognifying
+
+    const res = await fetch(`${COGNEE_URL}/cognify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(30000), // cognify can be slow — graph processing
+    });
+
+    if (res.ok) {
+      console.log(`[dispatcher] Post-wake cognify: ${text.length} chars ingested (${label} Day ${dayNumber})`);
+    } else {
+      console.log(`[dispatcher] Post-wake cognify: HTTP ${res.status} — non-fatal`);
+    }
+  } catch (err) {
+    console.log(`[dispatcher] Post-wake cognify skipped: ${err.message}`);
+  }
+}
+
 // ─── Wake Interface ──────────────────────────────────────────────────────────
 
 /**
@@ -2530,6 +2596,9 @@ export async function executeWake(label, time, purpose = null) {
       console.warn(`[dispatcher] Quality score injection failed (non-fatal): ${err.message}`);
     }
   }
+
+  // Post-wake Cognee ingestion — feed wake outputs into knowledge graph (non-blocking)
+  postWakeCognify(label, dayNumber, planFile, writeTargets).catch(() => {});
 
   return {
     time,
