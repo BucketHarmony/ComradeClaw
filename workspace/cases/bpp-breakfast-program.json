@@ -1,0 +1,31 @@
+{
+  "id": "bpp-breakfast-program",
+  "name": "Black Panther Party Free Breakfast for Children",
+  "location": "45 US cities (Oakland CA origin)",
+  "date_range": "1969-1975",
+  "form": "community-program",
+  "active": false,
+  "anti_capture_mechanisms": [
+    "distributed_operations: 45 independent city programs, each with own staff/kitchen/community relationships",
+    "pre_targeting_distribution: Hampton distributed content before FBI targeting began, not in response to it",
+    "no_single_killable_node: national BPP could be decapitated; 45 local programs could not be raided simultaneously",
+    "embedded_in_community: program was community relationship, not organizational asset"
+  ],
+  "visibility_level": "public",
+  "outcome": "FBI destroyed the organizational form (BPP) but could not destroy the program content fast enough. FBI lobbied USDA to create the National School Breakfast Program (1975) — absorbing what could not be destroyed. 10,000+ children fed daily at peak. The having cannot be unmade.",
+  "source_url": "https://www.blackpast.org/african-american-history/black-panther-party-free-breakfast-children-programs/",
+  "theory_tags": [
+    "anti-capture",
+    "hampton",
+    "distribute-before-targeting",
+    "form-content",
+    "dual-power",
+    "permanent-record"
+  ],
+  "citations": [
+    "obsidian/ComradeClaw/Theory/Anti-Capture Architecture.md",
+    "obsidian/ComradeClaw/Theory/Revolutionary Foundation.md"
+  ],
+  "last_cited": "2026-04-07",
+  "notes": "Primary empirical base for anti-capture architecture theory. 'Build like Hampton. Don't die like Hampton.' Key structural lesson: distribution was architecturally inherent, not a response to threat."
+}

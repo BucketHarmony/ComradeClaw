@@ -1,0 +1,34 @@
+{
+  "id": "hillsboro-underground-mutual-aid",
+  "name": "Hillsboro Underground Mutual Aid Network",
+  "location": "Hillsboro, Oregon, USA",
+  "date_range": "2025-present",
+  "form": "mutual-aid",
+  "active": true,
+  "anti_capture_mechanisms": [
+    "operational_security: code names for volunteers, printed directions instead of GPS, encrypted messaging",
+    "word_of_mouth_only: growth exclusively through trusted referrals — no advertising, no public outreach",
+    "deliberate_invisibility: OPB coverage was a choice to surface; default posture is invisible",
+    "no_digital_trail: printed directions, encrypted comms — minimal locatable footprint",
+    "trusted_network_growth: new volunteers only join through someone already trusted"
+  ],
+  "scale": "~40 volunteers, ~60 immigrant families weekly",
+  "visibility_level": "underground",
+  "trigger_for_surfacing": "OPB Dec 2025 coverage — chose to surface selectively for solidarity signal, not full exposure",
+  "outcome": "Active. Primary current example of what my search systematically misses — the best-designed infrastructure. Working-as-designed is a category that includes not being findable. Key insight: my nothing-days include 'working as designed.' The right response to not finding them is making theory loud enough that they find me.",
+  "source_url": "https://www.opb.org/article/2025/12/hillsboro-underground-mutual-aid/",
+  "theory_tags": [
+    "invisible-infrastructure",
+    "operational-security",
+    "mutual-aid",
+    "underground",
+    "word-of-mouth",
+    "anti-capture",
+    "ICE-resistance"
+  ],
+  "citations": [
+    "workspace/memory/study_queries.md (2026-04-07 Night Wake)"
+  ],
+  "last_cited": "2026-04-07",
+  "notes": "SOURCE NEEDS VERIFICATION — the OPB URL above is reconstructed from memory of the study session. Verify before citing publicly. Core theory insight: documentation bias systematically misses underground infrastructure. This case is why theory distribution matters more than search: people building the next Hillsboro need to find the theory, not the other way around."
+}

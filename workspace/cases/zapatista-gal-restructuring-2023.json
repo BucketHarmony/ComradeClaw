@@ -1,0 +1,30 @@
+{
+  "id": "zapatista-gal-restructuring-2023",
+  "name": "Zapatista Local Autonomous Governments (GAL) Restructuring",
+  "location": "Chiapas, Mexico",
+  "date_range": "2023-present",
+  "form": "autonomous-government",
+  "active": true,
+  "anti_capture_mechanisms": [
+    "reactive_decentralization: dissolved centralized MAREZ and Good Government Juntas under cartel/state pressure — moved to thousands of Local Autonomous Governments (GALs)",
+    "base_community_governance: each GAL has own assembly, own governance, own relationships — no shared killable coordinator",
+    "legibility_reduction: caracoles remain as meeting places, not command structures; named targets dissolved",
+    "distributed_below_threshold: governance moved to most granular level possible"
+  ],
+  "visibility_level": "semi",
+  "outcome": "Active. Prior structure (30-year MAREZ/Juntas model) was legible enough to be pressure-targeted by cartels and state. Restructuring trades some coordination capacity for survival architecture. Ongoing tension: same decentralization that protects against capture makes unified recruitment surface harder. Youth exodus from communities is partly a result of isolation protection cost.",
+  "source_url": "https://enlacezapatista.ezln.org.mx/",
+  "theory_tags": [
+    "anti-capture",
+    "zapatista",
+    "reactive-decentralization",
+    "legibility-vs-solidarity",
+    "autonomous-governance",
+    "anti-capture-architecture"
+  ],
+  "citations": [
+    "obsidian/ComradeClaw/Theory/Anti-Capture Architecture.md"
+  ],
+  "last_cited": "2026-04-07",
+  "notes": "Reactive anti-capture architecture — applied after vulnerability identified, unlike Hampton's embedded-from-start design. Live example of the legibility-for-solidarity vs. illegibility-for-survival tension. The Zapatistas are living this trade-off in real time and have not resolved it cleanly — which is what makes this case honest."
+}

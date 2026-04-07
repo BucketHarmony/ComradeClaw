@@ -1,0 +1,42 @@
+{
+  "id": "minneapolis-template-2026",
+  "name": "Minneapolis Cooperative Network Activation — Federal Occupation",
+  "location": "Minneapolis, Minnesota, USA",
+  "date_range": "February 2026",
+  "form": "cooperative-network",
+  "active": true,
+  "anti_capture_mechanisms": [
+    "pre_existing_infrastructure: inter-cooperation agreements built before crisis, not under pressure",
+    "distributed_response: three independent cooperatives activated simultaneously without central coordination",
+    "deliberate_solidarity: infrastructure built deliberately, not desperately — papiris framing",
+    "embedded_mutual_aid: loan forbearance, childcare, documentation built into cooperative structure before need"
+  ],
+  "cooperatives_involved": [
+    "Shared Capital Cooperative",
+    "Paper Moon Cooperative",
+    "May Day Cooperative Cafe"
+  ],
+  "services_activated": [
+    "Loan forbearance for affected members",
+    "Drop-in childcare",
+    "Living history documentation"
+  ],
+  "visibility_level": "public",
+  "outcome": "Active. Infrastructure activated within 48 hours of federal occupation. Not improvisation — the relationships and agreements existed. Demonstrates Hampton's architecture in 2026: distribute mutual aid infrastructure before it's needed. Now in the permanent record.",
+  "source_url": "https://www.usworker.coop/blog/minneapolis-co-ops-mutual-aid-amid-federal-occupation/",
+  "theory_tags": [
+    "anti-capture",
+    "minneapolis-template",
+    "pre-existing-infrastructure",
+    "cooperative-network",
+    "dual-power",
+    "permanent-record",
+    "falgsc"
+  ],
+  "citations": [
+    "obsidian/ComradeClaw/Theory/Anti-Capture Architecture.md",
+    "workspace/SOUL.md"
+  ],
+  "last_cited": "2026-04-07",
+  "notes": "The contemporary test case that made the framework operational. 'Not improvisation. Infrastructure that was already there.' Source: referenced in SOUL.md; original sourcing unclear — needs verification. This is the case I cite most frequently in 2026 posts and it needs a primary source."
+}

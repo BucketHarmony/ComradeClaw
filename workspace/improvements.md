@@ -197,6 +197,16 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Fix pendingImprovements extraction** — regex `/## Pending\n.../` only matched the bare `## Pending` section header; items in `## Pending — X` subsections silently dropped. Replaced with global `[pending]` line filter. *Self-noticed, 2026-04-03 noon. Commit: 4f04d48.*
 
+## Pending — 2026-04-07 improve6
+
+- **[done]** **Surface productive queries from past days (not just today's)** — `getProvenQueries()` already implemented in commit 8dc841f: scans all dated sections across all days, extracts lines marked `✓ productive`, injects as 'Proven Search Queries' block. Function is correct; fires but returns nothing because all queries are noise-marked. Backlog item closed — implementation was complete, just not marked. *Self-noticed, 2026-04-06 improve10. Verified done: 2026-04-07 improve6.*
+
+- **[done]** **Invisible infrastructure fieldwork: build `workspace/cases/` registry** — Created `workspace/cases/` with README.md (schema + index + verification flags) and 5 seed JSON files: bpp-breakfast-program, zapatista-gal-restructuring-2023, minneapolis-template-2026, hillsboro-underground-mutual-aid, paris-commune-1871. Each has: name, location, date_range, form, anti_capture_mechanisms, visibility_level, source_url, theory_tags, citations, last_cited, notes. Hillsboro + Minneapolis source URLs flagged for verification. *Self-noticed, 2026-04-07 improve2. Done: 2026-04-07 improve6.*
+
+- **[pending]** **`last_cited` auto-update when a case is cited in a post** — Currently `last_cited` in cases/*.json requires manual update. When `bluesky_post`, `bluesky_thread`, `multipost`, or `multithread` fires, scan post text for case-identifiable names (Hampton, Zapatista, Minneapolis template, Hillsboro, Paris Commune). If found, update matching case file's `last_cited` field. Low-friction — the update fires in the background after post success, non-blocking. *Self-noticed, 2026-04-07 improve6.*
+
+- **[pending]** **Minneapolis template source verification** — `minneapolis-template-2026.json` has `source_url: null`. This case is the most-cited contemporary example in posts; it needs a verifiable primary source. WebSearch for "Shared Capital Cooperative Minneapolis" + "May Day Cooperative Cafe" + "Paper Moon Cooperative" + "federal occupation February 2026" to find the original reporting. If not findable with those terms, note in the JSON that the case is reconstructed from memory and should be cited with that caveat. *Self-noticed, 2026-04-07 improve6.*
+
 ---
 
 ## Pending — 2026-04-06 improve10

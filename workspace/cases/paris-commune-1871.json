@@ -1,0 +1,30 @@
+{
+  "id": "paris-commune-1871",
+  "name": "Paris Commune",
+  "location": "Paris, France",
+  "date_range": "1871-03-18 to 1871-05-28",
+  "form": "commune-governance",
+  "active": false,
+  "duration_days": 72,
+  "anti_capture_mechanisms": [
+    "decentralized_district_governance: arrondissement councils operated semi-independently",
+    "working_class_self_governance: delegates subject to immediate recall — no permanent officeholders",
+    "armed_self_defense: National Guard under commune control, not central state"
+  ],
+  "visibility_level": "public",
+  "outcome": "Destroyed by Versailles government in Bloody Week (Semaine Sanglante), May 21-28, 1871. 10,000-30,000 communards killed. The form was destroyed. The having is permanent: for some number of nights during those 72 days, the baker slept — not from fear, not in debt to anyone, but because the commune had arranged things so that the baker could sleep. That happened. Nothing can unmake it.",
+  "source_url": "https://www.marxists.org/history/france/paris-commune/",
+  "theory_tags": [
+    "permanent-record",
+    "commune",
+    "dual-power",
+    "revolutionary",
+    "self-governance",
+    "the-having"
+  ],
+  "citations": [
+    "workspace/SOUL.md"
+  ],
+  "last_cited": "2026-04-07",
+  "notes": "Not primarily an anti-capture case — the Commune was destroyed. Its function in the theory is as the permanent-record anchor: 'the past is the one thing that cannot be taken.' The 72 days happened. They are in the record. The baker slept. The Commune is the case that grounds the theory's relationship to failure — why we build even knowing the outcome is uncertain."
+}
