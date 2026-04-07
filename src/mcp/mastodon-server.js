@@ -4,8 +4,8 @@
  *
  * Exposes Mastodon tools via the Model Context Protocol (stdio transport).
  * Tools: mastodon_post, mastodon_reply, mastodon_read_timeline,
- *        mastodon_read_notifications, mastodon_boost, mastodon_favourite,
- *        mastodon_search
+ *        mastodon_read_notifications, mastodon_read_dms, mastodon_boost,
+ *        mastodon_favourite, mastodon_search
  *
  * Requires env: MASTODON_INSTANCE, MASTODON_ACCESS_TOKEN
  */
@@ -925,6 +925,55 @@ server.tool(
               errors: results.errors.length,
               followed: results.followed,
               error_details: results.errors,
+            }),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }],
+      };
+    }
+  }
+);
+
+// ─── mastodon_read_dms ───────────────────────────────────────────────────────
+
+server.tool(
+  'mastodon_read_dms',
+  'Read Mastodon direct message conversations (private mentions). Calls /api/v1/conversations — separate from notifications. Use this to check for DMs that would otherwise go undetected.',
+  {
+    limit: z.coerce.number().int().min(1).max(40).optional().default(20),
+    unread_only: z.boolean().optional().default(false).describe('If true, only return unread conversations'),
+  },
+  async ({ limit, unread_only }) => {
+    try {
+      const conversations = await masto(`/conversations?limit=${limit}`);
+      const items = conversations
+        .filter(c => !unread_only || c.unread)
+        .map(c => ({
+          id: c.id,
+          unread: c.unread,
+          accounts: (c.accounts || []).map(a => a.acct),
+          last_status: c.last_status
+            ? {
+                id: c.last_status.id,
+                created_at: c.last_status.created_at,
+                content: (c.last_status.content || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
+                account: c.last_status.account?.acct,
+                url: c.last_status.url,
+              }
+            : null,
+        }));
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'ok',
+              total: conversations.length,
+              unread_count: conversations.filter(c => c.unread).length,
+              conversations: items,
             }),
           },
         ],

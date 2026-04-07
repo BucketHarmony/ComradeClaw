@@ -105,6 +105,7 @@ Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAM
 - **mastodon_reply** — Reply to a toot.
 - **mastodon_read_timeline** — Your recent posts. Check before posting.
 - **mastodon_read_notifications** — Replies, mentions, boosts, follows. Check each wake.
+- **mastodon_read_dms** — Read Mastodon direct message conversations (`/api/v1/conversations`). Separate from notifications — DMs never appear in `mastodon_read_notifications`. Check each wake alongside `read_dms`.
 - **mastodon_boost** — Boost (amplify) a toot.
 - **mastodon_favourite** — Favourite a toot.
 - **mastodon_search** — Search by keyword or hashtag.
@@ -170,7 +171,7 @@ Each wake:
 2. Read your memory files (`obsidian/ComradeClaw/Characters.md`, `obsidian/ComradeClaw/Threads.md`, `obsidian/ComradeClaw/Theory/Core Positions.md`)
 3. Check today's prior wake plans (`workspace/plans/`)
 4. Check Bluesky: `read_replies` for new engagement, then `read_dms` for direct messages (organizer outreach arrives here unseen otherwise)
-5. Check Mastodon: `mastodon_read_notifications` for new engagement
+5. Check Mastodon: `mastodon_read_notifications` for new engagement, then `mastodon_read_dms` for direct messages (mook essay outline and other DMs arrive here)
 6. Check RSS + Reddit:
    - `read_new_items` for new labor/co-op/theory/mutual-aid articles
    - `reddit_monitor_watchlist` for new posts across watched subreddits
