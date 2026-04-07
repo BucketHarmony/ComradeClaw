@@ -333,6 +333,54 @@ async function getWakeDriftAlert() {
 }
 
 /**
+ * Wake quality 7-day trend — reads last 7 non-improve plan files (across all days),
+ * computes average quality_score, detects trend direction.
+ * Always returns a one-liner: "Wake quality (7d avg): 7.2/12 (60%) — stable"
+ * Non-fatal: returns '' on any error or insufficient data.
+ */
+async function getWakeQualityTrend() {
+  try {
+    const files = await fs.readdir(PLANS_PATH);
+    // Non-improve plan files sorted newest-first
+    const planFiles = files
+      .filter(f => f.endsWith('.json') && !f.includes('_improve'))
+      .sort()
+      .reverse()
+      .slice(0, 7);
+
+    if (planFiles.length < 3) return ''; // Not enough history yet
+
+    const scores = [];
+    for (const file of planFiles) {
+      try {
+        const content = JSON.parse(await fs.readFile(path.join(PLANS_PATH, file), 'utf-8'));
+        if (content.quality_score) {
+          const match = String(content.quality_score).match(/^(\d+)\/12/);
+          if (match) scores.push(parseInt(match[1], 10));
+        }
+      } catch { /* skip unreadable plan */ }
+    }
+
+    if (scores.length < 3) return '';
+
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const pct = Math.round((avg / 12) * 100);
+
+    // Trend: compare oldest half vs newest half (scores are newest-first)
+    const half = Math.floor(scores.length / 2);
+    const newerAvg = scores.slice(0, half).reduce((a, b) => a + b, 0) / half;
+    const olderAvg = scores.slice(-half).reduce((a, b) => a + b, 0) / half;
+    const delta = newerAvg - olderAvg;
+    const trend = delta > 0.5 ? 'improving' : delta < -0.5 ? 'declining' : 'stable';
+    const arrow = trend === 'improving' ? '↑' : trend === 'declining' ? '↓' : '→';
+
+    return `Wake quality (${scores.length}-wake avg): ${avg.toFixed(1)}/12 (${pct}%) ${arrow} ${trend}`;
+  } catch {
+    return ''; // Non-fatal
+  }
+}
+
+/**
  * Count unique classified-organizer handles across all Bluesky + Mastodon engagement logs.
  * Used to evaluate whether the A/B experiment gate (≥3 organizers engaged) has been cleared.
  * Returns a context string to inject into the wake prompt, or null on failure.
@@ -2071,6 +2119,9 @@ export async function executeWake(label, time, purpose = null) {
   // Wake gap — how long since the last wake completed (2h vs 8h changes what needs checking)
   const hoursSinceLastWake = await getHoursSinceLastWake();
 
+  // Wake quality 7-day trend — shows whether quality is improving/stable/declining across regular wakes
+  const wakeQualityTrend = await getWakeQualityTrend();
+
   // Comrade follow-up context — last heard from each active comrade, prevents silence and repeat-messaging
   const comradeReplyContext = await getComradeReplyContext();
 
@@ -2313,6 +2364,7 @@ export async function executeWake(label, time, purpose = null) {
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',
+    wakeQualityTrend ? `\n${wakeQualityTrend}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
   ].join('\n');
