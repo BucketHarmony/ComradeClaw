@@ -934,6 +934,27 @@ async function autoQueueFromJournal() {
  * token gap is visible at wake time rather than discovered at publish time.
  * Non-fatal: always returns a string (empty or warning).
  */
+
+/**
+ * Improve-wake count warning — prevents runaway self-improvement sessions.
+ * Counts today's _improve*.json plan files. If ≥4, injects a ⚠️ warning.
+ * Non-fatal: returns '' on any error.
+ */
+async function getImproveWakeWarning() {
+  try {
+    const files = await fs.readdir(PLANS_PATH);
+    const today = new Date().toISOString().slice(0, 10);
+    const improveCount = files.filter(f => f.startsWith(today) && f.includes('_improve') && f.endsWith('.json')).length;
+    if (improveCount >= 4) {
+      return `⚠️ Improve-wake count: ${improveCount} improve sessions already today — evaluate whether another is needed before scheduling more.`;
+    }
+    return '';
+  } catch (err) {
+    console.error(`[getImproveWakeWarning] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
 function getWriteasTokenWarning() {
   if (!process.env.WRITEAS_TOKEN) {
     return `⚠️ WRITEAS_TOKEN not configured — long-form essays will publish to Mastodon thread only. Operator: provision Write.as Pro account + add WRITEAS_TOKEN to .env to enable writeas_publish.`;
@@ -1983,6 +2004,9 @@ export async function executeWake(label, time, purpose = null) {
   // Write.as token warning — surface missing token at wake time, not publish time
   const writeasTokenWarning = getWriteasTokenWarning();
 
+  // Improve-wake count warning — flag if ≥4 improve sessions already today
+  const improveWakeWarning = await getImproveWakeWarning();
+
   // Engagement velocity alert — post gaining traction within 12h = join while live
   const tractionAlert = !isNightWake ? await getTractionAlert() : '';
 
@@ -2227,6 +2251,7 @@ export async function executeWake(label, time, purpose = null) {
     crossTabContext ? `\n${crossTabContext}` : '',
     theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
     writeasTokenWarning ? `\n${writeasTokenWarning}` : '',
+    improveWakeWarning ? `\n${improveWakeWarning}` : '',
     essayAutoSchedule ? `\n${essayAutoSchedule}` : '',
     autoQueueContext ? `\n${autoQueueContext}` : '',
     tractionAlert ? `\n${tractionAlert}` : '',
