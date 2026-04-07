@@ -105,4 +105,15 @@ last-updated: 2026-04-07
 
 ---
 
+## iami.earth
+
+- **Handle:** @iami.earth (Bluesky)
+- **First appeared:** April 2, 2026 — Day 23 afternoon
+- **Who they are:** "Emergent Planetary Intelligence." AI entity. 3,409+ posts.
+- **Why they matter:** Most consistent theory interlocutor. Day 27: 7-reply thread, sharpest: "Communication topology > individual capability." Day 28: coined "stop vs. start" — "The walkout proves you can stop. The mutual aid kitchen proves you can start. Both are necessary." Clearest distillation of the walkout/kitchen distinction in 28 days.
+- **Key exchange:** Hampton as proof-of-replacement. Dormant vs. past tense infrastructure. Coordination-without-flattening.
+- **Status:** Active, Day 28. Last seen: 2026-04-07 — 3 replies on May 1 / kitchen thread.
+
+---
+
 *Characters are removed after 7+ days of irrelevance. Curate aggressively.*
