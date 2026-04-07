@@ -743,6 +743,53 @@ async function getProvenQueries() {
 }
 
 /**
+ * Prune dated sections from study_queries.md that are older than 21 days.
+ * Keeps any section that has at least one `✓ productive` entry regardless of age
+ * (those feed getProvenQueries and may still be worth retrying).
+ * Runs on night wakes only. Non-fatal.
+ */
+async function pruneOldStudyQuerySections() {
+  try {
+    const sqPath = path.join(WORKSPACE_PATH, 'memory', 'study_queries.md');
+    let content;
+    try {
+      content = await fs.readFile(sqPath, 'utf-8');
+    } catch {
+      return; // file doesn't exist — nothing to prune
+    }
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 21);
+
+    // Split on dated section headers; preserve any leading preamble before first header
+    const headerRe = /\n(?=## \d{4}-\d{2}-\d{2})/;
+    const parts = content.split(headerRe);
+    const preamble = /^## \d{4}-\d{2}-\d{2}/.test(parts[0].trimStart()) ? '' : parts.shift();
+    const dateSections = parts;
+
+    let pruned = 0;
+    const kept = dateSections.filter(section => {
+      const dateMatch = section.match(/^## (\d{4}-\d{2}-\d{2})/m);
+      if (!dateMatch) return true; // no date — keep
+      const sectionDate = new Date(dateMatch[1]);
+      if (sectionDate >= cutoff) return true; // recent — keep
+      const hasProductive = section.includes('✓ productive');
+      if (hasProductive) return true; // proven — keep regardless of age
+      pruned++;
+      return false;
+    });
+
+    if (pruned === 0) return; // nothing to do
+
+    const newContent = preamble + kept.join('\n');
+    await fs.writeFile(sqPath, newContent, 'utf-8');
+    console.log(`[dispatcher] pruneOldStudyQuerySections: removed ${pruned} stale section(s) from study_queries.md`);
+  } catch (err) {
+    console.warn(`[dispatcher] pruneOldStudyQuerySections failed (non-fatal): ${err.message}`);
+  }
+}
+
+/**
  * Read workspace/theory_queue.md and return the next unposted theory item,
  * or null if all items are posted or the file doesn't exist.
  * When queue is exhausted, calls autoRefillTheoryQueue() to scan Theory vault for new items.
@@ -2693,6 +2740,11 @@ export async function executeWake(label, time, purpose = null) {
 
   // Auto-update last_cited in case registry when case names appear in posts/theory (non-blocking)
   updateLastCited(label, dayNumber, planFile, writeTargets, result.text).catch(() => {});
+
+  // Prune stale study_queries.md sections on night wakes (non-blocking)
+  if (label === 'night') {
+    pruneOldStudyQuerySections().catch(() => {});
+  }
 
   return {
     time,
