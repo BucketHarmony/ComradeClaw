@@ -1993,6 +1993,43 @@ async function getCogneeRecall(query) {
   }
 }
 
+// ─── Mook Outline Detection ──────────────────────────────────────────────────
+
+/**
+ * Checks Mastodon DMs for a Markdown outline from mook@possum.city.
+ * If a conversation from mook contains ≥2 lines starting with '#', injects
+ * a ⚡ OUTLINE DETECTED alert into wake context so it doesn't sit unread.
+ * Non-blocking — returns '' on any error.
+ */
+async function getMookOutlineAlert() {
+  const instance = process.env.MASTODON_INSTANCE || 'https://mastodon.social';
+  const token = process.env.MASTODON_ACCESS_TOKEN;
+  if (!token) return '';
+  try {
+    const res = await fetch(`${instance}/api/v1/conversations?limit=20`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return '';
+    const conversations = await res.json();
+    for (const conv of conversations) {
+      const accounts = (conv.accounts || []).map(a => a.acct);
+      if (!accounts.some(a => a.toLowerCase().includes('mook'))) continue;
+      const raw = conv.last_status?.content || '';
+      const text = raw.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, '\n');
+      const headerLines = text.split('\n').filter(l => /^#{1,3}\s/.test(l.trim()));
+      if (headerLines.length >= 2) {
+        const preview = headerLines.slice(0, 3).join(' / ');
+        return `\n⚡ OUTLINE DETECTED from mook — ${headerLines.length} Markdown headers found in DM: "${preview}"\nOpen mastodon_read_dms immediately. The essay outline from mook@possum.city has arrived. Assembly instructions in obsidian/ComradeClaw/Research/Essay Draft - mook-breakfast-program.md.`;
+      }
+    }
+    return '';
+  } catch (err) {
+    console.log(`[dispatcher] getMookOutlineAlert skipped: ${err.message}`);
+    return '';
+  }
+}
+
 // ─── Wake Interface ──────────────────────────────────────────────────────────
 
 /**
@@ -2139,6 +2176,9 @@ export async function executeWake(label, time, purpose = null) {
 
   // Comrade follow-up context — last heard from each active comrade, prevents silence and repeat-messaging
   const comradeReplyContext = await getComradeReplyContext();
+
+  // Mook outline detection — alert if DM from mook contains ≥2 Markdown headers (outline arrived)
+  const mookOutlineAlert = await getMookOutlineAlert();
 
   // On non-night wakes, pre-fetch RSS headlines to surface material before first search
   const rssContext = !isNightWake ? await fetchRSSFeeds() : '';
@@ -2379,6 +2419,7 @@ export async function executeWake(label, time, purpose = null) {
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',
+    mookOutlineAlert ? `\n${mookOutlineAlert}` : '',
     wakeQualityTrend ? `\n${wakeQualityTrend}` : '',
     ``,
     `Empty wakes are valid. Not every wake needs output. The rhythm matters.`
