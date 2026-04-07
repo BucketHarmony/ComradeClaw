@@ -103,11 +103,16 @@ async function main() {
 
   // ── 2. Engagement Log ──────────────────────────────────────────────────────
   const engPath = path.join(WORKSPACE_PATH, 'logs', 'engagement', `${month}.json`);
+  const mastoEngPath = path.join(WORKSPACE_PATH, 'logs', 'engagement', `mastodon-${month}.json`);
   let weekEngagements = [];
   try {
     const raw = JSON.parse(await fs.readFile(engPath, 'utf-8'));
-    weekEngagements = raw.filter(e => weekDates.includes((e.timestamp || '').split('T')[0]));
-  } catch { /* no log yet */ }
+    weekEngagements.push(...raw.filter(e => weekDates.includes((e.timestamp || '').split('T')[0])));
+  } catch { /* no Bluesky log yet */ }
+  try {
+    const raw = JSON.parse(await fs.readFile(mastoEngPath, 'utf-8'));
+    weekEngagements.push(...raw.filter(e => weekDates.includes((e.timestamp || '').split('T')[0])));
+  } catch { /* no Mastodon log yet */ }
 
   const distinctHandles = new Set(weekEngagements.map(e => e.handle)).size;
   const byType = {};
@@ -116,10 +121,28 @@ async function main() {
   }
   const typeStr = Object.entries(byType).map(([t, n]) => `${t}: ${n}`).join(', ') || 'none';
 
+  // Theory interlocutor engagements — known deep-theory conversation partners
+  const theoryEngagements = weekEngagements.filter(e => e.theory_interlocutor === true);
+  const theoryHandles = [...new Set(theoryEngagements.map(e => e.unified_id || e.handle))];
+  const theoryByType = {};
+  for (const e of theoryEngagements) {
+    theoryByType[e.type] = (theoryByType[e.type] || 0) + 1;
+  }
+  const theoryTypeStr = Object.entries(theoryByType).map(([t, n]) => `${t}: ${n}`).join(', ') || 'none';
+
   console.log('── Engagement ───────────────────────────────────────');
   console.log(`  Total incoming:           ${weekEngagements.length}`);
   console.log(`  Distinct handles:         ${distinctHandles}`);
   console.log(`  By type:                  ${typeStr}`);
+  console.log(`  Theory interlocutors:     ${theoryEngagements.length} (${theoryHandles.join(', ') || 'none'})`);
+  if (theoryEngagements.length > 0) {
+    console.log(`    by type:                ${theoryTypeStr}`);
+    const tRate = pct(theoryEngagements.length, weekEngagements.length);
+    console.log(`    share of total:         ${tRate}`);
+  }
+  if (theoryEngagements.length === 0 && distinctHandles > 0) {
+    console.log(`  ⚠  No theory interlocutor engagement this week`);
+  }
   if (distinctHandles === 0) {
     console.log(`  ⚠  No organizer contacts this week`);
   }
@@ -181,10 +204,11 @@ async function main() {
   // ── Summary ────────────────────────────────────────────────────────────────
   const tpRate = pct(theoryPraxis, totalWakes);
   console.log('── Summary ──────────────────────────────────────────');
-  console.log(`  Theory-praxis rate:   ${tpRate} (target >50%)`);
-  console.log(`  Organizer contacts:   ${distinctHandles}`);
-  console.log(`  Posts published:      ${weekPosts.length}`);
-  console.log(`  Improvements shipped: ${improveWakes}`);
+  console.log(`  Theory-praxis rate:       ${tpRate} (target >50%)`);
+  console.log(`  Organizer contacts:       ${distinctHandles}`);
+  console.log(`  Theory interlocutor eng.: ${theoryEngagements.length} (${theoryHandles.join(', ') || 'none'})`);
+  console.log(`  Posts published:          ${weekPosts.length}`);
+  console.log(`  Improvements shipped:     ${improveWakes}`);
   console.log('');
 }
 
