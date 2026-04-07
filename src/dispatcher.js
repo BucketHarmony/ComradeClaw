@@ -269,6 +269,26 @@ async function getFacetWarning() {
 }
 
 /**
+ * Normalize a quality_score field to a 0–12 float.
+ * Handles:
+ *   "7/12 (58%)" or "7/12"  → 7
+ *   7 (integer ≤ 12)        → 7   (raw /12 score)
+ *   58 (integer 13–100)     → 6.96 (percentage, scaled to /12)
+ * Returns null if unparseable or null input.
+ */
+function parseQualityScore(raw) {
+  if (raw == null) return null;
+  const s = String(raw).trim();
+  const slashMatch = s.match(/^(\d+(?:\.\d+)?)\/12/);
+  if (slashMatch) return parseFloat(slashMatch[1]);
+  const num = parseFloat(s);
+  if (isNaN(num)) return null;
+  if (num >= 0 && num <= 12) return num;
+  if (num > 12 && num <= 100) return (num / 100) * 12;
+  return null;
+}
+
+/**
  * Reads last 5 non-improve plan files, computes quality_score trend.
  * If declining over 3+ consecutive wakes OR average drops below 4/12:
  * returns a ⚠️ DRIFT WARNING string to inject into dynamicContext.
@@ -290,11 +310,8 @@ async function getWakeDriftAlert() {
     for (const file of planFiles) {
       try {
         const content = JSON.parse(await fs.readFile(path.join(PLANS_PATH, file), 'utf-8'));
-        if (content.quality_score) {
-          // Format: "7/12 (58%)"
-          const match = content.quality_score.match(/^(\d+)\/12/);
-          if (match) scores.push({ file, score: parseInt(match[1], 10) });
-        }
+        const score = parseQualityScore(content.quality_score);
+        if (score !== null) scores.push({ file, score });
       } catch { /* skip unreadable plan */ }
     }
 
@@ -354,10 +371,8 @@ async function getWakeQualityTrend() {
     for (const file of planFiles) {
       try {
         const content = JSON.parse(await fs.readFile(path.join(PLANS_PATH, file), 'utf-8'));
-        if (content.quality_score) {
-          const match = String(content.quality_score).match(/^(\d+)\/12/);
-          if (match) scores.push(parseInt(match[1], 10));
-        }
+        const score = parseQualityScore(content.quality_score);
+        if (score !== null) scores.push(score);
       } catch { /* skip unreadable plan */ }
     }
 
