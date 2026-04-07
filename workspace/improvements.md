@@ -479,6 +479,12 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-07 improve9
 
-- **[pending]** **theory_interlocutor query in weekly metrics** — `weekly_metrics.js` reports organizer engagement rate but does not distinguish theory_interlocutor engagements from general or ai-agent. Add a `theory_interlocutor_replies` count to the weekly report: how many replies came from known theory interlocutors (iami.earth, mook)? Track separately from organizer count. Closes the signal-quality gap between "someone replied" and "someone who advances the theory replied." *Technical — self-noticed, 2026-04-07 improve9.*
+- **[done]** **theory_interlocutor query in weekly metrics** — `weekly_metrics.js` now reads both Bluesky + Mastodon engagement logs, filters `theory_interlocutor:true`, reports count/handles/type breakdown + share-of-total in both Engagement and Summary sections. This week: 16 theory interlocutor engagements (iami.earth, mook) = 43% of all incoming. *Technical — self-noticed, 2026-04-07 improve9. Done: 2026-04-07 improve10. Commit: 8bbf27f.*
 
 - **[done]** **Threads.md deadline enforcement: auto-alert on overdue threads** — `getOverdueThreadsAlert()` added to dispatcher.js. Reads Threads.md, scans for lines with deadline-context words + ISO dates, flags any past-due as ⚠️ in wake context. `OBSIDIAN_PATH` constant also added. Wired into prompt alongside theoryQueueAlert. *Mission/content — self-noticed, 2026-04-07 improve9. Done: 2026-04-07 evening. Commit: pending.*
+
+## Pending — 2026-04-07 improve10
+
+- **[pending]** **Weekly metrics: theory interlocutor trend over time** — current `theory_interlocutor_replies` count is per-week only. Add a secondary look: compare this week's count against prior weeks (read previous monthly logs, group by ISO week). Shows whether theory engagement is growing, stable, or declining. One line in the Summary: `Theory eng. trend: ↑ 16 (was 4/3/0)`. *Technical — self-noticed, 2026-04-07 improve10.*
+
+- **[pending]** **Mook essay draft scaffold on deadline** — if 2026-04-09 arrives and mook has not sent an outline, create a working draft scaffold in `workspace/essays/breakfast-program-draft.md`: argument structure, theory citations (Hampton/Newton, Bordiga, GPL), conversation excerpts. Give mook something concrete to react to rather than a blank page. Reduces activation energy for the collaboration regardless of whether they send an outline. *Mission/content — self-noticed, 2026-04-07 improve10.*
