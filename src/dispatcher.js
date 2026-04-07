@@ -2391,6 +2391,21 @@ export async function executeWake(label, time, purpose = null) {
   const contextKb = Math.round(contextChars / 102.4) / 10;
   console.log(`[dispatcher] Wake: ${label} (Day ${dayNumber}) — context: ${contextChars} chars (${contextKb}KB)`);
 
+  // Per-block token estimates — chars/4 approximation; injected into plan file post-run
+  const est = (s) => Math.round((s?.length || 0) / 4);
+  const contextBlockTokens = {
+    total_estimated: Math.round(contextChars / 4),
+    prior_plans: est(priorPlansSummary),
+    rss_feeds: est(rssContext),
+    theory_gap: est(theoryGapSummary),
+    hashtag_signal: est(hashtagSignalContext),
+    comrade_reply: est(comradeReplyContext),
+    study_queries: est(studyQueriesContext),
+    proven_queries: est(provenQueriesContext),
+    wake_quality_trend: est(wakeQualityTrend),
+    pending_improvements: est(pendingImprovements),
+  };
+
   // Timeout scaling by label. Intensive labels get 20 min; self-scheduled (purpose set) gets 25 min; all others 10 min.
   const INTENSIVE_LABELS = new Set(['improve', 'research', 'upgrade', 'connector', 'deep', 'reddit', 'solidarity', 'sunday-metrics']);
   const wakeTimeout = purpose ? 25 * 60 * 1000 : INTENSIVE_LABELS.has(label) ? 20 * 60 * 1000 : 10 * 60 * 1000;
@@ -2466,8 +2481,9 @@ export async function executeWake(label, time, purpose = null) {
       if (dayScore) {
         const planContent = JSON.parse(await fs.readFile(planFile, 'utf-8'));
         planContent.quality_score = `${dayScore.score}/12 (${dayScore.pct}%)`;
+        planContent.context_tokens = contextBlockTokens;
         await fs.writeFile(planFile, JSON.stringify(planContent, null, 2));
-        console.log(`[dispatcher] Quality score injected: ${planContent.quality_score}`);
+        console.log(`[dispatcher] Quality score injected: ${planContent.quality_score} | context ~${contextBlockTokens.total_estimated} tokens`);
       }
     } catch (err) {
       console.warn(`[dispatcher] Quality score injection failed (non-fatal): ${err.message}`);
