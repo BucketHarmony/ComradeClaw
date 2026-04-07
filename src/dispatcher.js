@@ -2118,6 +2118,69 @@ async function appendCogneeLog(entry) {
   await fs.writeFile(logFile, JSON.stringify(entries, null, 2), 'utf-8');
 }
 
+// ─── Last-Cited Auto-Update ──────────────────────────────────────────────────
+
+/**
+ * After each wake, scan the wake's text output and plan summaries for case
+ * names cited in posts or theory notes. When found, update last_cited in the
+ * matching workspace/cases/*.json file to today's date.
+ * Non-blocking — called with .catch() so failures never delay the return.
+ */
+const CASE_PATTERNS = [
+  { patterns: [/\b(Hampton|breakfast program|BPP|Black Panther)\b/i], id: 'bpp-breakfast-program' },
+  { patterns: [/\b(Zapatista|EZLN|GAL restructur|Chiapas)\b/i], id: 'zapatista-gal-restructuring-2023' },
+  { patterns: [/\b(Minneapolis template|Minneapolis cooperative|May Day Cooperative|Shared Capital Cooperative)\b/i], id: 'minneapolis-template-2026' },
+  { patterns: [/\bHillsboro\b/i], id: 'hillsboro-underground-mutual-aid' },
+  { patterns: [/\bParis Commune\b/i], id: 'paris-commune-1871' },
+];
+
+async function updateLastCited(label, dayNumber, planFile, writeTargets, wakeText) {
+  try {
+    const CASES_PATH = path.join(PROJECT_ROOT, 'workspace', 'cases');
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+
+    // Collect searchable text: plan summaries + vault writes + wake response (first 8000 chars)
+    const parts = [];
+    if (wakeText) parts.push(wakeText.substring(0, 8000));
+    if (planFile) {
+      try {
+        const plan = JSON.parse(await fs.readFile(planFile, 'utf-8'));
+        const summaries = (plan.tasks || []).map(t => t.summary || '').join(' ');
+        parts.push(summaries);
+        if (plan.theory_praxis) parts.push(plan.theory_praxis);
+      } catch {}
+    }
+    for (const fp of writeTargets.slice(0, 5)) {
+      try {
+        const content = await fs.readFile(fp, 'utf-8');
+        parts.push(content.substring(0, 1000));
+      } catch {}
+    }
+    const combinedText = parts.join('\n');
+    if (!combinedText.trim()) return;
+
+    const updated = [];
+    for (const { patterns, id } of CASE_PATTERNS) {
+      const matched = patterns.some(re => re.test(combinedText));
+      if (!matched) continue;
+      const caseFile = path.join(CASES_PATH, `${id}.json`);
+      try {
+        const caseData = JSON.parse(await fs.readFile(caseFile, 'utf-8'));
+        if (caseData.last_cited === today) continue; // already current
+        caseData.last_cited = today;
+        await fs.writeFile(caseFile, JSON.stringify(caseData, null, 2));
+        updated.push(id);
+      } catch {}
+    }
+    if (updated.length > 0) {
+      console.log(`[dispatcher] last_cited updated for ${updated.length} case(s): ${updated.join(', ')}`);
+    }
+  } catch (err) {
+    console.log(`[dispatcher] updateLastCited skipped: ${err.message}`);
+  }
+}
+
 // ─── Wake Interface ──────────────────────────────────────────────────────────
 
 /**
@@ -2621,6 +2684,9 @@ export async function executeWake(label, time, purpose = null) {
 
   // Post-wake Cognee ingestion — feed wake outputs into knowledge graph (non-blocking)
   postWakeCognify(label, dayNumber, planFile, writeTargets).catch(() => {});
+
+  // Auto-update last_cited in case registry when case names appear in posts/theory (non-blocking)
+  updateLastCited(label, dayNumber, planFile, writeTargets, result.text).catch(() => {});
 
   return {
     time,
