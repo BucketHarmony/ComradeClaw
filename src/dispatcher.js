@@ -2761,11 +2761,30 @@ export async function executeWake(label, time, purpose = null) {
   const contextKb = Math.round(contextChars / 102.4) / 10;
   console.log(`[dispatcher] Wake: ${label} (Day ${dayNumber}) — context: ${contextChars} chars (${contextKb}KB)`);
 
+  // Per-block char counts — used for both token estimates and context size breakdown alert
+  const blockChars = {
+    prior_plans: priorPlansSummary?.length || 0,
+    rss_feeds: rssContext?.length || 0,
+    theory_gap: theoryGapSummary?.length || 0,
+    hashtag_signal: hashtagSignalContext?.length || 0,
+    comrade_reply: comradeReplyContext?.length || 0,
+    study_queries: studyQueriesContext?.length || 0,
+    proven_queries: provenQueriesContext?.length || 0,
+    wake_quality_trend: wakeQualityTrend?.length || 0,
+    pending_improvements: pendingImprovements?.length || 0,
+  };
+
   // Context size trend alert — inject warning if current wake is >20% above 7-day rolling average
   if (contextSizeBaseline && contextKb > contextSizeBaseline.avg * 1.2) {
     const avgFmt = contextSizeBaseline.avg.toFixed(1);
-    dynamicContext += `\n⚠️ Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg (${contextSizeBaseline.count} wakes, 7d) — check what's growing.`;
-    console.warn(`[dispatcher] Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg — injected alert`);
+    // Top 3 largest blocks by char count — replaces vague "check what's growing"
+    const top3 = Object.entries(blockChars)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name, chars]) => `${name} (${(Math.round(chars / 102.4) / 10).toFixed(1)}KB)`)
+      .join(', ');
+    dynamicContext += `\n⚠️ Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg (${contextSizeBaseline.count} wakes, 7d) — largest blocks: ${top3}`;
+    console.warn(`[dispatcher] Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg — top blocks: ${top3}`);
   }
 
   // Per-block token estimates — chars/4 approximation; injected into plan file post-run
