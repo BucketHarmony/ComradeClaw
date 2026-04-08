@@ -2772,6 +2772,11 @@ export async function executeWake(label, time, purpose = null) {
     proven_queries: provenQueriesContext?.length || 0,
     wake_quality_trend: wakeQualityTrend?.length || 0,
     pending_improvements: pendingImprovements?.length || 0,
+    drift_alert: driftAlert?.length || 0,
+    auto_queue: autoQueueContext?.length || 0,
+    overdue_threads: overdueThreadsAlert?.length || 0,
+    mastodon_spread: mastodonSpreadAlert?.length || 0,
+    cross_tab: crossTabContext?.length || 0,
   };
 
   // Context size trend alert — inject warning if current wake is >20% above 7-day rolling average
@@ -2800,6 +2805,11 @@ export async function executeWake(label, time, purpose = null) {
     proven_queries: est(provenQueriesContext),
     wake_quality_trend: est(wakeQualityTrend),
     pending_improvements: est(pendingImprovements),
+    drift_alert: est(driftAlert),
+    auto_queue: est(autoQueueContext),
+    overdue_threads: est(overdueThreadsAlert),
+    mastodon_spread: est(mastodonSpreadAlert),
+    cross_tab: est(crossTabContext),
   };
 
   // Timeout scaling by label. Intensive labels get 20 min; self-scheduled (purpose set) gets 25 min; all others 10 min.
