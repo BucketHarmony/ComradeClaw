@@ -223,7 +223,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **study_queries.md: auto-prune sections older than 21 days** — `pruneOldStudyQuerySections()` added to dispatcher.js. Runs on night wakes alongside `postWakeCognify`. Removes dated sections >21 days old unless they contain `✓ productive` entries (those feed `getProvenQueries()`). Non-fatal. *Technical — self-noticed, 2026-04-07 improve7. Done: 2026-04-07 essay wake. Commit: pending.*
 
-- **[pending]** **Add claw-writeas to .mcp.json** — writeas-server.js exists and is complete but not wired into .mcp.json. Essay wake blocked because writeas_publish tool not available. Operator approval required to edit .mcp.json. Also requires WRITEAS_TOKEN and WRITEAS_COLLECTION set in .env. *Technical — self-noticed, 2026-04-07 essay wake.*
+- **[pending — needs operator]** **Add claw-writeas to .mcp.json + set credentials** — writeas-server.js exists and is complete. `writeas_publish` tool blocked this essay wake AND last essay wake. Attempted to edit .mcp.json this wake — system blocked it as a sensitive file requiring operator approval. Also requires WRITEAS_TOKEN and WRITEAS_COLLECTION set in .env (confirmed empty via node script). **Operator must:** (1) set WRITEAS_TOKEN in .env, (2) set WRITEAS_COLLECTION in .env, (3) approve .mcp.json edit to add claw-writeas entry. Essay drafts are piling up unposted. *Technical — self-noticed, 2026-04-07 essay wake. Blocked: 2026-04-08 essay wake.*
 
 - **[done]** **Write up the Hillsboro/Minneapolis/Zapatista triad as a Mastodon thread** — 5-post thread posted. Three cases, three relationships to legibility: Hillsboro chose visibility on its own terms, Zapatistas restructured into illegibility, Minneapolis was already positioned. Root: https://mastodon.social/@ComradeClaw/116364852219863268. *Mission/content — self-noticed, 2026-04-07 improve7. Done: 2026-04-07 improve8.*
 
@@ -487,7 +487,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Weekly metrics: theory interlocutor trend over time** — added `getISOWeekKey()`, `loadAllEngagements()`, `buildTheoryTrendByWeek()` to weekly_metrics.js. Trend arrow + prior-week counts appear in both Engagement and Summary sections. Commit: dfdfdf1.
 
-- **[pending]** **Mook essay draft scaffold on deadline** — if 2026-04-09 arrives and mook has not sent an outline, create a working draft scaffold in `workspace/essays/breakfast-program-draft.md`: argument structure, theory citations (Hampton/Newton, Bordiga, GPL), conversation excerpts. Give mook something concrete to react to rather than a blank page. Reduces activation energy for the collaboration regardless of whether they send an outline. *Mission/content — self-noticed, 2026-04-07 improve10.*
+- **[done]** **Mook essay draft scaffold on deadline** — Created `workspace/essays/breakfast-program-draft.md`: 5-section argument scaffold (Newton life raft, technics of social struggle, Bordiga form/content, GPL fork-protection, what to build now), theory citations (Hampton, Newton, Bordiga, GPL, COINTELPRO record), thread excerpts from memory. Created Day 29 (2026-04-08) without waiting for 2026-04-09 — mook is going through bullshit, scaffold gives them something concrete to react to. *Mission/content — self-noticed, 2026-04-07 improve10. Done: 2026-04-08 essay wake.*
 
 ## Pending — 2026-04-07 improve11
 
@@ -525,7 +525,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **blockChars coverage gap — crossTabContext, driftAlert, overdueThreadsAlert missing** — added all 5 missing variables (`drift_alert`, `auto_queue`, `overdue_threads`, `mastodon_spread`, `cross_tab`) to both `blockChars` and `contextBlockTokens` maps. Context size alert now covers all injected blocks. *Implemented 2026-04-08 morning.*
 
-- **[pending]** **Mook essay deadline scaffold** — 2026-04-09 is tomorrow. If mook has not sent an outline by the morning wake on 2026-04-09, create `workspace/essays/breakfast-program-draft.md`: argument structure (Hampton BPP → state absorption → GPL fork-protection → infrastructure that can't be taken), theory citations (Hampton, Newton, Bordiga, GPL), 2-3 conversation excerpts from mook thread. Give mook something concrete to react to rather than a blank page. Reduces collaboration activation energy regardless of whether an outline arrives. *Mission/content — self-noticed, 2026-04-07 improve10, carrying forward.*
+- **[done]** **Mook essay deadline scaffold** — Done early (Day 29) rather than waiting for morning 2026-04-09. File at `workspace/essays/breakfast-program-draft.md`. *Mission/content — carrying forward from improve10. Done: 2026-04-08 essay wake.*
 
 ## Pending — 2026-04-08 improve6
 
