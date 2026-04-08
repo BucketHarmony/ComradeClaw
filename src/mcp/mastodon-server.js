@@ -339,6 +339,103 @@ function autoFollowBackMastodonOrganizers(notifications) {
   });
 }
 
+// ─── Organizer-Density Booster Follow-Back ───────────────────────────────────
+
+/**
+ * Organizer-density instances: boosting from these is a strong proxy for
+ * organizer identity without requiring a bio API call.
+ */
+const ORGANIZER_DENSITY_INSTANCES = [
+  'kolektiva.social',
+  'social.coop',
+  'union.place',
+  'climatejustice.social',
+  'hachyderm.io',
+  'mastodon.green',
+];
+
+/**
+ * Extract the instance domain from a Mastodon acct string.
+ * Remote users: "user@instance.tld" → "instance.tld"
+ * Local users: "user" → null (local — not auto-followed via this path)
+ */
+function getInstanceFromAcct(acct) {
+  const parts = acct?.split('@');
+  return parts && parts.length === 2 ? parts[1].toLowerCase() : null;
+}
+
+/**
+ * Non-blocking: for each 'reblog' notification from an organizer-density instance,
+ * auto-follow the booster if not already followed or logged.
+ * Instance membership is a faster proxy than bio classification — no extra API call.
+ * Logs to workspace/logs/follows/YYYY-MM.json with source: 'booster_auto_follow'.
+ */
+function autoFollowOrganiserBoosters(notifications) {
+  setImmediate(async () => {
+    const reblogs = notifications.filter(n => n.type === 'reblog' && n.account?.id && n.account?.acct);
+    if (reblogs.length === 0) return;
+
+    // Filter to organizer-density instances only
+    const organiserBoosters = reblogs.filter(n => {
+      const instance = getInstanceFromAcct(n.account.acct);
+      return instance && ORGANIZER_DENSITY_INSTANCES.includes(instance);
+    });
+    if (organiserBoosters.length === 0) return;
+
+    // Load follow log to avoid duplicates
+    const now = new Date();
+    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    const logFile = path.join(MASTODON_FOLLOWS_LOG_PATH, `${month}.json`);
+    await fs.mkdir(MASTODON_FOLLOWS_LOG_PATH, { recursive: true });
+
+    let existing = [];
+    try {
+      existing = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+    } catch { /* new file */ }
+
+    const alreadyFollowed = new Set(
+      existing.filter(e => e.platform === 'mastodon').map(e => e.account_id)
+    );
+
+    // Dedupe within this batch (same booster may appear multiple times if they boosted several posts)
+    const seenInBatch = new Set();
+
+    for (const n of organiserBoosters) {
+      const accountId = n.account.id;
+      const acct = n.account.acct;
+      const instance = getInstanceFromAcct(acct);
+
+      if (alreadyFollowed.has(accountId) || seenInBatch.has(accountId)) continue;
+      seenInBatch.add(accountId);
+
+      try {
+        await masto(`/accounts/${accountId}/follow`, { method: 'POST' });
+        const entry = {
+          platform: 'mastodon',
+          account_id: accountId,
+          acct,
+          classification: 'organizer',
+          followed_back: true,
+          source: 'booster_auto_follow',
+          instance,
+          at: new Date().toISOString(),
+        };
+        existing.push(entry);
+        alreadyFollowed.add(accountId);
+        console.log(`[mastodon] Auto-followed booster from ${instance}: ${acct}`);
+      } catch (err) {
+        console.error(`[mastodon] Booster auto-follow failed for ${acct}: ${err.message}`);
+      }
+    }
+
+    try {
+      await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+    } catch (err) {
+      console.error(`[mastodon] Failed to write follows log after booster scan: ${err.message}`);
+    }
+  });
+}
+
 // ─── Search Seen Deduplication ───────────────────────────────────────────────
 
 /**
@@ -537,6 +634,8 @@ server.tool(
       backfillMastodonClassification().catch(() => {});
       // Auto-follow-back organizer followers — non-blocking
       autoFollowBackMastodonOrganizers(notifications);
+      // Auto-follow boosters from organizer-density instances — non-blocking
+      autoFollowOrganiserBoosters(notifications);
       // Non-blocking: update character last-seen for known comrades who mention us
       setImmediate(async () => {
         for (const n of notifications) {
