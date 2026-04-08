@@ -989,7 +989,7 @@ async function getTractionAlert() {
 async function getMastodonSpreadAlert() {
   try {
     const now = Date.now();
-    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
     const month = new Date().toISOString().slice(0, 7); // e.g. "2026-04"
 
     // Load reblog engagement log
@@ -1006,34 +1006,39 @@ async function getMastodonSpreadAlert() {
       favEntries = JSON.parse(await fs.readFile(favLogFile, 'utf-8'));
     } catch { /* no log yet */ }
 
-    // Per-post: track unique boosters and unique favoriters separately, combine for total
-    const postData = {}; // status_id → { boosters: Set, favoriters: Set, url }
+    // Per-post: track unique engagers with recency split (recent=within 48h vs older/backfilled)
+    // Total = all-time log entries; recent = within 48h. Breakdown: "17 total (9 recent + 8 older)"
+    const postData = {}; // status_id → { total: Set, recent: Set, url }
+    const ensurePost = (id, url) => {
+      if (!postData[id]) postData[id] = { total: new Set(), recent: new Set(), url };
+    };
+
     for (const e of engEntries) {
       if (e.type !== 'reblog') continue;
       if (!e.status_id || !e.handle) continue;
+      ensurePost(e.status_id, e.status_url);
+      postData[e.status_id].total.add(`boost:${e.handle}`);
       const ts = e.timestamp ? new Date(e.timestamp).getTime() : 0;
-      if (now - ts > TWENTY_FOUR_HOURS) continue;
-      if (!postData[e.status_id]) postData[e.status_id] = { boosters: new Set(), favoriters: new Set(), url: e.status_url };
-      postData[e.status_id].boosters.add(e.handle);
+      if (now - ts <= FORTY_EIGHT_HOURS) postData[e.status_id].recent.add(`boost:${e.handle}`);
     }
     for (const e of favEntries) {
       if (!e.status_id || !e.account) continue;
+      ensurePost(e.status_id, e.status_url);
+      postData[e.status_id].total.add(`fav:${e.account}`);
       const ts = e.timestamp ? new Date(e.timestamp).getTime() : 0;
-      if (now - ts > TWENTY_FOUR_HOURS) continue;
-      if (!postData[e.status_id]) postData[e.status_id] = { boosters: new Set(), favoriters: new Set(), url: e.status_url };
-      postData[e.status_id].favoriters.add(e.account);
+      // Explicitly backfilled entries are always older; also check timestamp
+      if (!e.backfilled && now - ts <= FORTY_EIGHT_HOURS) postData[e.status_id].recent.add(`fav:${e.account}`);
     }
 
     const alerts = [];
-    for (const [statusId, { boosters, favoriters, url }] of Object.entries(postData)) {
-      const total = boosters.size + favoriters.size;
-      if (total >= 10) {
-        const urlStr = url ? ` — ${url}` : ` (status ${statusId})`;
-        const breakdown = boosters.size > 0 && favoriters.size > 0
-          ? ` (${boosters.size} boosts + ${favoriters.size} favs)`
-          : boosters.size > 0 ? ` (${boosters.size} boosts)` : ` (${favoriters.size} favs)`;
-        alerts.push(`⚡ Mastodon spread: ${total} unique engagers in 24h${breakdown}${urlStr}`);
-      }
+    for (const [statusId, { total, recent, url }] of Object.entries(postData)) {
+      if (total.size < 10) continue;
+      const older = total.size - recent.size;
+      const recencyNote = older > 0
+        ? ` (${recent.size} recent + ${older} older)`
+        : ` (all recent)`;
+      const urlStr = url ? ` — ${url}` : ` (status ${statusId})`;
+      alerts.push(`⚡ Mastodon spread: ${total.size} total engagers${recencyNote}${urlStr}`);
     }
     return alerts.join('\n');
   } catch (err) {
