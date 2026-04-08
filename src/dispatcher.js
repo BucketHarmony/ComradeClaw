@@ -1141,6 +1141,40 @@ async function getTheoryQueueAlert() {
 }
 
 /**
+ * Compute 7-day rolling average of wake context sizes (KB) from daily cost files.
+ * Returns { avg, count } if enough history exists, or null if < 3 data points.
+ * Non-fatal — returns null on any error.
+ */
+async function getContextSizeBaseline() {
+  try {
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const samples = [];
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-CA', { timeZone: tz });
+      const costFile = path.join(WAKE_LOG_DIR, `${dateStr}_costs.json`);
+      try {
+        const data = JSON.parse(await fs.readFile(costFile, 'utf-8'));
+        for (const entry of (data.entries || [])) {
+          if (typeof entry.context_kb === 'number' && entry.context_kb > 0) {
+            samples.push(entry.context_kb);
+          }
+        }
+      } catch {
+        // Day with no cost file — skip
+      }
+    }
+    if (samples.length < 3) return null;
+    const avg = samples.reduce((a, b) => a + b, 0) / samples.length;
+    return { avg, count: samples.length };
+  } catch (err) {
+    console.error(`[getContextSizeBaseline] Failed (non-fatal): ${err.message}`);
+    return null;
+  }
+}
+
+/**
  * Scan Threads.md for past-due deadlines and surface them as wake-time warnings.
  * Looks for lines containing ISO dates (YYYY-MM-DD) near deadline/due/nudge markers.
  * Returns ⚠️ alerts for any deadline that has passed. Non-fatal.
@@ -2458,6 +2492,9 @@ export async function executeWake(label, time, purpose = null) {
   // Time-of-day scheduling signal — wires analysis output to actual scheduling decisions
   const timeOfDayContext = !isNightWake ? await getTimeOfDayRecommendation() : '';
 
+  // Context size trend baseline — 7-day rolling average for inflation detection
+  const contextSizeBaseline = await getContextSizeBaseline();
+
   // Wake gap — how long since the last wake completed (2h vs 8h changes what needs checking)
   const hoursSinceLastWake = await getHoursSinceLastWake();
 
@@ -2723,6 +2760,13 @@ export async function executeWake(label, time, purpose = null) {
   const contextChars = dynamicContext.length;
   const contextKb = Math.round(contextChars / 102.4) / 10;
   console.log(`[dispatcher] Wake: ${label} (Day ${dayNumber}) — context: ${contextChars} chars (${contextKb}KB)`);
+
+  // Context size trend alert — inject warning if current wake is >20% above 7-day rolling average
+  if (contextSizeBaseline && contextKb > contextSizeBaseline.avg * 1.2) {
+    const avgFmt = contextSizeBaseline.avg.toFixed(1);
+    dynamicContext += `\n⚠️ Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg (${contextSizeBaseline.count} wakes, 7d) — check what's growing.`;
+    console.warn(`[dispatcher] Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg — injected alert`);
+  }
 
   // Per-block token estimates — chars/4 approximation; injected into plan file post-run
   const est = (s) => Math.round((s?.length || 0) / 4);
