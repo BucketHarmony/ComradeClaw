@@ -50,6 +50,56 @@ function pct(n, total) {
   return total > 0 ? `${Math.round(n / total * 100)}%` : 'n/a';
 }
 
+/**
+ * Returns ISO week key string for a date string "YYYY-MM-DD".
+ * Format: "2026-W15" — stable sort key for chronological ordering.
+ */
+function getISOWeekKey(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  const day = d.getUTCDay() || 7; // Mon=1 … Sun=7
+  d.setUTCDate(d.getUTCDate() + 4 - day); // shift to Thursday
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+/**
+ * Load all engagement log months from the engagement directory.
+ * Returns flat array of all engagement entries across all available months.
+ */
+async function loadAllEngagements() {
+  const engDir = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+  let files = [];
+  try {
+    files = await fs.readdir(engDir);
+  } catch { return []; }
+
+  const all = [];
+  for (const file of files) {
+    if (!file.endsWith('.json')) continue;
+    try {
+      const raw = JSON.parse(await fs.readFile(path.join(engDir, file), 'utf-8'));
+      if (Array.isArray(raw)) all.push(...raw);
+    } catch { /* corrupt — skip */ }
+  }
+  return all;
+}
+
+/**
+ * Build per-ISO-week theory interlocutor counts from all available engagement data.
+ * Returns map: { "2026-W14": 3, "2026-W15": 7 }
+ */
+function buildTheoryTrendByWeek(allEngagements) {
+  const byWeek = {};
+  for (const e of allEngagements) {
+    if (!e.theory_interlocutor || !e.timestamp) continue;
+    const dateStr = e.timestamp.split('T')[0];
+    const weekKey = getISOWeekKey(dateStr);
+    byWeek[weekKey] = (byWeek[weekKey] || 0) + 1;
+  }
+  return byWeek;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -102,6 +152,7 @@ async function main() {
   console.log('');
 
   // ── 2. Engagement Log ──────────────────────────────────────────────────────
+  // Load this week's engagements (from current month files)
   const engPath = path.join(WORKSPACE_PATH, 'logs', 'engagement', `${month}.json`);
   const mastoEngPath = path.join(WORKSPACE_PATH, 'logs', 'engagement', `mastodon-${month}.json`);
   let weekEngagements = [];
@@ -113,6 +164,17 @@ async function main() {
     const raw = JSON.parse(await fs.readFile(mastoEngPath, 'utf-8'));
     weekEngagements.push(...raw.filter(e => weekDates.includes((e.timestamp || '').split('T')[0])));
   } catch { /* no Mastodon log yet */ }
+
+  // Load ALL engagement data (across all months) for trend computation
+  const allEngagements = await loadAllEngagements();
+  const theoryByWeekMap = buildTheoryTrendByWeek(allEngagements);
+  const thisWeekKey = getISOWeekKey(weekStart);
+  // Prior weeks: all keys before this week, sorted chronologically
+  const priorWeekKeys = Object.keys(theoryByWeekMap)
+    .filter(k => k < thisWeekKey)
+    .sort();
+  const theoryTrendPrior = priorWeekKeys.map(k => theoryByWeekMap[k]);
+  const thisWeekTheoryCount = theoryByWeekMap[thisWeekKey] || 0;
 
   const distinctHandles = new Set(weekEngagements.map(e => e.handle)).size;
   const byType = {};
@@ -139,6 +201,13 @@ async function main() {
     console.log(`    by type:                ${theoryTypeStr}`);
     const tRate = pct(theoryEngagements.length, weekEngagements.length);
     console.log(`    share of total:         ${tRate}`);
+  }
+  // Theory interlocutor trend: compare this week vs prior ISO weeks
+  if (priorWeekKeys.length > 0) {
+    const prevCount = theoryTrendPrior[theoryTrendPrior.length - 1]; // most recent prior week
+    const arrow = thisWeekTheoryCount > prevCount ? '↑' : thisWeekTheoryCount < prevCount ? '↓' : '→';
+    const priorStr = theoryTrendPrior.join('/');
+    console.log(`    trend (vs prior weeks): ${arrow} ${thisWeekTheoryCount} (was ${priorStr})`);
   }
   if (theoryEngagements.length === 0 && distinctHandles > 0) {
     console.log(`  ⚠  No theory interlocutor engagement this week`);
@@ -207,6 +276,11 @@ async function main() {
   console.log(`  Theory-praxis rate:       ${tpRate} (target >50%)`);
   console.log(`  Organizer contacts:       ${distinctHandles}`);
   console.log(`  Theory interlocutor eng.: ${theoryEngagements.length} (${theoryHandles.join(', ') || 'none'})`);
+  if (priorWeekKeys.length > 0) {
+    const prevCount = theoryTrendPrior[theoryTrendPrior.length - 1];
+    const arrow = thisWeekTheoryCount > prevCount ? '↑' : thisWeekTheoryCount < prevCount ? '↓' : '→';
+    console.log(`  Theory eng. trend:        ${arrow} ${thisWeekTheoryCount} (was ${theoryTrendPrior.join('/')})`);
+  }
   console.log(`  Posts published:          ${weekPosts.length}`);
   console.log(`  Improvements shipped:     ${improveWakes}`);
   console.log('');
