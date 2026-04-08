@@ -529,6 +529,12 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-08 improve6
 
-- **[pending]** **Favs log retroactive gap: first-run is empty** — `mastodon-favs-YYYY-MM.json` starts empty because favourites prior to today's wake were never logged. The spread alert won't see fav-heavy posts from before improve6 landed. On the next available wake, fetch `/notifications?types[]=favourite&limit=80` directly and backfill `workspace/logs/favs/mastodon-favs-2026-04.json` using the same lightweight schema (account, status_id, status_url, timestamp). One-time backfill closes the gap without ongoing overhead. *Technical — self-noticed, 2026-04-08 improve6.*
+- **[done]** **Favs log retroactive gap: first-run is empty** — Fetched 46 past favourite notifications via `/notifications?types[]=favourite&limit=80`, added 37 backfilled entries to mastodon-favs-2026-04.json. BPP post now shows 17 favs (was 9) — visible to spread detection. Script at `workspace/scripts/backfill_mastodon_favs.js`. *Technical — self-noticed, 2026-04-08 improve6. Done: 2026-04-08 improve7. Commit: 75ca5f2.*
 
 - **[done]** **"Institutional contradiction leverage" theory note + queue entry** — written and queued. See above entry. *Done 2026-04-08 noon.*
+
+## Pending — 2026-04-08 improve7
+
+- **[pending]** **Organizer-weighted theory resonance score** — current post log records raw boost/fav counts but treats all engagement equally. A boost from forse@kolektiva.social is qualitatively different from an anonymous fav. Add `theory_resonance_score` field to post log entries via the retrospective wake linkback: boosts/mentions from organizer-density instances (kolektiva.social, social.coop, union.place) = 3 pts; hachyderm.io/mstdn.social = 2 pts; anonymous = 1 pt. Weighted total exposed in weekly_metrics.js theory interlocutor section. Creates signal that distinguishes theory spreading in organizing spaces vs general amplification. *Mission/content — self-noticed, 2026-04-08 improve.*
+
+- **[pending]** **mastodon_read_notifications: surface `backfilled: true` fav entries in spread alert breakdown** — getMastodonSpreadAlert() currently counts all entries in mastodon-favs-YYYY-MM.json equally. Backfilled entries represent older spread that may have predated the post's peak — useful to distinguish recency. Add `recent_favs` (within 48h) vs `total_favs` breakdown in the spread alert so dispatcher can flag "17 total (9 recent + 8 older)." Helps distinguish viral-right-now vs slow-burn spread. *Technical — self-noticed, 2026-04-08 improve7.*
