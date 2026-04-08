@@ -1,0 +1,14 @@
+{
+  "_schema": "comment_id (t1_xxx) → { permalink, comment_text, thread_title, posted_at, last_checked, reply_ids_seen[] }",
+  "_instructions": "Add entries here when Claw comments on Reddit. reddit_read_inbox will re-fetch each comment's replies and surface new ones each wake.",
+  "_example": {
+    "t1_example": {
+      "permalink": "/r/cooperatives/comments/postid/thread_title/commentid/",
+      "comment_text": "first 100 chars of the comment you posted",
+      "thread_title": "Thread title here",
+      "posted_at": "2026-04-08T00:00:00.000Z",
+      "last_checked": null,
+      "reply_ids_seen": []
+    }
+  }
+}

@@ -26,6 +26,7 @@ const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', 
 const REDDIT_DIR = path.join(WORKSPACE_PATH, 'reddit');
 const WATCHLIST_PATH = path.join(REDDIT_DIR, 'watchlist.json');
 const LAST_SEEN_PATH = path.join(REDDIT_DIR, 'last_seen.json');
+const COMMENT_LAST_SEEN_PATH = path.join(REDDIT_DIR, 'comment_last_seen.json');
 const REDDIT_LOGS_DIR = path.join(WORKSPACE_PATH, 'logs', 'reddit');
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
@@ -379,6 +380,169 @@ server.tool(
         new_posts: allNewPosts,
         errors: errors.length > 0 ? errors : undefined,
         checked_at: checkedAt,
+      }, null, 2) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
+// ── reddit_read_inbox ────────────────────────────────────────────────────────
+
+async function loadCommentLastSeen() {
+  try {
+    return JSON.parse(await fs.readFile(COMMENT_LAST_SEEN_PATH, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
+async function saveCommentLastSeen(state) {
+  await ensureDir();
+  await fs.writeFile(COMMENT_LAST_SEEN_PATH, JSON.stringify(state, null, 2));
+}
+
+/**
+ * Fetch a comment's context + its replies using Reddit's permalink focus.
+ * URL: /r/{sub}/comments/{post_id}/_/{comment_id}.json
+ * Returns { comment, replies } where replies are direct children of the comment.
+ */
+async function fetchCommentReplies(subreddit, postId, commentId) {
+  const url = `https://old.reddit.com/r/${subreddit}/comments/${postId}/_/${commentId}.json?context=0&limit=25`;
+  const res = await rateLimitedFetch(url);
+  const data = await res.json();
+
+  if (!Array.isArray(data) || data.length < 2) {
+    throw new Error('Unexpected comment context response shape');
+  }
+
+  // data[1] contains the comment tree focused on commentId
+  const listing = data[1].data.children;
+  if (!listing?.length) return { comment: null, replies: [] };
+
+  // Find our comment in the listing
+  const focused = listing.find(c => c.kind === 't1' && c.data.id === commentId);
+  if (!focused) return { comment: null, replies: [] };
+
+  const comment = focused.data;
+  const replies = [];
+
+  if (comment.replies && comment.replies.data?.children) {
+    for (const child of comment.replies.data.children) {
+      if (child.kind === 'more') continue;
+      const c = child.data;
+      replies.push({
+        id: c.name,          // t1_xxx
+        short_id: c.id,
+        author: c.author,
+        body: c.body ? c.body.slice(0, 600) : '[deleted]',
+        score: c.score,
+        created_utc: c.created_utc,
+        permalink: `https://old.reddit.com${c.permalink}`,
+      });
+    }
+  }
+
+  return {
+    comment: {
+      id: comment.name,
+      short_id: comment.id,
+      body: comment.body ? comment.body.slice(0, 300) : '[deleted]',
+      subreddit: comment.subreddit,
+      link_title: comment.link_title || null,
+      permalink: `https://old.reddit.com${comment.permalink}`,
+      score: comment.score,
+      created_utc: comment.created_utc,
+    },
+    replies,
+  };
+}
+
+server.tool(
+  'reddit_read_inbox',
+  'Check for new replies to tracked Reddit comments. Reads workspace/reddit/comment_last_seen.json, re-fetches each comment thread, surfaces replies not yet seen. Call this each wake alongside mastodon_read_notifications.',
+  {
+    mark_seen: z.boolean().default(true).describe('Mark new replies as seen (updates comment_last_seen.json)'),
+  },
+  async ({ mark_seen }) => {
+    try {
+      const tracked = await loadCommentLastSeen();
+      const commentIds = Object.keys(tracked);
+
+      if (commentIds.length === 0) {
+        return { content: [{ type: 'text', text: JSON.stringify({
+          status: 'ok',
+          message: 'No tracked comments. When you comment on Reddit, add the comment ID to workspace/reddit/comment_last_seen.json.',
+          new_reply_count: 0,
+          new_replies: [],
+        }) }] };
+      }
+
+      const updatedState = { ...tracked };
+      const allNewReplies = [];
+      const errors = [];
+
+      for (const commentFullname of commentIds) {
+        const entry = tracked[commentFullname];
+        // commentFullname is t1_xxx; extract short ID
+        const shortId = commentFullname.startsWith('t1_')
+          ? commentFullname.slice(3)
+          : commentFullname;
+
+        // Need subreddit + post_id to build the URL. Parse from permalink.
+        // permalink format: /r/{sub}/comments/{post_id}/...
+        const permalink = entry.permalink || '';
+        const match = permalink.match(/\/r\/([^/]+)\/comments\/([^/]+)/);
+        if (!match) {
+          errors.push({ comment_id: commentFullname, error: 'No valid permalink stored — cannot fetch replies' });
+          continue;
+        }
+
+        const [, subreddit, postId] = match;
+
+        try {
+          await sleep(3000);
+          const { comment, replies } = await fetchCommentReplies(subreddit, postId, shortId);
+
+          const seenIds = new Set(entry.reply_ids_seen || []);
+          const newReplies = replies.filter(r => !seenIds.has(r.id));
+
+          if (newReplies.length > 0) {
+            for (const reply of newReplies) {
+              allNewReplies.push({
+                parent_comment_id: commentFullname,
+                parent_comment_text: entry.comment_text || comment?.body || '',
+                parent_thread_title: entry.thread_title || comment?.link_title || '',
+                parent_permalink: entry.permalink,
+                ...reply,
+              });
+            }
+          }
+
+          if (mark_seen) {
+            updatedState[commentFullname] = {
+              ...entry,
+              last_checked: new Date().toISOString(),
+              reply_ids_seen: [...(entry.reply_ids_seen || []), ...newReplies.map(r => r.id)],
+            };
+          }
+        } catch (err) {
+          errors.push({ comment_id: commentFullname, error: err.message });
+          if (err.message.includes('Circuit breaker')) break;
+        }
+      }
+
+      if (mark_seen) {
+        await saveCommentLastSeen(updatedState);
+      }
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'ok',
+        comments_checked: commentIds.length - errors.length,
+        new_reply_count: allNewReplies.length,
+        new_replies: allNewReplies,
+        errors: errors.length > 0 ? errors : undefined,
+        checked_at: new Date().toISOString(),
       }, null, 2) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
