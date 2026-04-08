@@ -979,6 +979,52 @@ async function getTractionAlert() {
 }
 
 /**
+ * Mastodon viral spread alert.
+ * Reads the monthly mastodon engagement log, groups reblogs by status_id within
+ * the last 24h, and fires if any single post received ≥10 unique boosters.
+ * The old logging code deduped by status_id (not account+status_id), so spread
+ * was invisible; the dedup fix lands alongside this alert to make it accurate.
+ * Non-fatal: returns '' on any error.
+ */
+async function getMastodonSpreadAlert() {
+  try {
+    const now = Date.now();
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const month = new Date().toISOString().slice(0, 7); // e.g. "2026-04"
+    const logFile = path.join(WORKSPACE_PATH, 'logs', 'engagement', `mastodon-${month}.json`);
+    let entries = [];
+    try {
+      entries = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+    } catch { return ''; }
+
+    // Group reblogs in the last 24h by the original post (status_id)
+    const postBoosters = {};
+    for (const e of entries) {
+      if (e.type !== 'reblog') continue;
+      if (!e.status_id || !e.handle) continue;
+      const ts = e.timestamp ? new Date(e.timestamp).getTime() : 0;
+      if (now - ts > TWENTY_FOUR_HOURS) continue;
+      if (!postBoosters[e.status_id]) {
+        postBoosters[e.status_id] = { accounts: new Set(), url: e.status_url };
+      }
+      postBoosters[e.status_id].accounts.add(e.handle);
+    }
+
+    const alerts = [];
+    for (const [statusId, { accounts, url }] of Object.entries(postBoosters)) {
+      if (accounts.size >= 10) {
+        const urlStr = url ? ` — ${url}` : ` (status ${statusId})`;
+        alerts.push(`⚡ Mastodon spread: ${accounts.size} unique boosters in 24h${urlStr}`);
+      }
+    }
+    return alerts.join('\n');
+  } catch (err) {
+    console.error(`[getMastodonSpreadAlert] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Auto-extract theory candidates from recent journal entries.
  * Greps for **bold phrases** (≥4 words) that look like distributable arguments.
  * Appends them as [candidate] items to theory_queue.md so the night wake study
@@ -2403,6 +2449,9 @@ export async function executeWake(label, time, purpose = null) {
   // Engagement velocity alert — post gaining traction within 12h = join while live
   const tractionAlert = !isNightWake ? await getTractionAlert() : '';
 
+  // Mastodon viral spread alert — ≥10 unique boosters for any post in last 24h
+  const mastodonSpreadAlert = await getMastodonSpreadAlert();
+
   // Content-type × hashtag crosstab — best (content_type, hashtag) pair by signal quality
   const crossTabContext = !isNightWake ? await getCrossTabRecommendation() : '';
 
@@ -2658,6 +2707,7 @@ export async function executeWake(label, time, purpose = null) {
     essayAutoSchedule ? `\n${essayAutoSchedule}` : '',
     autoQueueContext ? `\n${autoQueueContext}` : '',
     tractionAlert ? `\n${tractionAlert}` : '',
+    mastodonSpreadAlert ? `\n${mastodonSpreadAlert}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',

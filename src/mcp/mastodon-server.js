@@ -124,7 +124,9 @@ async function logMastodonNotifications(notifications) {
   const highSignal = notifications.filter(n => n.type === 'mention' || n.type === 'reblog');
   if (highSignal.length === 0) return;
 
-  // Load existing log for deduplication (same status_id can appear across wakes)
+  // Load existing log for deduplication.
+  // Key: "${type}:${account}:${status_id}" — allows multiple accounts to boost the same post.
+  // Old code keyed by status_id alone, which silently dropped all but the first reblog of any post.
   const now = new Date();
   const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
   const logFile = path.join(MASTODON_ENGAGEMENT_LOG_PATH, `mastodon-${month}.json`);
@@ -133,10 +135,12 @@ async function logMastodonNotifications(notifications) {
   try {
     existing = JSON.parse(await fs.readFile(logFile, 'utf-8'));
   } catch { /* new file */ }
-  const seenIds = new Set(existing.map(e => e.status_id).filter(Boolean));
+  const dedupKey = e => `${e.type}:${e.handle}:${e.status_id}`;
+  const seenKeys = new Set(existing.map(dedupKey));
 
   for (const n of highSignal) {
-    if (n.status_id && seenIds.has(n.status_id)) continue; // already logged
+    const key = `${n.type}:${n.account}:${n.status_id}`;
+    if (seenKeys.has(key)) continue; // already logged
     try {
       const entry = {
         platform: 'mastodon',
@@ -168,7 +172,7 @@ async function logMastodonNotifications(notifications) {
         } catch { entry.classified = false; }
       }
       existing.push(entry);
-      if (n.status_id) seenIds.add(n.status_id);
+      seenKeys.add(key);
     } catch { /* non-fatal */ }
   }
 
