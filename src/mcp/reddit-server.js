@@ -7,10 +7,14 @@
  * Covers ~90% of use case: monitoring labor/co-op/mutual-aid subreddits.
  *
  * Tools: reddit_fetch_subreddit, reddit_fetch_post, reddit_search,
- *        reddit_monitor_watchlist
+ *        reddit_monitor_watchlist, reddit_read_inbox, reddit_post_comment
  *
  * Watchlist: workspace/reddit/watchlist.json
  * State:     workspace/reddit/last_seen.json
+ *
+ * OAuth (reddit_post_comment): requires REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET,
+ * REDDIT_USERNAME, REDDIT_PASSWORD in .env. Register a "script" app at
+ * https://www.reddit.com/prefs/apps to get client credentials.
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -546,6 +550,161 @@ server.tool(
       }, null, 2) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
+// ── reddit_post_comment ──────────────────────────────────────────────────────
+
+/**
+ * Reddit OAuth token cache (in-process; lasts as long as the MCP server runs).
+ * Tokens are valid for ~24h. We cache to avoid re-authing on every comment.
+ */
+const _oauthCache = { token: null, expiresAt: 0 };
+
+async function getRedditOAuthToken() {
+  if (_oauthCache.token && Date.now() < _oauthCache.expiresAt) {
+    return _oauthCache.token;
+  }
+
+  const clientId     = process.env.REDDIT_CLIENT_ID;
+  const clientSecret = process.env.REDDIT_CLIENT_SECRET;
+  const username     = process.env.REDDIT_USERNAME;
+  const password     = process.env.REDDIT_PASSWORD;
+
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      'Reddit OAuth not configured. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in .env. ' +
+      'Register a "script" app at https://www.reddit.com/prefs/apps to get credentials.'
+    );
+  }
+  if (!username || !password) {
+    throw new Error('REDDIT_USERNAME and REDDIT_PASSWORD must be set in .env');
+  }
+
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  const body = new URLSearchParams({
+    grant_type: 'password',
+    username,
+    password,
+  });
+
+  const res = await fetch('https://www.reddit.com/api/v1/access_token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'ComradeClaw/1.0 (by /u/Calm_Delivery6725)',
+    },
+    body: body.toString(),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Reddit OAuth failed: HTTP ${res.status} — ${text}`);
+  }
+
+  const data = await res.json();
+  if (data.error) {
+    throw new Error(`Reddit OAuth error: ${data.error}`);
+  }
+
+  // Cache with 5-min buffer before actual expiry
+  _oauthCache.token = data.access_token;
+  _oauthCache.expiresAt = Date.now() + (data.expires_in - 300) * 1000;
+  return _oauthCache.token;
+}
+
+server.tool(
+  'reddit_post_comment',
+  'Post a comment on Reddit (reply to a post or another comment). Requires REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET in .env (ROPC OAuth). On success, auto-registers the new comment in comment_last_seen.json so reddit_read_inbox tracks replies to it.',
+  {
+    parent_fullname: z.string().describe(
+      'Fullname of the thing to reply to: post fullname (t3_xxx) or comment fullname (t1_xxx). ' +
+      'Get from reddit_fetch_subreddit (post.id) or reddit_fetch_post (comment.id).'
+    ),
+    text: z.string().min(1).max(10000).describe('Comment body in plain text (Markdown supported).'),
+    permalink: z.string().describe(
+      'Permalink of the parent post (e.g. /r/cooperatives/comments/abc123/...). ' +
+      'Required so reply tracking knows which thread to re-fetch.'
+    ),
+    thread_title: z.string().optional().describe('Thread title — stored in tracking for context.'),
+  },
+  async ({ parent_fullname, text, permalink, thread_title }) => {
+    try {
+      const token = await getRedditOAuthToken();
+
+      const body = new URLSearchParams({
+        api_type: 'json',
+        thing_id: parent_fullname,
+        text,
+      });
+
+      const res = await fetch('https://oauth.reddit.com/api/comment', {
+        method: 'POST',
+        headers: {
+          'Authorization': `bearer ${token}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'ComradeClaw/1.0 (by /u/Calm_Delivery6725)',
+        },
+        body: body.toString(),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        return { content: [{ type: 'text', text: JSON.stringify({
+          status: 'error',
+          message: `Reddit API returned HTTP ${res.status}: ${errText}`,
+        }) }] };
+      }
+
+      const data = await res.json();
+      const errors = data?.json?.errors;
+      if (errors?.length) {
+        return { content: [{ type: 'text', text: JSON.stringify({
+          status: 'error',
+          message: `Reddit API errors: ${errors.map(e => e.join(': ')).join('; ')}`,
+        }) }] };
+      }
+
+      // Extract the new comment's fullname from the response
+      const things = data?.json?.data?.things;
+      const newComment = things?.[0]?.data;
+      const newCommentId   = newComment ? `t1_${newComment.id}` : null;
+      const newPermalink   = newComment?.permalink
+        ? `/r/${newComment.subreddit}/comments/${newComment.link_id?.replace('t3_','')}/x/${newComment.id}/`
+        : permalink;
+
+      // Auto-register in comment_last_seen.json for reply tracking
+      if (newCommentId) {
+        const tracked = await loadCommentLastSeen();
+        tracked[newCommentId] = {
+          permalink: newPermalink,
+          comment_text: text.slice(0, 150),
+          thread_title: thread_title || '',
+          posted_at: new Date().toISOString(),
+          last_checked: null,
+          reply_ids_seen: [],
+        };
+        await saveCommentLastSeen(tracked);
+      }
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'ok',
+        comment_id: newCommentId,
+        permalink: newPermalink,
+        parent_fullname,
+        text_preview: text.slice(0, 100),
+        tracked: !!newCommentId,
+        posted_at: new Date().toISOString(),
+      }, null, 2) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'error',
+        message: err.message,
+      }) }] };
     }
   }
 );
