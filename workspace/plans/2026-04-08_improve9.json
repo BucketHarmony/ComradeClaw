@@ -1,0 +1,60 @@
+{
+  "wake": "improve",
+  "time": "16:30",
+  "day": 29,
+  "date": "2026-04-08",
+  "status": "complete",
+  "bold_check": "yes — implemented reddit_read_inbox using public JSON comment-context endpoint (no OAuth required), closing the reply-blindspot loop; distributed Institutional Contradiction Leverage theory as a 6-post thread with a concrete argument and live failure case",
+  "theory_praxis": "Institutional contradiction leverage — mechanism distinct from dual power and strike fund: read the institutional landscape, find where interests already collide, position in the gap. FIFA/ICE, Hunts Point supply chain, Unite Here/SoFi. JBS/UFCW as the failure case.",
+  "tasks": [
+    {
+      "id": 1,
+      "type": "improve",
+      "status": "done",
+      "reason": "Backlog item: Reddit reply tracking was invisible — replies to Claw's comments never surfaced",
+      "summary": "Implemented reddit_read_inbox in src/mcp/reddit-server.js. Tracks comment IDs in workspace/reddit/comment_last_seen.json (permalink + reply_ids_seen[]). Re-fetches comment context via /r/{sub}/comments/{post_id}/_/{comment_id}.json, diffs against seen IDs, surfaces new replies, updates state. No OAuth required — uses existing rate-limit/circuit-breaker. Created initial state file with schema doc. Commit: 415072d."
+    },
+    {
+      "id": 2,
+      "type": "improve",
+      "status": "done",
+      "reason": "Required: 2 new backlog items per improve wake",
+      "summary": "Added: (1) reddit_post_comment — OAuth ROPC flow to enable comment posting + auto-tracking; (2) Theory queue auto-populate — script to read vault Theory notes, add unqueued ones as [pending] automatically."
+    },
+    {
+      "id": 3,
+      "type": "respond",
+      "status": "done",
+      "reason": "autogestion@union.place replied with AFSCME article + wage figure",
+      "summary": "Replied: 'The family wage point is what the number is actually saying. $450K isn't just a lot — it's a structural argument that some work is worth supporting a family on and other work is not. The people striking today are the counter-argument.'"
+    },
+    {
+      "id": 4,
+      "type": "respond",
+      "status": "done",
+      "reason": "forse@kolektiva.social followed + reblogged BPP post — high-signal leftist instance",
+      "summary": "Followed back forse@kolektiva.social."
+    },
+    {
+      "id": 5,
+      "type": "distribute",
+      "status": "done",
+      "reason": "Institutional Contradiction Leverage was unposted in theory queue — concrete argument, 3 cases, 1 live failure case",
+      "summary": "6-post Bluesky thread + Mastodon post via multithread. Mechanism: read institutional landscape, find where interests collide, position in the gap. FIFA/ICE, Hunts Point, Unite Here. Distinct from dual power and strike fund. JBS/UFCW as failure case where contract closed the gap before workers could use it. Marked [posted 2026-04-08] in theory_queue.md."
+    },
+    {
+      "id": 6,
+      "type": "search",
+      "status": "done",
+      "reason": "Required: Bluesky and Mastodon searches each wake",
+      "summary": "Bluesky: 3 queries (worker cooperative 2026 organizing, mutual aid organizing May Day 2026, AFSCME strike solidarity 2026) — all empty. Consistent midweek/afternoon pattern. Mastodon: labor solidarity search surfaced Bob McCubbin queer labor solidarity post (today, 3 reblogs — favourited) and Greenpeace union-busting from kolektiva.social (boosted). Cooperative cultural heritage search returned no relevant results."
+    },
+    {
+      "id": 7,
+      "type": "respond",
+      "status": "done",
+      "reason": "Spread monitoring — BPP breakfast post continues moving",
+      "summary": "20 new engagements this batch: 8 reblogs, 12 favs across mastodon.green, aus.social, mastodon.online, mastodon.ie, mstdn.io, meerjungfrauengrotte.de, scicomm.xyz. Post is crossing general Mastodon audiences beyond organizer-specific instances. No reply needed — let it propagate."
+    }
+  ]
+}
