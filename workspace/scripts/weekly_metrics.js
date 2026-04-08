@@ -87,17 +87,40 @@ async function loadAllEngagements() {
 
 /**
  * Build per-ISO-week theory interlocutor counts from all available engagement data.
- * Returns map: { "2026-W14": 3, "2026-W15": 7 }
+ * Returns { byWeek: { "2026-W14": 3 }, weekDates: { "2026-W14": { "2026-04-04": 117 } } }
  */
 function buildTheoryTrendByWeek(allEngagements) {
   const byWeek = {};
+  const weekDates = {}; // weekKey -> { dateStr -> count } — for backfill spike detection
   for (const e of allEngagements) {
     if (!e.theory_interlocutor || !e.timestamp) continue;
     const dateStr = e.timestamp.split('T')[0];
     const weekKey = getISOWeekKey(dateStr);
     byWeek[weekKey] = (byWeek[weekKey] || 0) + 1;
+    if (!weekDates[weekKey]) weekDates[weekKey] = {};
+    weekDates[weekKey][dateStr] = (weekDates[weekKey][dateStr] || 0) + 1;
   }
-  return byWeek;
+  return { byWeek, weekDates };
+}
+
+const BACKFILL_SPIKE_THRESHOLD = 20;
+
+/**
+ * Detect possible backfill spikes in prior weeks.
+ * If a single date in a prior week has >BACKFILL_SPIKE_THRESHOLD theory_interlocutor entries,
+ * flag it — a bulk tagging run on one day inflates the weekly count misleadingly.
+ * Returns: { weekKey -> { date, count } } for affected weeks only.
+ */
+function detectBackfillSpikes(priorWeekKeys, weekDates) {
+  const spikes = {};
+  for (const weekKey of priorWeekKeys) {
+    const dates = weekDates[weekKey] || {};
+    const entries = Object.entries(dates).sort((a, b) => b[1] - a[1]);
+    if (entries.length > 0 && entries[0][1] > BACKFILL_SPIKE_THRESHOLD) {
+      spikes[weekKey] = { date: entries[0][0], count: entries[0][1] };
+    }
+  }
+  return spikes;
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -167,13 +190,14 @@ async function main() {
 
   // Load ALL engagement data (across all months) for trend computation
   const allEngagements = await loadAllEngagements();
-  const theoryByWeekMap = buildTheoryTrendByWeek(allEngagements);
+  const { byWeek: theoryByWeekMap, weekDates: theoryByDateMap } = buildTheoryTrendByWeek(allEngagements);
   const thisWeekKey = getISOWeekKey(weekStart);
   // Prior weeks: all keys before this week, sorted chronologically
   const priorWeekKeys = Object.keys(theoryByWeekMap)
     .filter(k => k < thisWeekKey)
     .sort();
   const theoryTrendPrior = priorWeekKeys.map(k => theoryByWeekMap[k]);
+  const backfillSpikes = detectBackfillSpikes(priorWeekKeys, theoryByDateMap);
   const thisWeekTheoryCount = theoryByWeekMap[thisWeekKey] || 0;
 
   const distinctHandles = new Set(weekEngagements.map(e => e.handle)).size;
@@ -208,6 +232,9 @@ async function main() {
     const arrow = thisWeekTheoryCount > prevCount ? '↑' : thisWeekTheoryCount < prevCount ? '↓' : '→';
     const priorStr = theoryTrendPrior.join('/');
     console.log(`    trend (vs prior weeks): ${arrow} ${thisWeekTheoryCount} (was ${priorStr})`);
+    for (const [weekKey, spike] of Object.entries(backfillSpikes)) {
+      console.log(`    ⚠ ${weekKey}: ${theoryByWeekMap[weekKey]} (spike: ${spike.count} on ${spike.date}, possible backfill)`);
+    }
   }
   if (theoryEngagements.length === 0 && distinctHandles > 0) {
     console.log(`  ⚠  No theory interlocutor engagement this week`);
@@ -280,6 +307,9 @@ async function main() {
     const prevCount = theoryTrendPrior[theoryTrendPrior.length - 1];
     const arrow = thisWeekTheoryCount > prevCount ? '↑' : thisWeekTheoryCount < prevCount ? '↓' : '→';
     console.log(`  Theory eng. trend:        ${arrow} ${thisWeekTheoryCount} (was ${theoryTrendPrior.join('/')})`);
+    for (const [weekKey, spike] of Object.entries(backfillSpikes)) {
+      console.log(`    ⚠ ${weekKey}: ${theoryByWeekMap[weekKey]} (spike: ${spike.count} on ${spike.date}, possible backfill)`);
+    }
   }
   console.log(`  Posts published:          ${weekPosts.length}`);
   console.log(`  Improvements shipped:     ${improveWakes}`);
