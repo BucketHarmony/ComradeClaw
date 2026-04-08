@@ -89,6 +89,28 @@ function classifyContentTypeMasto(text) {
   return 'observation';
 }
 
+// ─── Theory Resonance Score ──────────────────────────────────────────────────
+// Boosts/mentions from organizer-density instances are qualitatively different
+// from anonymous amplification. Score stored on each engagement log entry so
+// weekly_metrics.js can distinguish theory spreading in organizing spaces vs
+// general amplification.
+
+const RESONANCE_TIER_3 = new Set(['kolektiva.social', 'social.coop', 'union.place']);
+const RESONANCE_TIER_2 = new Set(['hachyderm.io', 'mstdn.social']);
+
+function getInstanceDomain(handle) {
+  const parts = (handle || '').split('@');
+  return parts.length >= 2 ? parts[parts.length - 1].toLowerCase() : '';
+}
+
+function computeResonancePts(handle) {
+  const domain = getInstanceDomain(handle);
+  if (!domain) return 1;
+  if (RESONANCE_TIER_3.has(domain)) return 3;
+  if (RESONANCE_TIER_2.has(domain)) return 2;
+  return 1;
+}
+
 async function logMastodonPost(entry) {
   try {
     const now = new Date();
@@ -151,6 +173,7 @@ async function logMastodonNotifications(notifications) {
         status_id: n.status_id,
         text_snippet: n.status_content ? n.status_content.substring(0, 150) : null,
         status_url: n.status_url,
+        resonance_pts: computeResonancePts(n.account),
         logged_at: new Date().toISOString(),
       };
       // Cross-platform identity: tag with unified_id if this person is known on Bluesky too

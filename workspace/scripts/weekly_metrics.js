@@ -266,6 +266,53 @@ async function main() {
   if (distinctHandles === 0) {
     console.log(`  ⚠  No organizer contacts this week`);
   }
+
+  // Theory resonance score — organizer-instance-weighted amplification signal.
+  // A reblog from kolektiva.social (3pts) is qualitatively different from
+  // an anonymous mstdn.social boost (1pt). Groups mastodon engagement entries
+  // with resonance_pts by status_url; distinguishes organizing-space spread vs
+  // general amplification.
+  const mastodonEngDir = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+  let mastodonEngagements = [];
+  try {
+    const engFiles = await fs.readdir(mastodonEngDir);
+    for (const file of engFiles) {
+      if (!file.startsWith('mastodon-') || !file.endsWith('.json')) continue;
+      try {
+        const raw = JSON.parse(await fs.readFile(path.join(mastodonEngDir, file), 'utf-8'));
+        if (Array.isArray(raw)) mastodonEngagements.push(...raw);
+      } catch { /* corrupt — skip */ }
+    }
+  } catch { /* no dir yet */ }
+
+  const weekMastoEngagements = mastodonEngagements.filter(e =>
+    e.timestamp && weekDates.includes(e.timestamp.split('T')[0]) && e.resonance_pts
+  );
+
+  if (weekMastoEngagements.length > 0) {
+    // Group by status_url — each post's total resonance score
+    const resonanceByPost = {};
+    for (const e of weekMastoEngagements) {
+      const key = e.status_url || e.status_id || 'unknown';
+      if (!resonanceByPost[key]) resonanceByPost[key] = { total: 0, organizer: 0, general: 0, count: 0 };
+      resonanceByPost[key].total += e.resonance_pts;
+      resonanceByPost[key].count += 1;
+      if (e.resonance_pts >= 3) resonanceByPost[key].organizer += 1;
+      else resonanceByPost[key].general += 1;
+    }
+    const topPosts = Object.entries(resonanceByPost)
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 3);
+    const totalResonance = weekMastoEngagements.reduce((s, e) => s + e.resonance_pts, 0);
+    const organizerPts = weekMastoEngagements.filter(e => e.resonance_pts >= 3).reduce((s, e) => s + e.resonance_pts, 0);
+    console.log(`  Theory resonance score:   ${totalResonance} total (${organizerPts} from organizer instances)`);
+    for (const [url, s] of topPosts) {
+      const shortUrl = url.length > 60 ? url.slice(-40) : url;
+      console.log(`    ${shortUrl}: score ${s.total} (${s.organizer} organizer + ${s.general} general boosts)`);
+    }
+  } else {
+    console.log(`  Theory resonance score:   no resonance_pts data yet (fires next wake forward)`);
+  }
   console.log('');
 
   // ── 3. Posts Log ───────────────────────────────────────────────────────────
