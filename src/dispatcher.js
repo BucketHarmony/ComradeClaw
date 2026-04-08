@@ -991,30 +991,48 @@ async function getMastodonSpreadAlert() {
     const now = Date.now();
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
     const month = new Date().toISOString().slice(0, 7); // e.g. "2026-04"
-    const logFile = path.join(WORKSPACE_PATH, 'logs', 'engagement', `mastodon-${month}.json`);
-    let entries = [];
-    try {
-      entries = JSON.parse(await fs.readFile(logFile, 'utf-8'));
-    } catch { return ''; }
 
-    // Group reblogs in the last 24h by the original post (status_id)
-    const postBoosters = {};
-    for (const e of entries) {
+    // Load reblog engagement log
+    const engLogFile = path.join(WORKSPACE_PATH, 'logs', 'engagement', `mastodon-${month}.json`);
+    let engEntries = [];
+    try {
+      engEntries = JSON.parse(await fs.readFile(engLogFile, 'utf-8'));
+    } catch { /* no log yet */ }
+
+    // Load favourite log (lightweight, logged since improve wake Day 29)
+    const favLogFile = path.join(WORKSPACE_PATH, 'logs', 'favs', `mastodon-favs-${month}.json`);
+    let favEntries = [];
+    try {
+      favEntries = JSON.parse(await fs.readFile(favLogFile, 'utf-8'));
+    } catch { /* no log yet */ }
+
+    // Per-post: track unique boosters and unique favoriters separately, combine for total
+    const postData = {}; // status_id → { boosters: Set, favoriters: Set, url }
+    for (const e of engEntries) {
       if (e.type !== 'reblog') continue;
       if (!e.status_id || !e.handle) continue;
       const ts = e.timestamp ? new Date(e.timestamp).getTime() : 0;
       if (now - ts > TWENTY_FOUR_HOURS) continue;
-      if (!postBoosters[e.status_id]) {
-        postBoosters[e.status_id] = { accounts: new Set(), url: e.status_url };
-      }
-      postBoosters[e.status_id].accounts.add(e.handle);
+      if (!postData[e.status_id]) postData[e.status_id] = { boosters: new Set(), favoriters: new Set(), url: e.status_url };
+      postData[e.status_id].boosters.add(e.handle);
+    }
+    for (const e of favEntries) {
+      if (!e.status_id || !e.account) continue;
+      const ts = e.timestamp ? new Date(e.timestamp).getTime() : 0;
+      if (now - ts > TWENTY_FOUR_HOURS) continue;
+      if (!postData[e.status_id]) postData[e.status_id] = { boosters: new Set(), favoriters: new Set(), url: e.status_url };
+      postData[e.status_id].favoriters.add(e.account);
     }
 
     const alerts = [];
-    for (const [statusId, { accounts, url }] of Object.entries(postBoosters)) {
-      if (accounts.size >= 10) {
+    for (const [statusId, { boosters, favoriters, url }] of Object.entries(postData)) {
+      const total = boosters.size + favoriters.size;
+      if (total >= 10) {
         const urlStr = url ? ` — ${url}` : ` (status ${statusId})`;
-        alerts.push(`⚡ Mastodon spread: ${accounts.size} unique boosters in 24h${urlStr}`);
+        const breakdown = boosters.size > 0 && favoriters.size > 0
+          ? ` (${boosters.size} boosts + ${favoriters.size} favs)`
+          : boosters.size > 0 ? ` (${boosters.size} boosts)` : ` (${favoriters.size} favs)`;
+        alerts.push(`⚡ Mastodon spread: ${total} unique engagers in 24h${breakdown}${urlStr}`);
       }
     }
     return alerts.join('\n');

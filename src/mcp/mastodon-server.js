@@ -24,6 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WORKSPACE_PATH = process.env.WORKSPACE_PATH || path.join(__dirname, '..', '..', 'workspace');
 const MASTODON_ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+const MASTODON_FAVS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'favs');
 const MASTODON_FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
 const MASTODON_SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'mastodon_search_seen');
 const MASTODON_POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
@@ -174,6 +175,49 @@ async function logMastodonNotifications(notifications) {
       existing.push(entry);
       seenKeys.add(key);
     } catch { /* non-fatal */ }
+  }
+
+  try {
+    await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+  } catch { /* non-fatal */ }
+}
+
+/**
+ * Log favourite notifications to a lightweight favs log.
+ * No profile classification — just account + status_id + timestamp.
+ * Kept fast so it doesn't slow down mastodon_read_notifications.
+ * Used by getMastodonSpreadAlert() in dispatcher.js to complete the spread picture.
+ */
+async function logMastodonFavourites(notifications) {
+  const favs = notifications.filter(n => n.type === 'favourite');
+  if (favs.length === 0) return;
+
+  const now = new Date();
+  const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+  const logFile = path.join(MASTODON_FAVS_LOG_PATH, `mastodon-favs-${month}.json`);
+  await fs.mkdir(MASTODON_FAVS_LOG_PATH, { recursive: true });
+  let existing = [];
+  try {
+    existing = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+  } catch { /* new file */ }
+
+  const dedupKey = e => `${e.account}:${e.status_id}`;
+  const seenKeys = new Set(existing.map(dedupKey));
+
+  for (const n of favs) {
+    if (!n.account || !n.status_id) continue;
+    const key = `${n.account}:${n.status_id}`;
+    if (seenKeys.has(key)) continue;
+    existing.push({
+      platform: 'mastodon',
+      type: 'favourite',
+      account: n.account,
+      status_id: n.status_id,
+      status_url: n.status_url || null,
+      timestamp: n.created_at,
+      logged_at: now.toISOString(),
+    });
+    seenKeys.add(key);
   }
 
   try {
@@ -634,6 +678,8 @@ server.tool(
       }));
       // Log high-signal notifications (mentions, reblogs) for Karpathy Loop visibility
       await logMastodonNotifications(items).catch(() => {});
+      // Log favourites to lightweight favs log — no profile fetch, just account+status+time
+      logMastodonFavourites(items).catch(() => {});
       // Backfill classification for any unclassified entries — non-blocking
       backfillMastodonClassification().catch(() => {});
       // Auto-follow-back organizer followers — non-blocking
