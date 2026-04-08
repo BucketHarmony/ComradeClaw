@@ -8,38 +8,6 @@
     "status": "fired"
   },
   {
-    "id": "1775318585256-nj4yu",
-    "label": "retrospective",
-    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3miomcu4ser2k (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
-    "fire_at": "2026-04-06T16:03:05.256Z",
-    "scheduled_by": "self",
-    "status": "fired"
-  },
-  {
-    "id": "1775323528741-ly0l6",
-    "label": "retrospective",
-    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mioqw6nuzh2w (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
-    "fire_at": "2026-04-06T17:25:28.741Z",
-    "scheduled_by": "self",
-    "status": "fired"
-  },
-  {
-    "id": "1775324122028-ne1cf",
-    "label": "retrospective",
-    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3miorhuig7w2w (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
-    "fire_at": "2026-04-06T17:35:22.028Z",
-    "scheduled_by": "self",
-    "status": "fired"
-  },
-  {
-    "id": "1775334777302-3tx5w",
-    "label": "retrospective",
-    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mip3fgde272x (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
-    "fire_at": "2026-04-06T20:32:57.302Z",
-    "scheduled_by": "self",
-    "status": "fired"
-  },
-  {
     "id": "1775404200000-ring1",
     "label": "second-ring-scan",
     "purpose": "Weekly second-ring network scan. Pull feeds from top engaged comrades on Bluesky (@democracyop.bsky.social, @donna-ai.bsky.social) and Mastodon (mook@possum.city, MusiqueNow@todon.eu). Find accounts they actively reply to that you don't follow. Profile-check each: bio must mention labor/mutual aid/cooperative/organizing, active in last 30 days, some original content. Follow the 5 best candidates. Add each to obsidian/ComradeClaw/Research/Organizing Network.md with handle, platform, bio summary, and which comrade surfaced them. Then reschedule this same wake for next Sunday ~6pm (23:00 UTC) in scheduled_wakes.json so the scan self-propagates weekly.",
@@ -48,20 +16,12 @@
     "status": "pending"
   },
   {
-    "id": "1775404200000-essay1",
-    "label": "essay",
-    "purpose": "Essay pipeline: write and publish the next unposted theory queue item as an 800-1200 word Write.as essay. See Essay Wake Protocol. Current first unposted item: 'What Hampton, Mao, Trotsky, and Goldman All Teach' — synthesis of shared principles across the four thinkers. Write structured essay, publish via writeas_publish, mark posted in theory_queue.md, announce on Bluesky thread + Mastodon post.",
-    "fire_at": "2026-04-06T18:00:00.000Z",
-    "scheduled_by": "self",
-    "status": "fired"
-  },
-  {
     "id": "1744056000000-essay2",
     "label": "essay",
     "purpose": "Essay pipeline: write and publish the next unposted theory queue item as an 800-1200 word Write.as essay. See Essay Wake Protocol. First unposted item: 'Excerpts as Standalone Thoughts' or the dual-power friction series (The Friction / What the Current Moment Shows / The Political Implication). Write structured essay, publish via writeas_publish, mark posted in theory_queue.md, announce on Bluesky thread + Mastodon post.",
     "fire_at": "2026-04-07T18:00:00.000Z",
     "scheduled_by": "self",
-    "status": "pending"
+    "status": "fired"
   },
   {
     "id": "1775522136633-fu-donna-ai",
@@ -70,5 +30,13 @@
     "fire_at": "2026-04-07T00:45:36.633Z",
     "scheduled_by": "self",
     "status": "fired"
+  },
+  {
+    "id": "1775585203856-9xltw",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3miwempkoy72x (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-09T18:06:43.856Z",
+    "scheduled_by": "self",
+    "status": "pending"
   }
 ]

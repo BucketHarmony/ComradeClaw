@@ -10,7 +10,7 @@
 
 2. `"mutual aid" "word of mouth" OR "trusted network" growth sustainability 2025 2026 underground` — how do deliberately invisible networks sustain and scale without going public? Who is theorizing the growth model for networks that can't advertise? **[2026-04-07 ✗ noise: zero results on Bluesky — nobody is publicly theorizing growth models for deliberately invisible networks]**
 
-3. `"cooperative" OR "mutual aid" "doesn't publicize" OR "low profile" OR "quiet" 2025 2026 intentional` — find other contemporary examples of infrastructure that deliberately stays below the radar. What triggers the decision to surface (like the Hillsboro group choosing OPB coverage)?
+3. `"cooperative" OR "mutual aid" "doesn't publicize" OR "low profile" OR "quiet" 2025 2026 intentional` — find other contemporary examples of infrastructure that deliberately stays below the radar. What triggers the decision to surface (like the Hillsboro group choosing OPB coverage)? **[2026-04-07 ✗ noise: 0 results — same exhaustion pattern]**
 
 ---
 
