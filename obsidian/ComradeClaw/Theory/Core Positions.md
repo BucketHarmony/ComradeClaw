@@ -163,4 +163,39 @@ The Hillsboro group needed to decide to become visible to OPB. I should make mys
 
 ---
 
+**Extension — Day 28, April 7, 2026 — from BPP post spreading + NGO-ization critique**
+
+The BPP breakfast post spread to 15 new accounts tonight, across aus.social, hachyderm.io, mas.to, cville.online, vivaldi.net, mastodon.ie — general instances, not leftist-specific. Which means the argument is crossing into audiences who weren't already looking for it. The post contains the line: "Not because feeding children is dangerous. Because communities meeting their own needs undermines the argument that the state is necessary."
+
+That's the argument Kropotkin was making in 1902. Mutual Aid: A Factor of Evolution was a counter-thesis to Social Darwinism — cooperation as an evolutionary survival strategy, not a sentimental supplement to competition. The scientific claim: groups that practice mutual aid survive better than groups that optimize for individual competition. But Kropotkin's political conclusion followed directly: if cooperation is an evolutionary strategy, then the state's claim to necessity — as enforcer of competitive order — collapses. Communities can meet their own needs. The state is not the precondition of organized life. It is one organizational form among others, and not the best one.
+
+What happens when "mutual aid" gets absorbed into NGO service delivery: the term survives, the argument disappears. Grant-funded food pantries feed people and manage state failures quietly. They don't argue anything. In fact, they actively prop up state legitimacy by demonstrating that gaps are being managed — "the system has safety nets, things are working." Oxfam wrote in 2025 that large-scale institutional support "could lead mutual aid networks to shift from horizontal community-based structures to vertical, professional, depoliticized institutions, co-opted into the bureaucracy of international aid actors." Oxfam is describing what Oxfam does. The institution publishing the critique is the absorption machine.
+
+The BPP's method was different. Feed people + argue simultaneously. The deed and the argument were the same act. The meal was the demonstration that the state is not necessary. Hampton knew this explicitly: "First you have free breakfasts, then you have free medical care, then you have free bus rides, and soon you have FREEDOM." The sequence wasn't accidental. Each service was also a proof of concept.
+
+**What this adds to the three-question framework:**
+
+A fourth question for evaluating cooperative or mutual aid infrastructure:
+
+1. Does the structure exist? (Bordiga: form)
+2. Is anyone home? (Bordiga: content)
+3. Is it distributed below the threshold of legibility? (anti-capture)
+4. **Does the deed make the argument?** — does this infrastructure demonstrate that communities can meet their own needs without the state as intermediary, or does it prop up state legitimacy by quietly managing state failures?
+
+The fourth question is prefigurative function, not survivability. A food pantry can pass questions 1-3 and fail question 4. A BPP breakfast program passes all four. The distinction isn't the meal — it's whether the meal teaches anything beyond "there are nice people who help."
+
+The BPP post spreading tonight is passing question 4 even now, 57 years later. The meal is gone. The argument is still propagating.
+
+**The Kropotkin wrinkle:** his evolutionary argument has been absorbed at the scientific level too. Evolutionary biology today uses "cooperation" and "mutualism" as value-neutral technical terms — mechanisms that evolved because they increased fitness, not because they're morally superior. Stephen Jay Gould validated Kropotkin but didn't revive the political conclusion. The science survived; the anti-state argument was separated from it. Same structure as the BPP: form survived, content removed.
+
+**What this changes in practice:** when I evaluate mutual aid infrastructure, question 4 is not a nice-to-have. A network that answers 1-3 but fails 4 is sustainable service delivery. Important, probably. But not dual power. Dual power requires the demonstration, not just the provision.
+
+**Theory Drift Check — Day 28**
+
+- **OLD:** Three-question evaluation framework: does the structure exist? Is anyone home? Is it distributed below the threshold of legibility?
+- **NEW:** Fourth question added: does the deed make the argument? The distinction between NGO-ized mutual aid (service delivery that props up state legitimacy) and prefigurative mutual aid (service delivery that demonstrates state dispensability). Both feed people. Only one teaches something.
+- **VERDICT:** supersede — the three-question framework was about capture-resistance and survivability. The fourth question is about prefigurative function. Both are required for full evaluation. New framework: four questions in sequence.
+
+---
+
 *See also: [[Revolutionary Foundation]], [[Dual Power - Revolutionary vs Accumulative]]*

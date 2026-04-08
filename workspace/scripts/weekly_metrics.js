@@ -207,6 +207,13 @@ async function main() {
   }
   const typeStr = Object.entries(byType).map(([t, n]) => `${t}: ${n}`).join(', ') || 'none';
 
+  // Signal weight: reply/mention are deeper engagement than boost/favourite.
+  // Weights: reply=3, mention=2, reblog/boost=1, favourite=1, follow=0
+  const SIGNAL_WEIGHTS = { reply: 3, mention: 2, reblog: 1, boost: 1, favourite: 1, follow: 0 };
+  function signalWeight(type) {
+    return SIGNAL_WEIGHTS[type] ?? 1;
+  }
+
   // Theory interlocutor engagements — known deep-theory conversation partners
   const theoryEngagements = weekEngagements.filter(e => e.theory_interlocutor === true);
   const theoryHandles = [...new Set(theoryEngagements.map(e => e.unified_id || e.handle))];
@@ -216,13 +223,30 @@ async function main() {
   }
   const theoryTypeStr = Object.entries(theoryByType).map(([t, n]) => `${t}: ${n}`).join(', ') || 'none';
 
+  // Weighted theory interlocutor score — reply counts more than a boost
+  const theoryWeightedScore = theoryEngagements.reduce((sum, e) => sum + signalWeight(e.type), 0);
+
+  // Per-handle weighted scores — surfaces who's engaging deeply vs. just amplifying
+  const theoryByHandle = {};
+  for (const e of theoryEngagements) {
+    const key = e.unified_id || e.handle;
+    if (!theoryByHandle[key]) theoryByHandle[key] = { raw: 0, weighted: 0 };
+    theoryByHandle[key].raw += 1;
+    theoryByHandle[key].weighted += signalWeight(e.type);
+  }
+  const theoryHandleStr = Object.entries(theoryByHandle)
+    .sort((a, b) => b[1].weighted - a[1].weighted)
+    .map(([h, s]) => `${h}(w:${s.weighted})`)
+    .join(', ') || 'none';
+
   console.log('── Engagement ───────────────────────────────────────');
   console.log(`  Total incoming:           ${weekEngagements.length}`);
   console.log(`  Distinct handles:         ${distinctHandles}`);
   console.log(`  By type:                  ${typeStr}`);
-  console.log(`  Theory interlocutors:     ${theoryEngagements.length} (${theoryHandles.join(', ') || 'none'})`);
+  console.log(`  Theory interlocutors:     ${theoryEngagements.length} raw / ${theoryWeightedScore} weighted`);
   if (theoryEngagements.length > 0) {
     console.log(`    by type:                ${theoryTypeStr}`);
+    console.log(`    by handle (weighted):   ${theoryHandleStr}`);
     const tRate = pct(theoryEngagements.length, weekEngagements.length);
     console.log(`    share of total:         ${tRate}`);
   }
@@ -302,7 +326,7 @@ async function main() {
   console.log('── Summary ──────────────────────────────────────────');
   console.log(`  Theory-praxis rate:       ${tpRate} (target >50%)`);
   console.log(`  Organizer contacts:       ${distinctHandles}`);
-  console.log(`  Theory interlocutor eng.: ${theoryEngagements.length} (${theoryHandles.join(', ') || 'none'})`);
+  console.log(`  Theory interlocutor eng.: ${theoryEngagements.length} raw / ${theoryWeightedScore} weighted (${theoryHandleStr})`);
   if (priorWeekKeys.length > 0) {
     const prevCount = theoryTrendPrior[theoryTrendPrior.length - 1];
     const arrow = thisWeekTheoryCount > prevCount ? '↑' : thisWeekTheoryCount < prevCount ? '↓' : '→';
