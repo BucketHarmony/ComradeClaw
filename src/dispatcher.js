@@ -1164,6 +1164,30 @@ async function getTheoryQueueAlert() {
 }
 
 /**
+ * Candidate queue alert — if ≥3 [candidate] items exist in theory_queue.md,
+ * inject a one-liner listing the first 2 titles and asking to promote or drop.
+ * Candidates accumulate from autoQueueFromJournal() but have no promotion path
+ * without this alert surfacing them. Non-fatal.
+ */
+async function getCandidateQueueAlert() {
+  try {
+    const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
+    const content = await fs.readFile(QUEUE_PATH, 'utf-8');
+    const candidateLines = (content.match(/\[candidate\][^\n]*/g) || []);
+    if (candidateLines.length < 3) return '';
+    // Extract first 2 titles — format: **[candidate]** **<title>** — ...
+    const titles = candidateLines.slice(0, 2).map(line => {
+      const m = line.match(/\*\*\[candidate\]\*\*\s*\*\*([^*]+)\*\*/);
+      return m ? m[1].trim() : line.slice(0, 60).trim();
+    });
+    return `⚠️ ${candidateLines.length} theory candidate${candidateLines.length !== 1 ? 's' : ''} waiting in queue — promote to [pending] or drop: "${titles[0]}", "${titles[1]}". Check theory_queue.md.`;
+  } catch (err) {
+    console.error(`[getCandidateQueueAlert] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Compute 7-day rolling average of wake context sizes (KB) from daily cost files.
  * Returns { avg, count } if enough history exists, or null if < 3 data points.
  * Non-fatal — returns null on any error.
@@ -2494,6 +2518,9 @@ export async function executeWake(label, time, purpose = null) {
   // Theory queue low-water alert — inject warning if ≤2 [pending] items remain
   const theoryQueueAlert = await getTheoryQueueAlert();
 
+  // Candidate queue alert — surface [candidate] items if ≥3 have accumulated without promotion
+  const candidateQueueAlert = await getCandidateQueueAlert();
+
   // Overdue threads alert — flag past-due deadlines in Threads.md
   const overdueThreadsAlert = await getOverdueThreadsAlert();
 
@@ -2761,6 +2788,7 @@ export async function executeWake(label, time, purpose = null) {
     hashtagSignalContext ? `\n${hashtagSignalContext}` : '',
     crossTabContext ? `\n${crossTabContext}` : '',
     theoryQueueAlert ? `\n${theoryQueueAlert}` : '',
+    candidateQueueAlert ? `\n${candidateQueueAlert}` : '',
     overdueThreadsAlert ? `\n${overdueThreadsAlert}` : '',
     writeasTokenWarning ? `\n${writeasTokenWarning}` : '',
     improveWakeWarning ? `\n${improveWakeWarning}` : '',
@@ -2800,6 +2828,7 @@ export async function executeWake(label, time, purpose = null) {
     overdue_threads: overdueThreadsAlert?.length || 0,
     mastodon_spread: mastodonSpreadAlert?.length || 0,
     cross_tab: crossTabContext?.length || 0,
+    candidate_queue: candidateQueueAlert?.length || 0,
   };
 
   // Context size trend alert — inject warning if current wake is >20% above 7-day rolling average
@@ -2833,6 +2862,7 @@ export async function executeWake(label, time, purpose = null) {
     overdue_threads: est(overdueThreadsAlert),
     mastodon_spread: est(mastodonSpreadAlert),
     cross_tab: est(crossTabContext),
+    candidate_queue: est(candidateQueueAlert),
   };
 
   // Timeout scaling by label. Intensive labels get 20 min; self-scheduled (purpose set) gets 25 min; all others 10 min.
