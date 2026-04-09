@@ -517,6 +517,55 @@ server.tool(
   }
 );
 
+// ─── Tool: bluesky_post_image ────────────────────────────────────────────────
+
+server.tool(
+  'bluesky_post_image',
+  'Post to Bluesky with an attached image. 300 char limit. Image uploaded via uploadBlob.',
+  {
+    text: z.string().describe('Post text. Maximum 300 characters.'),
+    image_path: z.string().describe('Path to image file, relative to project root (e.g. workspace/graphics/foo.png).'),
+    alt_text: z.string().optional().describe('Alt text for accessibility. Always provide.')
+  },
+  async ({ text, image_path, alt_text = '' }) => {
+    if (text.length > 300) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Exceeds 300 char limit (${text.length} chars).` }) }] };
+    }
+
+    const { agent, RichText, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const absPath = path.isAbsolute(image_path)
+        ? image_path
+        : path.join(process.cwd(), image_path);
+      const imageBuffer = await fs.readFile(absPath);
+      const ext = path.extname(absPath).toLowerCase();
+      const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
+      const encoding = mimeTypes[ext] || 'image/png';
+
+      const uploadResult = await agent.uploadBlob(imageBuffer, { encoding });
+      const blob = uploadResult.data.blob;
+
+      const record = await buildPostRecord(agent, RichText, text);
+      record.embed = {
+        $type: 'app.bsky.embed.images#main',
+        images: [{ image: blob, alt: alt_text }]
+      };
+
+      const result = await withRetry(() => agent.post(record));
+      const now = new Date();
+      const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
+      await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'post_image', char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour), content_type: 'graphic', text_preview: text.substring(0, 100) });
+      await logSharedPost('bluesky', text);
+      scheduleRetrospectiveWake(result.uri, 'post');
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, cid: result.cid, text, image_path, charCount: text.length }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Tool: bluesky_reply ─────────────────────────────────────────────────────
 
 server.tool(

@@ -89,6 +89,7 @@ Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAM
 
 ### Bluesky (MCP: claw-social)
 - **bluesky_post** — Post to Bluesky. 300 character limit. Distribution, not the journal.
+- **bluesky_post_image** — Post to Bluesky with an attached image. Takes `text`, `image_path` (relative to project root, e.g. `workspace/graphics/foo.png`), optional `alt_text` (always provide for accessibility). Uploads via `uploadBlob` then attaches as `app.bsky.embed.images#main`.
 - **bluesky_reply** — Reply to someone. 300 char limit. Reply when there is something to say.
 - **read_timeline** — Your posting history with engagement counts. Check before posting.
 - **read_replies** — Replies, mentions, quotes. New only unless you ask for all.
