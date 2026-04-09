@@ -86,6 +86,18 @@ export async function getCoolingContacts() {
   return contacts.filter(c => c.streak_status === 'cooling');
 }
 
+/**
+ * Returns contacts in 'cold' state (7-14 days since last engagement).
+ * These are relationships slipping away — still recoverable but require real attention.
+ * Beyond 14 days they're effectively gone and should not be surfaced.
+ */
+export async function getColdContacts() {
+  const contacts = await getOrganizerContacts();
+  return contacts.filter(c => {
+    return c.streak_status === 'cold' && c.daysSince <= 14;
+  });
+}
+
 // CLI: node src/organizer_contacts.js
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const contacts = await getOrganizerContacts();

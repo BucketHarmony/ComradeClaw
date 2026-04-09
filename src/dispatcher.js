@@ -2731,14 +2731,21 @@ export async function executeWake(label, time, purpose = null) {
   ].join('\n') : '';
 
   // Organizer streak check — inject cooling contacts so wake can re-engage them
+  // Also surfaces cold contacts (7-14d) that are slipping away and need intentional recovery
   let coolingContactsContext = '';
   try {
-    const { getCoolingContacts } = await import('./organizer_contacts.js');
-    const cooling = await getCoolingContacts();
+    const { getCoolingContacts, getColdContacts } = await import('./organizer_contacts.js');
+    const [cooling, cold] = await Promise.all([getCoolingContacts(), getColdContacts()]);
+    const parts = [];
     if (cooling.length > 0) {
       const names = cooling.map(c => `${c.handle} (${c.daysSince}d since last engagement)`).join(', ');
-      coolingContactsContext = `\n## Relationships to Maintain\nThese contacts engaged recently but haven't engaged in 3-7 days — worth keeping warm: ${names}`;
+      parts.push(`## Relationships to Maintain\nThese contacts engaged recently but haven't engaged in 3-7 days — worth keeping warm: ${names}`);
     }
+    if (cold.length > 0) {
+      const names = cold.map(c => `${c.handle} (${c.daysSince}d)`).join(', ');
+      parts.push(`⚠️ Going cold (7-14d, still recoverable): ${names} — a direct reply or mention can re-open these.`);
+    }
+    if (parts.length > 0) coolingContactsContext = '\n' + parts.join('\n');
   } catch (err) {
     console.error(`[dispatcher] organizer_contacts failed: ${err.message}`);
   }
