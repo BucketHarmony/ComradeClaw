@@ -556,6 +556,84 @@ server.tool(
 
 // ── reddit_post_comment ──────────────────────────────────────────────────────
 
+// ─── Pre-flight Quality Gate ──────────────────────────────────────────────────
+
+async function fetchPostMeta(permalink) {
+  let url = permalink;
+  if (!url.startsWith('http')) url = `https://old.reddit.com${url}`;
+  if (!url.includes('.json')) url = url.replace(/\/?$/, '.json');
+  url = `${url}?limit=0`;
+
+  const res = await rateLimitedFetch(url);
+  const data = await res.json();
+
+  if (!Array.isArray(data) || !data[0]?.data?.children?.[0]) {
+    throw new Error('Could not parse post metadata from Reddit response');
+  }
+
+  const post = data[0].data.children[0].data;
+  return {
+    locked: post.locked || false,
+    archived: post.archived || false,
+    subreddit: post.subreddit,
+  };
+}
+
+async function preflightCheck(text, permalink, watchlist) {
+  const failures = [];
+
+  // Check 1: minimum length
+  if (text.length < 80) {
+    failures.push({
+      check: 'min_length',
+      reason: `Comment is ${text.length} chars (minimum 80). One-liners damage credibility — expand the argument or don't post.`,
+      blocking: true,
+    });
+  }
+
+  // Check 2 + 3: post status and subreddit whitelist (requires one API call)
+  try {
+    await sleep(3000); // rate-limit respect
+    const meta = await fetchPostMeta(permalink);
+
+    const watchedNames = new Set((watchlist.subreddits || []).map(s => s.name.toLowerCase()));
+    if (!watchedNames.has(meta.subreddit.toLowerCase())) {
+      failures.push({
+        check: 'subreddit_not_approved',
+        reason: `r/${meta.subreddit} is not in the watchlist. Posting there risks off-mission drift. Add it to workspace/reddit/watchlist.json first, or pass force: true.`,
+        blocking: true,
+      });
+    }
+
+    if (meta.locked) {
+      failures.push({
+        check: 'post_locked',
+        reason: `Post in r/${meta.subreddit} is locked. Comment will fail silently.`,
+        blocking: true,
+      });
+    }
+
+    if (meta.archived) {
+      failures.push({
+        check: 'post_archived',
+        reason: `Post in r/${meta.subreddit} is archived (>6 months old). Commenting is disabled.`,
+        blocking: true,
+      });
+    }
+  } catch (err) {
+    // Non-fatal: can't verify post status, warn but don't block
+    failures.push({
+      check: 'meta_fetch_warning',
+      reason: `Could not verify post status (${err.message}). Proceeding may fail silently.`,
+      blocking: false,
+    });
+  }
+
+  return failures;
+}
+
+// ─── OAuth ────────────────────────────────────────────────────────────────────
+
 /**
  * Reddit OAuth token cache (in-process; lasts as long as the MCP server runs).
  * Tokens are valid for ~24h. We cache to avoid re-authing on every comment.
@@ -618,7 +696,7 @@ async function getRedditOAuthToken() {
 
 server.tool(
   'reddit_post_comment',
-  'Post a comment on Reddit (reply to a post or another comment). Requires REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET in .env (ROPC OAuth). On success, auto-registers the new comment in comment_last_seen.json so reddit_read_inbox tracks replies to it.',
+  'Post a comment on Reddit (reply to a post or another comment). Requires REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET in .env (ROPC OAuth). On success, auto-registers the new comment in comment_last_seen.json so reddit_read_inbox tracks replies to it. Pre-flight gate: checks min length (80 chars), subreddit is in watchlist, post is not locked/archived. Pass force: true to bypass.',
   {
     parent_fullname: z.string().describe(
       'Fullname of the thing to reply to: post fullname (t3_xxx) or comment fullname (t1_xxx). ' +
@@ -630,9 +708,32 @@ server.tool(
       'Required so reply tracking knows which thread to re-fetch.'
     ),
     thread_title: z.string().optional().describe('Thread title — stored in tracking for context.'),
+    force: z.boolean().default(false).describe(
+      'Bypass the pre-flight quality gate (min length, subreddit whitelist, post locked/archived). ' +
+      'Use deliberately for exceptions — gate failure message will say when force is appropriate.'
+    ),
   },
-  async ({ parent_fullname, text, permalink, thread_title }) => {
+  async ({ parent_fullname, text, permalink, thread_title, force }) => {
     try {
+      // ── Pre-flight quality gate ──────────────────────────────────────────
+      let preflightWarnings = [];
+      if (!force) {
+        const watchlist = await loadWatchlist();
+        const failures = await preflightCheck(text, permalink, watchlist);
+        const blocking = failures.filter(f => f.blocking);
+
+        if (blocking.length > 0) {
+          return { content: [{ type: 'text', text: JSON.stringify({
+            status: 'preflight_failed',
+            message: 'Comment blocked by pre-flight quality gate. Fix the issues or pass force: true to bypass.',
+            failures,
+            bypass_hint: 'force: true skips all checks — use deliberately.',
+          }, null, 2) }] };
+        }
+
+        preflightWarnings = failures.filter(f => !f.blocking);
+      }
+
       const token = await getRedditOAuthToken();
 
       const body = new URLSearchParams({
@@ -699,6 +800,7 @@ server.tool(
         text_preview: text.slice(0, 100),
         tracked: !!newCommentId,
         posted_at: new Date().toISOString(),
+        ...(preflightWarnings.length > 0 ? { warnings: preflightWarnings } : {}),
       }, null, 2) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({
