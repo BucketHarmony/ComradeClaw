@@ -69,8 +69,8 @@ process.stdout.write(document.body.innerHTML);
 // ─── Execute D3 code in a child process ──────────────────────────────────────
 
 async function runD3(code) {
-  const tmpDir = os.tmpdir();
-  const tmpFile = path.join(tmpDir, `claw-graphic-${crypto.randomBytes(6).toString('hex')}.mjs`);
+  // Write temp file inside the project so ESM can resolve node_modules
+  const tmpFile = path.join(PROJECT_ROOT, `.claw-graphic-${crypto.randomBytes(6).toString('hex')}.mjs`);
 
   const script = buildScript(code);
   await fs.writeFile(tmpFile, script, 'utf8');
