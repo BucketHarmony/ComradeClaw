@@ -778,16 +778,18 @@ server.tool(
 
 server.tool(
   'mastodon_reply',
-  'Reply to a Mastodon status',
+  'Reply to a Mastodon status. Optionally attach an image.',
   {
     status_id: z.string().describe('ID of the status to reply to'),
     text: z.string().max(500).describe('Reply text'),
+    image_path: z.string().optional().describe('Optional image to attach (relative to project root, e.g. workspace/graphics/foo.png).'),
+    alt_text: z.string().optional().describe('Alt text for the image. Always provide when using image_path.'),
     visibility: z
       .enum(['public', 'unlisted', 'followers_only', 'direct'])
       .optional()
       .default('public'),
   },
-  async ({ status_id, text, visibility }) => {
+  async ({ status_id, text, image_path, alt_text, visibility }) => {
     try {
       // Dedup: check if we already replied to this status
       const dupeCheck = await alreadyRepliedMastodon(status_id);
@@ -796,13 +798,21 @@ server.tool(
           content: [{ type: 'text', text: JSON.stringify({ status: 'already_replied', message: `Already replied to status ${status_id}. Skipping duplicate reply.` }) }],
         };
       }
+
+      let media_ids;
+      if (image_path) {
+        const __root = path.join(__dirname, '..', '..');
+        const resolvedPath = path.isAbsolute(image_path) ? image_path : path.join(__root, image_path);
+        const mediaId = await uploadMedia(resolvedPath, alt_text);
+        media_ids = [mediaId];
+      }
+
+      const body = { status: text, in_reply_to_id: status_id, visibility };
+      if (media_ids) body.media_ids = media_ids;
+
       const status = await masto('/statuses', {
         method: 'POST',
-        body: JSON.stringify({
-          status: text,
-          in_reply_to_id: status_id,
-          visibility,
-        }),
+        body: JSON.stringify(body),
       });
       return {
         content: [
@@ -813,6 +823,7 @@ server.tool(
               id: status.id,
               url: status.url,
               in_reply_to_id: status.in_reply_to_id,
+              hasImage: !!image_path,
             }),
           },
         ],

@@ -586,12 +586,14 @@ server.tool(
 
 server.tool(
   'bluesky_reply',
-  'Reply to someone on Bluesky. 300 char limit. Reply when there is something to say.',
+  'Reply to someone on Bluesky. 300 char limit. Optionally attach an image.',
   {
     uri: z.string().describe('AT URI of the post to reply to (from read_replies output).'),
-    text: z.string().describe('Reply text. Maximum 300 characters.')
+    text: z.string().describe('Reply text. Maximum 300 characters.'),
+    image_path: z.string().optional().describe('Optional image to attach (relative to project root, e.g. workspace/graphics/foo.png).'),
+    alt_text: z.string().optional().describe('Alt text for the image. Always provide when using image_path.')
   },
-  async ({ uri, text }) => {
+  async ({ uri, text, image_path, alt_text = '' }) => {
     if (text.length > 300) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Exceeds 300 char limit (${text.length} chars).` }) }] };
     }
@@ -625,12 +627,26 @@ server.tool(
       };
 
       const record = await buildPostRecord(agent, RichText, text);
+
+      if (image_path) {
+        const absPath = path.isAbsolute(image_path) ? image_path : path.join(process.cwd(), image_path);
+        const imageBuffer = await fs.readFile(absPath);
+        const ext = path.extname(absPath).toLowerCase();
+        const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
+        const encoding = mimeTypes[ext] || 'image/png';
+        const uploadResult = await agent.uploadBlob(imageBuffer, { encoding });
+        record.embed = {
+          $type: 'app.bsky.embed.images#main',
+          images: [{ image: uploadResult.data.blob, alt: alt_text }]
+        };
+      }
+
       const result = await withRetry(() => agent.post({ ...record, reply: replyRef }));
       const now = new Date();
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
-      await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: 'reply', in_reply_to: uri, char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour) });
+      await logPost({ uri: result.uri, cid: result.cid, posted_at: now.toISOString(), type: image_path ? 'reply_image' : 'reply', in_reply_to: uri, char_count: text.length, hashtags: detectHashtags(text), time_of_day: timeOfDay(hour) });
       verifyFacets(agent, result.uri, text);
-      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, inReplyTo: uri, text, charCount: text.length }) }] };
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, inReplyTo: uri, text, charCount: text.length, hasImage: !!image_path }) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
     }
