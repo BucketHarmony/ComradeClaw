@@ -109,11 +109,13 @@ const server = new McpServer({
 server.tool(
   'generate_graphic',
   {
-    filename: z.string().describe('Output filename without extension (e.g. "bpp-breakfast-poster"). Saved to workspace/graphics/<filename>.svg'),
+    filename: z.string().describe('Output filename without extension (e.g. "bpp-breakfast-poster"). Saved to workspace/graphics/<filename>.svg (and .png if png=true)'),
     d3_code: z.string().describe('D3 drawing code. Uses: d3, document, window, svg (800×600 <svg> selection). Set width/height variables before drawing to resize. Do NOT write to stdout or call process.exit.'),
     description: z.string().optional().describe('Human-readable description of what this graphic is for (logged with the file)'),
+    png: z.boolean().optional().describe('If true, also export a PNG alongside the SVG. Default false.'),
+    png_scale: z.number().optional().describe('PNG pixel density multiplier (default 2 = 2× for crisp social-media exports). 1 = 1:1, 3 = 3×.'),
   },
-  async ({ filename, d3_code, description }) => {
+  async ({ filename, d3_code, description, png = false, png_scale = 2 }) => {
     // Ensure graphics dir exists
     await fs.mkdir(GRAPHICS_PATH, { recursive: true });
 
@@ -129,9 +131,27 @@ server.tool(
 
       if (result.ok) {
         await fs.writeFile(outPath, result.svg, 'utf8');
+
+        let pngPath = null;
+        let pngError = null;
+        if (png) {
+          pngPath = path.join(GRAPHICS_PATH, `${safeName}.png`);
+          try {
+            const { default: sharp } = await import('sharp');
+            await sharp(Buffer.from(result.svg))
+              .png()
+              .resize({ width: Math.round(800 * png_scale), kernel: 'lanczos3' })
+              .toFile(pngPath);
+          } catch (e) {
+            pngError = e.message;
+            pngPath = null;
+          }
+        }
+
         const meta = {
           filename: `${safeName}.svg`,
           path: outPath,
+          png_path: pngPath,
           description: description || null,
           created: new Date().toISOString(),
           attempts: attempt,
@@ -147,9 +167,13 @@ server.tool(
                 status: 'ok',
                 path: outPath,
                 filename: `${safeName}.svg`,
+                png_path: pngPath,
+                png_error: pngError || undefined,
                 attempts: attempt,
                 size_bytes: Buffer.byteLength(result.svg),
-                message: `SVG saved to workspace/graphics/${safeName}.svg`,
+                message: pngPath
+                  ? `SVG + PNG saved to workspace/graphics/${safeName}.{svg,png}`
+                  : `SVG saved to workspace/graphics/${safeName}.svg`,
               }),
             },
           ],
@@ -204,16 +228,26 @@ server.tool(
     await fs.mkdir(GRAPHICS_PATH, { recursive: true });
     const files = await fs.readdir(GRAPHICS_PATH);
     const svgs = files.filter(f => f.endsWith('.svg'));
+    const pngs = new Set(files.filter(f => f.endsWith('.png')).map(f => f.replace('.png', '')));
 
     const items = await Promise.all(
       svgs.map(async f => {
         const metaFile = f.replace('.svg', '.json');
+        const baseName = f.replace('.svg', '');
         try {
           const meta = JSON.parse(await fs.readFile(path.join(GRAPHICS_PATH, metaFile), 'utf8'));
+          if (!meta.png_path && pngs.has(baseName)) {
+            meta.png_path = path.join(GRAPHICS_PATH, `${baseName}.png`);
+          }
           return meta;
         } catch {
           const stat = await fs.stat(path.join(GRAPHICS_PATH, f)).catch(() => null);
-          return { filename: f, path: path.join(GRAPHICS_PATH, f), created: stat?.mtime };
+          return {
+            filename: f,
+            path: path.join(GRAPHICS_PATH, f),
+            png_path: pngs.has(baseName) ? path.join(GRAPHICS_PATH, `${baseName}.png`) : null,
+            created: stat?.mtime,
+          };
         }
       })
     );
