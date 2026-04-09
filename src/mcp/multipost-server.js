@@ -97,6 +97,30 @@ async function masto(endpoint, options = {}) {
   return res.json();
 }
 
+// ─── Reply Dedup Helpers ────────────────────────────────────────────────────
+
+async function alreadyRepliedBluesky(agent, uri) {
+  try {
+    const thread = await agent.getPostThread({ uri, depth: 1, parentHeight: 0 });
+    const replies = thread.data.thread?.replies || [];
+    const myDid = agent.session?.did;
+    if (!myDid) return false;
+    return replies.some(r => r.post?.author?.did === myDid);
+  } catch {
+    return false;
+  }
+}
+
+async function alreadyRepliedMastodon(statusId) {
+  try {
+    const context = await masto(`/statuses/${statusId}/context`);
+    const me = await masto('/accounts/verify_credentials');
+    return (context.descendants || []).some(s => s.account?.id === me.id);
+  } catch {
+    return false;
+  }
+}
+
 // ─── Post Format Experiment — content_type classifier ────────────────────────
 // Mirrors the classifier in bluesky-server.js — keep in sync.
 function classifyContentType(text) {
@@ -138,6 +162,32 @@ async function logMultipost(entry) {
     const timeOfDay = hour >= 6 && hour < 12 ? 'morning' : hour >= 12 && hour < 15 ? 'noon' : hour >= 15 && hour < 18 ? 'afternoon' : hour >= 18 && hour < 23 ? 'evening' : 'night';
     existing.push({ ...entry, logged_at: now.toISOString(), time_of_day: timeOfDay });
     await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+  } catch { /* non-fatal */ }
+}
+
+// ─── Theory Queue Tracking ────────────────────────────────────────────────────
+
+const THEORY_QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
+
+async function markTheoryPosted(title) {
+  if (!title) return;
+  try {
+    const content = await fs.readFile(THEORY_QUEUE_PATH, 'utf-8');
+    const titlePrefix = title.slice(0, 40).toLowerCase();
+    const date = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' });
+
+    const updated = content.split('\n').map(line => {
+      if (!/\[(pending|unposted)\]/i.test(line)) return line;
+      const lineLower = line.toLowerCase();
+      if (lineLower.includes(titlePrefix)) {
+        return line.replace(/\[(pending|unposted)\]/i, `[posted ${date}]`);
+      }
+      return line;
+    }).join('\n');
+
+    if (updated !== content) {
+      await fs.writeFile(THEORY_QUEUE_PATH, updated, 'utf-8');
+    }
   } catch { /* non-fatal */ }
 }
 
@@ -346,6 +396,11 @@ server.tool(
           const { agent, RichText, error } = await getBlueskyAgent();
           if (error) { results.bluesky = { status: 'not_configured', message: error }; return; }
           try {
+            // Dedup: check if we already replied to this post
+            if (await alreadyRepliedBluesky(agent, bluesky_uri)) {
+              results.bluesky = { status: 'already_replied', message: `Already replied to ${bluesky_uri}. Skipping.` };
+              return;
+            }
             const thread = await agent.getPostThread({ uri: bluesky_uri, depth: 0, parentHeight: 10 });
             const replyTo = thread.data.thread?.post;
             if (!replyTo) { results.bluesky = { status: 'error', message: 'Could not find post to reply to.' }; return; }
@@ -375,6 +430,11 @@ server.tool(
       } else {
         tasks.push((async () => {
           try {
+            // Dedup: check if we already replied to this status
+            if (await alreadyRepliedMastodon(mastodon_status_id)) {
+              results.mastodon = { status: 'already_replied', message: `Already replied to status ${mastodon_status_id}. Skipping.` };
+              return;
+            }
             const status = await masto('/statuses', {
               method: 'POST',
               body: JSON.stringify({ status: mText, in_reply_to_id: mastodon_status_id, visibility }),
@@ -421,8 +481,9 @@ server.tool(
     posts: z.array(z.string().max(300)).min(1).max(10).describe('Array of post texts for the Bluesky thread. Each ≤300 chars. First post is root; subsequent posts reply to the prior.'),
     mastodon_text: z.string().max(500).optional().describe('Mastodon post text (≤500 chars). If omitted, uses the first Bluesky post (truncated to 500).'),
     visibility: z.enum(['public', 'unlisted', 'followers_only']).optional().default('public'),
+    theory_title: z.string().optional().describe('Title of the theory_queue.md item being distributed. When provided and at least one platform succeeds, marks the item as [posted YYYY-MM-DD] in workspace/theory_queue.md.'),
   },
-  async ({ posts, mastodon_text, visibility }) => {
+  async ({ posts, mastodon_text, visibility, theory_title }) => {
     const mText = mastodon_text || posts[0].slice(0, 500);
 
     const [bskyResult, mastoResult] = await Promise.all([
@@ -476,6 +537,10 @@ server.tool(
 
     const anySuccess = Object.values(results).some(r => r?.status === 'success');
     const allFailed = Object.values(results).every(r => r?.status === 'error');
+
+    if (anySuccess && theory_title) {
+      await markTheoryPosted(theory_title);
+    }
 
     return {
       content: [{
