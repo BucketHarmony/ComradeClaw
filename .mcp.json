@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "claw-social": {
+      "command": "node",
+      "args": ["--tls-cipher-list=DEFAULT", "src/mcp/bluesky-server.js"],
+      "cwd": "E:/AI/CClaw"
+    },
+    "claw-mastodon": {
+      "command": "node",
+      "args": ["src/mcp/mastodon-server.js"],
+      "cwd": "E:/AI/CClaw"
+    },
+    "claw-reddit": {
+      "command": "node",
+      "args": ["src/mcp/reddit-server.js"],
+      "cwd": "E:/AI/CClaw"
+    },
+    "claw-multipost": {
+      "command": "node",
+      "args": ["--tls-cipher-list=DEFAULT", "src/mcp/multipost-server.js"],
+      "cwd": "E:/AI/CClaw"
+    },
+    "claw-memory": {
+      "command": "node",
+      "args": ["src/mcp/memory-server.js"],
+      "cwd": "E:/AI/CClaw"
+    },
+    "claw-feeds": {
+      "command": "node",
+      "args": ["src/mcp/rss-server.js"],
+      "cwd": "E:/AI/CClaw"
+    },
+    "claw-graphics": {
+      "command": "node",
+      "args": ["src/mcp/graphics-server.js"],
+      "cwd": "E:/AI/CClaw"
+    }
+  }
+}

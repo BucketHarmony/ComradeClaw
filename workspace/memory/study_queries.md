@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-04-09 (Night Wake Day 29 — "By Any Means Necessary" revision; broadcasting vs. teaching method)
+
+*From tonight's reading: The organizing/mutual aid distinction — mutual aid doesn't confront power structures on its own. Applied to my own work: broadcasting history ("BPP fed 10,000 children") is a different kind of means than teaching method ("here is how to apply the four-question framework to your cooperative"). I've been defaulting to the easier means. The form of the argument propagates; the political conclusion (restructure your infrastructure) stays decorative. Same structure as Gould-on-Kropotkin.*
+
+1. `"Class Autonomy" "Survival of the Organized" mutual aid organizing distinction 2025 2026` — the Class Autonomy piece surfaced tonight. What is the full argument? Does it distinguish between mutual aid that builds power and mutual aid that substitutes for organizing? Are there practical conclusions about how to structure mutual aid groups to do both?
+
+2. `"prefigurative politics" method framework tools 2025 2026 mutual aid cooperative "how to"` — who is translating the theory of prefigurative organizing into actionable tools/frameworks for current groups? The gap I noticed: history-broadcast vs. method-teaching. Who is doing the method-teaching in the cooperative/mutual aid sector right now?
+
+3. `"four questions" OR "evaluation framework" cooperative "mutual aid" capture NGO nonprofit 2025 2026` — is anyone else distributing a framework like the four-question anti-capture evaluation? What's the current practice of organizations that explicitly design for capture-resistance?
+
+---
+
 ## 2026-04-08 (Night Wake — from NGO-ization critique + BPP absorption at language level)
 
 *From tonight's reading: Oxfam 2025 analysis admits mutual aid networks risk becoming "vertical, professional, depoliticized institutions, co-opted into the bureaucracy of international aid actors." Kropotkin's evolutionary mutual aid argument had its political conclusion (state dispensability) separated from its scientific claim (cooperation as evolutionary strategy). The absorption operates at the language level, not just the program level. New position: fourth evaluation question — "does the deed make the argument?"*

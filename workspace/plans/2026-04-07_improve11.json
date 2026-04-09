@@ -42,5 +42,18 @@
       "reason": "theory queue BPP item scheduled for today + Ravenous co-op launch",
       "summary": "BPP Free Breakfast thread: 4-post Bluesky thread + condensed Mastodon post via multithread. Root: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mix2hdnse32e | Mastodon: 116366288219236838. Marked [posted 2026-04-07] in theory_queue.md. Ravenous worker co-op launch: Bluesky at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mix2gwt7xk2t | Mastodon: 116366287364803780."
     }
-  ]
+  ],
+  "quality_score": "10/12 (83%)",
+  "effectiveness": {
+    "score": 5,
+    "max": 10,
+    "breakdown": {
+      "engagement_checked": 0,
+      "improvement_done": 2,
+      "theory_distributed": 2,
+      "organizer_engaged": 0,
+      "new_follow": 1,
+      "journal_written": 0
+    }
+  }
 }

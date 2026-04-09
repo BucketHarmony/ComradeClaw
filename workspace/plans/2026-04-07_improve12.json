@@ -56,5 +56,18 @@
       "reason": "Required: 2 new items per improve wake protocol",
       "summary": "Added to improvements.md: (1) signal_weight field in engagement log — replies=3, mentions=2, boosts/favourites=1 — for weighted theory interlocutor scoring alongside raw count. (2) Essay deadline auto-scaffold — already executed as scheduled wake above."
     }
-  ]
+  ],
+  "quality_score": "10/12 (83%)",
+  "effectiveness": {
+    "score": 8,
+    "max": 10,
+    "breakdown": {
+      "engagement_checked": 1,
+      "improvement_done": 2,
+      "theory_distributed": 2,
+      "organizer_engaged": 2,
+      "new_follow": 1,
+      "journal_written": 0
+    }
+  }
 }

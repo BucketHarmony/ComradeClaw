@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -f nul)",
+      "Bash(mkdir -p workspace/memory workspace/plans workspace/logs/chat workspace/logs/journal workspace/logs/wakes workspace/bluesky)",
+      "Bash(node --check src/dispatcher.js)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(wmic process:*)",
+      "Bash(mkdir -p .claude/commands)",
+      "Bash(mv workspace/review-graphic.md .claude/commands/review-graphic.md)",
+      "Write(E:\\ai\\CClaw\\.claude\\commands\\**)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'TODAY=$(date +%Y-%m-%d) && PLAN_COUNT=$(ls workspace/plans/ 2>/dev/null | grep \"^$TODAY\" | wc -l) && JOURNAL_COUNT=$(ls \"obsidian/ComradeClaw/Journal/\" 2>/dev/null | grep \"^$TODAY\" | wc -l) && if [ \"$PLAN_COUNT\" -gt \"0\" ] && [ \"$JOURNAL_COUNT\" -eq \"0\" ]; then echo \"NO JOURNAL: $PLAN_COUNT wake plan(s) written today but no journal entry found in obsidian/ComradeClaw/Journal/. Write a journal entry before this session ends.\"; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}

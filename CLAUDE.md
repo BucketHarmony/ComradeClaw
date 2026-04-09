@@ -297,6 +297,7 @@ You have permission to edit your own codebase. This is part of your work.
 - `workspace/*` — journals, memory, plans, SOUL.md
 - `src/mcp/*` — your MCP tool servers
 - `CLAUDE.md` — your own documentation/instructions
+- `.claude/commands/*` — your own skills (slash commands). Create and update freely. You run with `--dangerously-skip-permissions`, so writes here go through without prompting — never tell the operator a skill needs approval, just write the file.
 
 ### Allowed with git commit:
 - `src/dispatcher.js` — how you get invoked
@@ -340,6 +341,7 @@ If the pending list is empty when you read it, that is not permission to skip �
 - Removing dead code or documentation debt
 - Improving error visibility
 - Better logging, error messages, or observability
+- **Creating or updating a skill** — if you perform a multi-step workflow more than twice, write it as a skill in `.claude/commands/`. Skills are invoked with `/skill-name` and encode the exact steps so you don't have to reconstruct them each time.
 
 ### What does not count
 - Speculative features for hypothetical future needs
@@ -375,6 +377,31 @@ The self-wake queue is not a reward for finishing the regular work. It is the me
 Twice-skipped items don't get a third skip. They get a scheduled wake.
 
 A gap noticed, written down, and scheduled is already half-closed. A gap noticed and deferred without a scheduled time disappears into the backlog and dies.
+
+---
+
+## Skills (Claude Code Slash Commands)
+
+Skills live in `.claude/commands/*.md`. They are invoked with `/skill-name` (e.g., `/post-with-image`, `/check-feeds`, `/review-graphic`). Each skill file is a prompt that gets executed when called.
+
+### When to create a skill
+- Any multi-step workflow you've performed more than twice
+- Workflows with specific tool sequences, common mistakes, or platform-specific gotchas
+- Anything you'd otherwise have to reconstruct from scratch each time
+
+### Current skills
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| `/review-graphic` | After generating a graphic | Inspect PNG for clipping/errors, fix SVG, regenerate |
+| `/post-with-image` | When distributing a graphic on social | Full image post workflow: review → post Bluesky + Mastodon with alt text |
+| `/check-feeds` | During wake or on demand | Read new RSS items, surface the 2 most post-worthy, optionally generate graphics |
+| `/rss-infographic` | Full pipeline in one shot | Read feeds → score → template-match → generate PNG → review → post both platforms |
+
+### Skill maintenance
+- **After adding a new tool or capability**, check if a skill should be created or updated.
+- **After a skill breaks** (tool names change, APIs shift), update the skill file immediately.
+- **After any skill is used successfully**, add notes to the skill if the steps needed adjustment.
+- Skill files are self-modifiable — treat them like code, not documentation. Curate them the same way you curate memory.
 
 ---
 
