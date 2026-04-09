@@ -1242,6 +1242,12 @@ server.tool(
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Posts ${oversized.map(i => `#${i+1}`).join(', ')} exceed 300 char limit.` }) }] };
     }
 
+    // Pre-flight cross-platform dedup check on first post (soft warn — never blocks)
+    const dedupCheck = await checkCrossPlatformDuplicate('bluesky', posts[0]);
+    const dedupWarning = dedupCheck.duplicate
+      ? `⚠️ CROSS-PLATFORM DUPLICATE: ${dedupCheck.reason}`
+      : null;
+
     const { agent, RichText, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
@@ -1277,12 +1283,9 @@ server.tool(
       await logSharedPost('bluesky', posts[0]);
       scheduleRetrospectiveWake(rootUri, 'thread');
       verifyFacets(agent, rootUri, posts[0]);
-      return { content: [{ type: 'text', text: JSON.stringify({
-        status: 'success',
-        threadLength: posts.length,
-        rootUri,
-        posts: results
-      }) }] };
+      const response = { status: 'success', threadLength: posts.length, rootUri, posts: results };
+      if (dedupWarning) response.duplicate_warning = dedupWarning;
+      return { content: [{ type: 'text', text: JSON.stringify(response) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({
         status: 'partial_error',
