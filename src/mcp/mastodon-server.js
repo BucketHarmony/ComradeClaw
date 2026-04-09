@@ -17,7 +17,7 @@ import fs from 'fs/promises';
 import { createReadStream } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { logSharedPost } from '../post_dedup.js';
+import { logSharedPost, checkCrossPlatformDuplicate } from '../post_dedup.js';
 import { updateCharacterLastSeen } from '../character-updater.js';
 import { getUnifiedId } from '../lib/unified-identities.js';
 
@@ -685,6 +685,12 @@ server.tool(
       .describe('Visibility level'),
   },
   async ({ text, visibility }) => {
+    // Pre-flight cross-platform dedup check (soft warn — never blocks)
+    const dedupCheck = await checkCrossPlatformDuplicate('mastodon', text);
+    const dedupWarning = dedupCheck.duplicate
+      ? `⚠️ CROSS-PLATFORM DUPLICATE: ${dedupCheck.reason}`
+      : null;
+
     try {
       const status = await masto('/statuses', {
         method: 'POST',
@@ -694,16 +700,18 @@ server.tool(
       const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
       await logMastodonPost({ id: status.id, url: status.url, posted_at: now.toISOString(), platform: 'mastodon', type: 'post', char_count: text.length, hashtags: detectHashtagsMasto(text), time_of_day: timeOfDayMasto(hour), content_type: classifyContentTypeMasto(text), text_preview: text.substring(0, 100) });
       await logSharedPost('mastodon', text);
+      const responseData = {
+        status: 'posted',
+        id: status.id,
+        url: status.url,
+        created_at: status.created_at,
+      };
+      if (dedupWarning) responseData.duplicate_warning = dedupWarning;
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              status: 'posted',
-              id: status.id,
-              url: status.url,
-              created_at: status.created_at,
-            }),
+            text: JSON.stringify(responseData),
           },
         ],
       };

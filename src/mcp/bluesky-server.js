@@ -14,7 +14,7 @@ import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { logSharedPost } from '../post_dedup.js';
+import { logSharedPost, checkCrossPlatformDuplicate } from '../post_dedup.js';
 import { updateCharacterLastSeen } from '../character-updater.js';
 import { getUnifiedId } from '../lib/unified-identities.js';
 
@@ -514,6 +514,12 @@ server.tool(
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Exceeds 300 char limit (${text.length} chars).` }) }] };
     }
 
+    // Pre-flight cross-platform dedup check (soft warn — never blocks)
+    const dedupCheck = await checkCrossPlatformDuplicate('bluesky', text);
+    const dedupWarning = dedupCheck.duplicate
+      ? `⚠️ CROSS-PLATFORM DUPLICATE: ${dedupCheck.reason}`
+      : null;
+
     const { agent, RichText, error } = await getBlueskyAgent();
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
@@ -526,7 +532,9 @@ server.tool(
       await logSharedPost('bluesky', text);
       scheduleRetrospectiveWake(result.uri, 'post');
       verifyFacets(agent, result.uri, text);
-      return { content: [{ type: 'text', text: JSON.stringify({ status: 'success', uri: result.uri, cid: result.cid, text, charCount: text.length }) }] };
+      const response = { status: 'success', uri: result.uri, cid: result.cid, text, charCount: text.length };
+      if (dedupWarning) response.duplicate_warning = dedupWarning;
+      return { content: [{ type: 'text', text: JSON.stringify(response) }] };
     } catch (err) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
     }
@@ -591,9 +599,10 @@ server.tool(
     uri: z.string().describe('AT URI of the post to reply to (from read_replies output).'),
     text: z.string().describe('Reply text. Maximum 300 characters.'),
     image_path: z.string().optional().describe('Optional image to attach (relative to project root, e.g. workspace/graphics/foo.png).'),
-    alt_text: z.string().optional().describe('Alt text for the image. Always provide when using image_path.')
+    alt_text: z.string().optional().describe('Alt text for the image. Always provide when using image_path.'),
+    force: z.boolean().optional().describe('Bypass dedup check and reply even if already replied. Use when adding an image follow-up.')
   },
-  async ({ uri, text, image_path, alt_text = '' }) => {
+  async ({ uri, text, image_path, alt_text = '', force = false }) => {
     if (text.length > 300) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Exceeds 300 char limit (${text.length} chars).` }) }] };
     }
@@ -606,10 +615,12 @@ server.tool(
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     try {
-      // Dedup: check if we already replied to this post
-      const dupeCheck = await alreadyRepliedBluesky(agent, uri);
-      if (dupeCheck) {
-        return { content: [{ type: 'text', text: JSON.stringify({ status: 'already_replied', message: `Already replied to ${uri}. Skipping duplicate reply.` }) }] };
+      // Dedup: check if we already replied to this post (skip if force=true)
+      if (!force) {
+        const dupeCheck = await alreadyRepliedBluesky(agent, uri);
+        if (dupeCheck) {
+          return { content: [{ type: 'text', text: JSON.stringify({ status: 'already_replied', message: `Already replied to ${uri}. Skipping duplicate reply. Use force:true to override.` }) }] };
+        }
       }
 
       const thread = await agent.getPostThread({ uri, depth: 0, parentHeight: 10 });
