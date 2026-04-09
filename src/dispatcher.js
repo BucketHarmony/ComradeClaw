@@ -146,6 +146,45 @@ async function checkOperatorAbsence() {
   }
 }
 
+// ─── Cold Contact Recovery Prompt Builder ────────────────────────────────────
+
+/**
+ * Build a one-line actionable re-engagement prompt for a cold contact.
+ * Uses lastEngagementType and lastEngagementUrl from organizer_contacts.js.
+ *
+ * Examples:
+ *   "boosted your dual-power thread — reply to that thread to re-open"
+ *   "replied to your Minneapolis post — respond to keep the thread alive"
+ *   "mentioned you — reply to acknowledge"
+ */
+function buildRecoveryPrompt(contact) {
+  const { lastEngagementType, lastEngagementUrl, lastEngagementSnippet } = contact;
+  const url = lastEngagementUrl || null;
+  const urlSuffix = url ? ` — ${url}` : '';
+
+  const snippet = lastEngagementSnippet
+    ? ` ("${lastEngagementSnippet.slice(0, 50).replace(/\n/g, ' ')}…")`
+    : '';
+
+  switch (lastEngagementType) {
+    case 'reblog':
+    case 'repost':
+      return `boosted your post${urlSuffix ? urlSuffix : ''} — reply to that thread to re-open the conversation`;
+    case 'favourite':
+    case 'like':
+      return `liked your post${urlSuffix ? urlSuffix : ''} — a reply there or a new post mentioning them can restart contact`;
+    case 'reply':
+    case 'mention':
+      return `replied to you${snippet}${urlSuffix} — respond to keep the thread alive`;
+    case 'follow':
+      return `followed you — a direct mention or reply to one of their posts can open a real connection`;
+    case 'quote':
+      return `quoted your post${urlSuffix ? urlSuffix : ''} — reply to their quote to continue the conversation`;
+    default:
+      return `last engagement was ${contact.daysSince}d ago — a direct reply or mention can re-open contact`;
+  }
+}
+
 // ─── Contact Follow-Up Automation ────────────────────────────────────────────
 
 const CONTACTS_FILE = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
@@ -2742,8 +2781,11 @@ export async function executeWake(label, time, purpose = null) {
       parts.push(`## Relationships to Maintain\nThese contacts engaged recently but haven't engaged in 3-7 days — worth keeping warm: ${names}`);
     }
     if (cold.length > 0) {
-      const names = cold.map(c => `${c.handle} (${c.daysSince}d)`).join(', ');
-      parts.push(`⚠️ Going cold (7-14d, still recoverable): ${names} — a direct reply or mention can re-open these.`);
+      const coldLines = cold.map(c => {
+        const action = buildRecoveryPrompt(c);
+        return `  - ${c.handle} (${c.daysSince}d): ${action}`;
+      }).join('\n');
+      parts.push(`⚠️ Going cold (7-14d, still recoverable) — one action each can re-open these:\n${coldLines}`);
     }
     if (parts.length > 0) coolingContactsContext = '\n' + parts.join('\n');
   } catch (err) {

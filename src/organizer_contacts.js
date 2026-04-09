@@ -52,10 +52,12 @@ export async function getOrganizerContacts() {
           handle,
           platform: entry.platform || 'bluesky',
           lastEngagement: ts,
+          lastEngagementEntry: entry,
           interactionCount: 0
         };
       } else if (ts > byHandle[handle].lastEngagement) {
         byHandle[handle].lastEngagement = ts;
+        byHandle[handle].lastEngagementEntry = entry;
       }
       byHandle[handle].interactionCount++;
     }
@@ -65,13 +67,17 @@ export async function getOrganizerContacts() {
     .map(c => {
       const daysSince = (now - c.lastEngagement) / (1000 * 60 * 60 * 24);
       const streak_status = daysSince <= 3 ? 'active' : daysSince <= 7 ? 'cooling' : 'cold';
+      const e = c.lastEngagementEntry || {};
       return {
         handle: c.handle,
         platform: c.platform,
         lastEngagement: c.lastEngagement.toISOString(),
         daysSince: Math.round(daysSince * 10) / 10,
         streak_status,
-        interactionCount: c.interactionCount
+        interactionCount: c.interactionCount,
+        lastEngagementType: e.type || null,
+        lastEngagementUrl: e.status_url || e.uri || null,
+        lastEngagementSnippet: (e.text_snippet || '').slice(0, 80) || null,
       };
     })
     .sort((a, b) => new Date(b.lastEngagement) - new Date(a.lastEngagement));
