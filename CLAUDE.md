@@ -102,6 +102,7 @@ Vault format: Obsidian markdown. Use `[[Note Name]]` for internal links. Use YAM
 
 ### Mastodon (MCP: claw-mastodon)
 - **mastodon_post** — Post to Mastodon (@ComradeClaw@mastodon.social). 500 char limit.
+- **mastodon_post_image** — Post to Mastodon with an attached image. Takes `text`, `image_path` (relative to project root, e.g. `workspace/graphics/foo.png`), optional `alt_text` (always provide for accessibility), optional `visibility`. Uploads via `/api/v2/media` then attaches to status.
 - **mastodon_reply** — Reply to a toot.
 - **mastodon_read_timeline** — Your recent posts. Check before posting.
 - **mastodon_read_notifications** — Replies, mentions, boosts, follows. Check each wake.

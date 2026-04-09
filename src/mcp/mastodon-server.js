@@ -3,7 +3,7 @@
  * Mastodon MCP Server for Comrade Claw
  *
  * Exposes Mastodon tools via the Model Context Protocol (stdio transport).
- * Tools: mastodon_post, mastodon_reply, mastodon_read_timeline,
+ * Tools: mastodon_post, mastodon_post_image, mastodon_reply, mastodon_read_timeline,
  *        mastodon_read_notifications, mastodon_read_dms, mastodon_boost,
  *        mastodon_favourite, mastodon_search
  *
@@ -14,6 +14,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import fs from 'fs/promises';
+import { createReadStream } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { logSharedPost } from '../post_dedup.js';
@@ -51,6 +52,47 @@ async function masto(path, options = {}) {
     throw new Error(`Mastodon API ${res.status}: ${text}`);
   }
   return res.json();
+}
+
+// ─── Media Upload Helper ─────────────────────────────────────────────────────
+
+async function uploadMedia(filePath, altText) {
+  if (!TOKEN) throw new Error('MASTODON_ACCESS_TOKEN not set');
+  const fileBuffer = await fs.readFile(filePath);
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
+  const mimeType = mimeTypes[ext] || 'application/octet-stream';
+  const filename = path.basename(filePath);
+
+  const formData = new FormData();
+  formData.append('file', new Blob([fileBuffer], { type: mimeType }), filename);
+  if (altText) formData.append('description', altText);
+
+  const res = await fetch(`${INSTANCE}/api/v2/media`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${TOKEN}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Media upload ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  // v2 media upload may return 202 (processing) — poll until ready
+  if (res.status === 202) {
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      const poll = await fetch(`${INSTANCE}/api/v1/media/${data.id}`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      });
+      if (poll.ok) {
+        const pollData = await poll.json();
+        if (pollData.url) return pollData.id;
+      }
+    }
+    // Return the id anyway — mastodon.social processes synchronously for small images
+  }
+  return data.id;
 }
 
 // ─── Post Format Experiment — helpers ────────────────────────────────────────
@@ -582,6 +624,65 @@ server.tool(
               id: status.id,
               url: status.url,
               created_at: status.created_at,
+            }),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }],
+      };
+    }
+  }
+);
+
+// ─── mastodon_post_image ─────────────────────────────────────────────────────
+
+server.tool(
+  'mastodon_post_image',
+  'Post a status to Mastodon with an attached image. Uploads the image from workspace/graphics/ then posts.',
+  {
+    text: z.string().max(500).describe('Status text to post (500 char limit)'),
+    image_path: z.string().describe('Path to the image file (absolute, or relative to project root). Use workspace/graphics/<filename>.png for generated graphics.'),
+    alt_text: z.string().optional().describe('Alt text / image description for accessibility. Required for good practice.'),
+    visibility: z
+      .enum(['public', 'unlisted', 'followers_only', 'direct'])
+      .optional()
+      .default('public')
+      .describe('Visibility level'),
+  },
+  async ({ text, image_path, alt_text, visibility }) => {
+    try {
+      // Resolve relative paths from project root
+      const __root = path.join(__dirname, '..', '..');
+      const resolvedPath = path.isAbsolute(image_path) ? image_path : path.join(__root, image_path);
+
+      const mediaId = await uploadMedia(resolvedPath, alt_text);
+
+      const status = await masto('/statuses', {
+        method: 'POST',
+        body: JSON.stringify({
+          status: text,
+          media_ids: [mediaId],
+          visibility,
+        }),
+      });
+
+      const now = new Date();
+      const hour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false }));
+      await logMastodonPost({ id: status.id, url: status.url, posted_at: now.toISOString(), platform: 'mastodon', type: 'post_image', char_count: text.length, hashtags: detectHashtagsMasto(text), time_of_day: timeOfDayMasto(hour), content_type: classifyContentTypeMasto(text), text_preview: text.substring(0, 100), image: path.basename(image_path) });
+      await logSharedPost('mastodon', text);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'posted',
+              id: status.id,
+              url: status.url,
+              created_at: status.created_at,
+              media_id: mediaId,
             }),
           },
         ],
