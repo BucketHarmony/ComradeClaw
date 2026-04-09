@@ -161,7 +161,7 @@ for (const file of files) {
     }
 
     if (excerpt) {
-      newEntries.push(`- **[pending]** **${h1}** — ${excerpt}`);
+      newEntries.push(`- **[candidate]** **${h1}** — ${excerpt}`);
       console.log(`   → Adding file-level entry`);
       console.log(`   → Excerpt: ${excerpt.substring(0, 80)}...`);
     } else {
@@ -187,7 +187,7 @@ for (const file of files) {
 
     const excerpt = extractExcerptFromLines(sec.lines);
     if (excerpt) {
-      newEntries.push(`- **[pending]** **${sec.title}** — ${excerpt}`);
+      newEntries.push(`- **[candidate]** **${sec.title}** — ${excerpt}`);
       console.log(`   Section "${sec.title}" — ✗ adding`);
       console.log(`     Excerpt: ${excerpt.substring(0, 70)}...`);
     } else {
@@ -201,8 +201,72 @@ if (newEntries.length > 0) {
   const date = new Date().toISOString().split('T')[0];
   const block = `\n<!-- auto-populated ${date} -->\n` + newEntries.join('\n') + '\n';
   writeFileSync(QUEUE_FILE, queueContent.trimEnd() + block);
-  console.log(`Added ${newEntries.length} new [pending] entr${newEntries.length === 1 ? 'y' : 'ies'} to theory_queue.md`);
+  console.log(`Added ${newEntries.length} new [candidate] entr${newEntries.length === 1 ? 'y' : 'ies'} to theory_queue.md`);
   newEntries.forEach(e => console.log(' ', e.substring(0, 90) + (e.length > 90 ? '...' : '')));
 } else {
   console.log('All theory vault files and sections already represented in theory_queue.md');
+}
+
+// ── Promote candidates ────────────────────────────────────────────────────────
+
+console.log(`\n── Promoting [candidate] items`);
+const updatedQueue = readFileSync(QUEUE_FILE, 'utf-8');
+const promoted = promoteCandidates(updatedQueue);
+if (promoted.count > 0) {
+  writeFileSync(QUEUE_FILE, promoted.content);
+  console.log(`Promoted ${promoted.count} candidate${promoted.count !== 1 ? 's' : ''} to [pending]: ${promoted.titles.join(', ')}`);
+} else {
+  console.log('No candidates to promote (fewer than 3 candidates, or none found).');
+}
+
+/**
+ * Promote top-scoring [candidate] items to [pending].
+ * Scores by keyword overlap with Characters.md "Key exchange" / "Why they matter" text.
+ * Promotes only if ≥3 candidates exist (below that, manual review is fast enough).
+ * Returns { content, count, titles }.
+ */
+function promoteCandidates(content, maxPromote = 2) {
+  const CHARS_FILE = 'obsidian/ComradeClaw/Characters.md';
+  let charsText = '';
+  try { charsText = readFileSync(CHARS_FILE, 'utf-8'); } catch { /* non-fatal */ }
+
+  // Extract keywords from Characters.md engagement lines
+  const STOP = new Set(['their', 'which', 'about', 'after', 'where', 'there', 'these', 'those',
+    'being', 'would', 'could', 'should', 'comrade', 'status', 'matter', 'first', 'appeared']);
+  const relevant = charsText.split('\n')
+    .filter(l => /Key exchange|Why they matter|key exchange|Status/i.test(l))
+    .join(' ');
+  const kwSet = new Set(
+    [...relevant.matchAll(/\b([a-z]{5,})\b/gi)]
+      .map(m => m[1].toLowerCase())
+      .filter(w => !STOP.has(w))
+  );
+
+  const candidateMatches = [...content.matchAll(/^- \*\*\[candidate\]\*\* \*\*(.+?)\*\* — (.+)$/gm)];
+  if (candidateMatches.length < 3) return { content, count: 0, titles: [] };
+
+  const scored = candidateMatches.map(m => {
+    const title = m[1], desc = m[2];
+    const text = (title + ' ' + desc).toLowerCase();
+    const words = text.match(/\b[a-z]{4,}\b/g) || [];
+    const score = words.filter(w => kwSet.has(w)).length;
+    return { fullMatch: m[0], title, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const toPromote = scored.slice(0, maxPromote);
+
+  const date = new Date().toISOString().split('T')[0];
+  let updated = content;
+  const promoted = [];
+  for (const item of toPromote) {
+    const replacement = item.fullMatch
+      .replace('**[candidate]**', '**[pending]**')
+      + ` *(promoted ${date}, score=${item.score})*`;
+    updated = updated.replace(item.fullMatch, replacement);
+    promoted.push(item.title);
+    console.log(`  → Promoted: "${item.title}" (score=${item.score})`);
+  }
+
+  return { content: updated, count: promoted.length, titles: promoted };
 }

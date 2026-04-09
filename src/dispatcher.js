@@ -600,13 +600,74 @@ async function getCharacterKeywords() {
 }
 
 /**
+ * Promote top-scoring [candidate] theory queue items to [pending].
+ * Scores each candidate by keyword overlap with Characters.md engagement themes
+ * (same scoring as autoRefillTheoryQueue). Promotes top-2 per call.
+ * Runs as part of proactiveQueueReplenishment on night wakes. Non-fatal.
+ */
+async function promoteCandidates(maxPromote = 2) {
+  try {
+    const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
+    let content;
+    try { content = await fs.readFile(QUEUE_PATH, 'utf-8'); } catch { return 0; }
+
+    // Find all [candidate] lines — format: - **[candidate]** **<title>** — <desc>
+    const candidateMatches = [...content.matchAll(/^- \*\*\[candidate\]\*\* \*\*(.+?)\*\* — (.+)$/gm)];
+    if (candidateMatches.length === 0) return 0;
+
+    const keywords = await getCharacterKeywords();
+    const kwSet = new Set(keywords.map(k => k.toLowerCase()));
+
+    const scored = candidateMatches.map(m => {
+      const title = m[1];
+      const desc = m[2];
+      const text = (title + ' ' + desc).toLowerCase();
+      const words = text.match(/\b[a-z]{4,}\b/g) || [];
+      const score = words.filter(w => kwSet.has(w)).length;
+      return { fullMatch: m[0], title, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    const toPromote = scored.slice(0, maxPromote);
+
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+
+    let updated = content;
+    let promoted = 0;
+    for (const item of toPromote) {
+      // Replace [candidate] with [pending] and append rationale note
+      const replacement = item.fullMatch
+        .replace('**[candidate]**', '**[pending]**')
+        + ` *(promoted ${today}, score=${item.score})*`;
+      updated = updated.replace(item.fullMatch, replacement);
+      promoted++;
+      console.log(`[promoteCandidates] Promoted: "${item.title}" (score=${item.score})`);
+    }
+
+    if (promoted > 0) {
+      await fs.writeFile(QUEUE_PATH, updated);
+      console.log(`[promoteCandidates] ${promoted} candidate${promoted !== 1 ? 's' : ''} promoted to [pending]`);
+    }
+    return promoted;
+  } catch (err) {
+    console.error(`[promoteCandidates] Failed (non-fatal): ${err.message}`);
+    return 0;
+  }
+}
+
+/**
  * Proactive theory queue replenishment — runs on night wakes.
  * If fewer than 3 [unposted] items remain, refills from Theory vault with
  * relevance scoring against current Characters.md thread topics.
+ * Also promotes any [candidate] items to [pending] before checking queue health.
  * Non-fatal.
  */
 async function proactiveQueueReplenishment() {
   try {
+    // Promote any scored candidates to [pending] first
+    await promoteCandidates();
+
     const count = await countUnpostedQueueItems();
     if (count >= 3) return; // queue healthy
     const needed = Math.max(3 - count, 1);
