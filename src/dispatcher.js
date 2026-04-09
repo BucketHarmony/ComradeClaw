@@ -1048,6 +1048,77 @@ async function getMastodonSpreadAlert() {
 }
 
 /**
+ * Theory resonance score with time-decay.
+ * Reads the mastodon engagement log, groups reblogs/mentions by status_url,
+ * and computes a per-post decayed score: sum of (resonance_pts * e^(-age_days/7)).
+ * Half-weight at 7 days — surfaces what is *currently* resonating, not just what
+ * historically performed. Returns top-3 posts as a compact context string.
+ * Non-fatal: returns '' on any error or empty log.
+ */
+async function getTheoryResonanceScore() {
+  try {
+    const now = Date.now();
+    const HALF_LIFE_DAYS = 7;
+
+    // Read current month and previous month logs for age diversity
+    const engDir = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+    const currentMonth = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    const prevDate = new Date(Date.now() - 32 * 24 * 60 * 60 * 1000);
+    const prevMonth = prevDate.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+
+    let entries = [];
+    for (const month of [currentMonth, prevMonth]) {
+      const logFile = path.join(engDir, `mastodon-${month}.json`);
+      try {
+        const raw = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+        entries = entries.concat(raw);
+      } catch { /* file may not exist */ }
+    }
+
+    if (entries.length === 0) return '';
+
+    // Group by status_url; compute decayed resonance score per post
+    const postScores = {}; // url → { score, snippet, latestTs }
+    for (const e of entries) {
+      if (!e.status_url || !e.timestamp) continue;
+      const resonancePts = typeof e.resonance_pts === 'number' ? e.resonance_pts : 1;
+      const ageDays = (now - new Date(e.timestamp).getTime()) / (1000 * 60 * 60 * 24);
+      const decayedScore = resonancePts * Math.exp(-ageDays / HALF_LIFE_DAYS);
+
+      if (!postScores[e.status_url]) {
+        postScores[e.status_url] = { score: 0, snippet: e.text_snippet || '', latestTs: e.timestamp };
+      }
+      postScores[e.status_url].score += decayedScore;
+      // Keep the most recent snippet for context
+      if (new Date(e.timestamp) > new Date(postScores[e.status_url].latestTs)) {
+        postScores[e.status_url].latestTs = e.timestamp;
+        if (e.text_snippet) postScores[e.status_url].snippet = e.text_snippet;
+      }
+    }
+
+    const ranked = Object.entries(postScores)
+      .sort((a, b) => b[1].score - a[1].score)
+      .slice(0, 3);
+
+    if (ranked.length === 0) return '';
+
+    const lines = ranked.map(([url, { score, snippet }]) => {
+      const preview = (snippet || '').replace(/\s+/g, ' ').substring(0, 80).trim();
+      return `  score=${score.toFixed(2)} — "${preview}…" — ${url}`;
+    });
+
+    return [
+      '## Theory Resonance (decay-weighted, top 3)',
+      ...lines,
+      '*Score = organizer-weighted engagement × e^(-age_days/7). High score = still resonating.*',
+    ].join('\n');
+  } catch (err) {
+    console.error(`[getTheoryResonanceScore] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Auto-extract theory candidates from recent journal entries.
  * Greps for **bold phrases** (≥4 words) that look like distributable arguments.
  * Appends them as [candidate] items to theory_queue.md so the night wake study
@@ -2536,6 +2607,9 @@ export async function executeWake(label, time, purpose = null) {
   // Mastodon viral spread alert — ≥10 unique boosters for any post in last 24h
   const mastodonSpreadAlert = await getMastodonSpreadAlert();
 
+  // Theory resonance score — decay-weighted per-post organizer engagement; surfaces what's currently resonating
+  const resonanceScoreContext = !isNightWake ? await getTheoryResonanceScore() : '';
+
   // Content-type × hashtag crosstab — best (content_type, hashtag) pair by signal quality
   const crossTabContext = !isNightWake ? await getCrossTabRecommendation() : '';
 
@@ -2796,6 +2870,7 @@ export async function executeWake(label, time, purpose = null) {
     autoQueueContext ? `\n${autoQueueContext}` : '',
     tractionAlert ? `\n${tractionAlert}` : '',
     mastodonSpreadAlert ? `\n${mastodonSpreadAlert}` : '',
+    resonanceScoreContext ? `\n${resonanceScoreContext}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',
@@ -2827,6 +2902,7 @@ export async function executeWake(label, time, purpose = null) {
     auto_queue: autoQueueContext?.length || 0,
     overdue_threads: overdueThreadsAlert?.length || 0,
     mastodon_spread: mastodonSpreadAlert?.length || 0,
+    resonance_score: resonanceScoreContext?.length || 0,
     cross_tab: crossTabContext?.length || 0,
     candidate_queue: candidateQueueAlert?.length || 0,
   };
@@ -2861,6 +2937,7 @@ export async function executeWake(label, time, purpose = null) {
     auto_queue: est(autoQueueContext),
     overdue_threads: est(overdueThreadsAlert),
     mastodon_spread: est(mastodonSpreadAlert),
+    resonance_score: est(resonanceScoreContext),
     cross_tab: est(crossTabContext),
     candidate_queue: est(candidateQueueAlert),
   };
