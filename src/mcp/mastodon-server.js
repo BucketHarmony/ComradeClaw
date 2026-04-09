@@ -33,6 +33,22 @@ const MASTODON_POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
 const INSTANCE = process.env.MASTODON_INSTANCE || 'https://mastodon.social';
 const TOKEN = process.env.MASTODON_ACCESS_TOKEN;
 
+// ─── HTML Entity Decode ───────────────────────────────────────────────────────
+
+function decodeHtmlEntities(text) {
+  if (!text) return text;
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)));
+}
+
 // ─── API Helper ──────────────────────────────────────────────────────────────
 
 async function masto(path, options = {}) {
@@ -797,7 +813,7 @@ server.tool(
         account: n.account?.acct,
         account_id: n.account?.id,
         status_id: n.status?.id,
-        status_content: n.status?.content?.replace(/<[^>]*>/g, ''),
+        status_content: n.status?.content ? decodeHtmlEntities(n.status.content.replace(/<[^>]*>/g, '')) : undefined,
         status_url: n.status?.url,
       }));
       // Log high-signal notifications (mentions, reblogs) for Karpathy Loop visibility
