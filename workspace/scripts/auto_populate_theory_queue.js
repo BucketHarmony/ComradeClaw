@@ -220,8 +220,76 @@ if (promoted.count > 0) {
 }
 
 /**
+ * Scan workspace/logs/posts/*.json for theory-related posts and return
+ * days since the most recent post that overlaps with the given candidate title.
+ * Returns Infinity if the theory area has never been posted about.
+ *
+ * Matching: at least 2 significant words (≥5 chars) from the title appear
+ * in the post text (bluesky_text, mastodon_text, or posts array joined).
+ */
+function getLastPostedByTheoryArea(candidateTitle) {
+  const POSTS_DIR = 'workspace/logs/posts';
+  let files = [];
+  try {
+    files = readdirSync(POSTS_DIR).filter(f => f.endsWith('.json'));
+  } catch { return Infinity; }
+
+  // Significant words from candidate title (≥5 chars, not stop words)
+  const STOP = new Set(['their', 'which', 'about', 'after', 'where', 'there', 'these', 'those',
+    'being', 'would', 'could', 'should', 'theory', 'power', 'state', 'class', 'labor',
+    'history', 'political', 'social', 'working', 'against']);
+  const titleWords = (candidateTitle.toLowerCase().match(/\b[a-z]{5,}\b/g) || [])
+    .filter(w => !STOP.has(w));
+  if (titleWords.length === 0) return Infinity;
+
+  const now = Date.now();
+  let mostRecentMs = null;
+
+  for (const file of files) {
+    let data;
+    try { data = JSON.parse(readFileSync(`${POSTS_DIR}/${file}`, 'utf-8')); } catch { continue; }
+    const entries = Object.values(data);
+    for (const entry of entries) {
+      if (!entry.logged_at) continue;
+      // Extract all text from this post entry
+      const parts = [];
+      if (entry.bluesky_text) parts.push(entry.bluesky_text);
+      if (entry.mastodon_text) parts.push(entry.mastodon_text);
+      if (Array.isArray(entry.posts)) parts.push(...entry.posts.map(p => typeof p === 'string' ? p : (p.text || '')));
+      const postText = parts.join(' ').toLowerCase();
+
+      // Count overlapping title words in post text
+      const matchCount = titleWords.filter(w => postText.includes(w)).length;
+      const threshold = Math.max(2, Math.ceil(titleWords.length * 0.4));
+      if (matchCount < threshold) continue;
+
+      const entryMs = new Date(entry.logged_at).getTime();
+      if (!isNaN(entryMs) && (mostRecentMs === null || entryMs > mostRecentMs)) {
+        mostRecentMs = entryMs;
+      }
+    }
+  }
+
+  if (mostRecentMs === null) return Infinity;
+  return (now - mostRecentMs) / (1000 * 60 * 60 * 24); // days
+}
+
+/**
+ * Recency multiplier for candidate scoring.
+ * Recently-posted theory areas score lower (avoid repetition).
+ * Long-unposted areas score higher (time to revisit).
+ */
+function recencyMultiplier(daysSince) {
+  if (daysSince === Infinity || daysSince >= 7) return 1.5;
+  if (daysSince >= 4) return 1.0;
+  if (daysSince >= 1) return 0.7;
+  return 0.3; // posted today
+}
+
+/**
  * Promote top-scoring [candidate] items to [pending].
- * Scores by keyword overlap with Characters.md "Key exchange" / "Why they matter" text.
+ * Scores by keyword overlap with Characters.md "Key exchange" / "Why they matter" text,
+ * weighted by recency: theory areas not posted recently score higher (temporal diversity).
  * Promotes only if ≥3 candidates exist (below that, manual review is fast enough).
  * Returns { content, count, titles }.
  */
@@ -249,23 +317,27 @@ function promoteCandidates(content, maxPromote = 2) {
     const title = m[1], desc = m[2];
     const text = (title + ' ' + desc).toLowerCase();
     const words = text.match(/\b[a-z]{4,}\b/g) || [];
-    const score = words.filter(w => kwSet.has(w)).length;
-    return { fullMatch: m[0], title, score };
+    const baseScore = words.filter(w => kwSet.has(w)).length;
+    const daysSince = getLastPostedByTheoryArea(title);
+    const multiplier = recencyMultiplier(daysSince);
+    const finalScore = baseScore * multiplier;
+    return { fullMatch: m[0], title, baseScore, daysSince, multiplier, finalScore };
   });
 
-  scored.sort((a, b) => b.score - a.score);
+  scored.sort((a, b) => b.finalScore - a.finalScore);
   const toPromote = scored.slice(0, maxPromote);
 
   const date = new Date().toISOString().split('T')[0];
   let updated = content;
   const promoted = [];
   for (const item of toPromote) {
+    const daysNote = item.daysSince === Infinity ? 'never posted' : `${item.daysSince.toFixed(1)}d ago`;
     const replacement = item.fullMatch
       .replace('**[candidate]**', '**[pending]**')
-      + ` *(promoted ${date}, score=${item.score})*`;
+      + ` *(promoted ${date}, score=${item.finalScore.toFixed(1)}, base=${item.baseScore}, recency=${item.multiplier}×, ${daysNote})*`;
     updated = updated.replace(item.fullMatch, replacement);
     promoted.push(item.title);
-    console.log(`  → Promoted: "${item.title}" (score=${item.score})`);
+    console.log(`  → Promoted: "${item.title}" (score=${item.finalScore.toFixed(1)}, base=${item.baseScore}, recency=${item.multiplier}×, ${daysNote})`);
   }
 
   return { content: updated, count: promoted.length, titles: promoted };
