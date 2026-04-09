@@ -1274,6 +1274,42 @@ async function getTheoryQueueAlert() {
 }
 
 /**
+ * Daily cost summary — reads today's costs.json, returns a compact per-type
+ * breakdown for non-night wakes. Lets operator see "improve wakes = 60% of
+ * daily cost" without running cost_by_type.js manually.
+ * Format: "💰 Today: $X.XX total (N wakes) — top: improve $X.XX, essay $X.XX"
+ * Non-fatal. Returns '' on any error or if no cost data yet.
+ */
+async function getDailyCostSummary() {
+  try {
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+    const costFile = path.join(WAKE_LOG_DIR, `${todayStr}_costs.json`);
+    let data;
+    try {
+      data = JSON.parse(await fs.readFile(costFile, 'utf-8'));
+    } catch {
+      return ''; // No cost data yet today
+    }
+    if (!data.entries || data.entries.length === 0) return '';
+
+    const byType = {};
+    for (const e of data.entries) {
+      const key = e.source || 'unknown';
+      byType[key] = (byType[key] || 0) + (e.cost || 0);
+    }
+    const sorted = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+    const top2 = sorted.slice(0, 2).map(([t, c]) => `${t} $${c.toFixed(2)}`).join(', ');
+    const total = (data.total || 0).toFixed(2);
+    const n = data.entries.length;
+    return `💰 Today: $${total} total (${n} wake${n !== 1 ? 's' : ''}) — top: ${top2}`;
+  } catch (err) {
+    console.error(`[getDailyCostSummary] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Candidate queue alert — if ≥3 [candidate] items exist in theory_queue.md,
  * inject a one-liner listing the first 2 titles and asking to promote or drop.
  * Candidates accumulate from autoQueueFromJournal() but have no promotion path
@@ -2640,6 +2676,9 @@ export async function executeWake(label, time, purpose = null) {
   // Improve-wake count warning — flag if ≥4 improve sessions already today
   const improveWakeWarning = await getImproveWakeWarning();
 
+  // Daily cost summary — compact per-type breakdown for non-night wakes
+  const dailyCostSummary = !isNightWake ? await getDailyCostSummary() : '';
+
   // Engagement velocity alert — post gaining traction within 12h = join while live
   const tractionAlert = !isNightWake ? await getTractionAlert() : '';
 
@@ -2943,6 +2982,7 @@ export async function executeWake(label, time, purpose = null) {
     overdueThreadsAlert ? `\n${overdueThreadsAlert}` : '',
     writeasTokenWarning ? `\n${writeasTokenWarning}` : '',
     improveWakeWarning ? `\n${improveWakeWarning}` : '',
+    dailyCostSummary ? `\n${dailyCostSummary}` : '',
     essayAutoSchedule ? `\n${essayAutoSchedule}` : '',
     autoQueueContext ? `\n${autoQueueContext}` : '',
     tractionAlert ? `\n${tractionAlert}` : '',
