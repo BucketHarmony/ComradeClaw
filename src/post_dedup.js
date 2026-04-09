@@ -7,6 +7,9 @@
  *
  * Before posting, call checkCrossPlatformDuplicate(text) to detect
  * if similar content was posted to the OTHER platform in the last 24h.
+ *
+ * Trigram similarity (Jaccard on character 3-grams) catches paraphrased
+ * repetition that hash matching misses. Threshold: 0.7 = warn, same-platform.
  */
 
 import crypto from 'crypto';
@@ -32,6 +35,36 @@ const TOPIC_KEYWORDS = {
   mayday: ['mayday', 'may day', 'may 1', 'general strike', '#mayday', '#wcc26'],
   infrastructure: ['infrastructure', 'dual power', 'loan fund', 'credit union', 'childcare', 'food bank'],
 };
+
+/**
+ * Compute Jaccard similarity between two texts using character 3-grams.
+ * Returns 0.0–1.0. Values ≥ 0.7 indicate near-duplicate content.
+ * Effective at catching paraphrased repetition that hash matching misses.
+ *
+ * @param {string} a
+ * @param {string} b
+ * @returns {number}
+ */
+export function trigramSimilarity(a, b) {
+  const normalize = s => s.toLowerCase().replace(/\s+/g, ' ').trim();
+  const na = normalize(a);
+  const nb = normalize(b);
+  if (na === nb) return 1.0;
+  if (na.length < 3 || nb.length < 3) return 0.0;
+
+  const trigrams = s => {
+    const set = new Set();
+    for (let i = 0; i <= s.length - 3; i++) set.add(s.slice(i, i + 3));
+    return set;
+  };
+
+  const ta = trigrams(na);
+  const tb = trigrams(nb);
+  let intersection = 0;
+  for (const t of ta) if (tb.has(t)) intersection++;
+  const union = ta.size + tb.size - intersection;
+  return union === 0 ? 0.0 : intersection / union;
+}
 
 /**
  * Hash the normalized first 120 chars of text.
@@ -77,7 +110,7 @@ export async function logSharedPost(platform, text) {
       text_hash: hashText(text),
       timestamp: new Date().toISOString(),
       topic: extractTopics(text),
-      text_preview: text.slice(0, 80).replace(/\n/g, ' '),
+      text_preview: text.slice(0, 200).replace(/\n/g, ' '),
     };
     entries.push(entry);
 
@@ -116,6 +149,22 @@ export async function checkCrossPlatformDuplicate(platform, text) {
       };
     }
 
+    // Trigram similarity check — catches paraphrased repetition
+    const incomingPreview = text.slice(0, 300);
+    for (const entry of recent) {
+      if (!entry.text_preview) continue;
+      const sim = trigramSimilarity(incomingPreview, entry.text_preview);
+      if (sim >= 0.7) {
+        const hoursAgo = Math.round((Date.now() - new Date(entry.timestamp).getTime()) / 3600000);
+        return {
+          duplicate: true,
+          reason: `Near-duplicate content (${Math.round(sim * 100)}% similar) already posted to ${otherPlatform} ${hoursAgo}h ago: "${entry.text_preview.slice(0, 60)}..."`,
+          match: entry,
+          similarity: sim,
+        };
+      }
+    }
+
     // Topic overlap — if 2+ shared topics with a recent post on other platform
     if (incomingTopics[0] !== 'general') {
       const topicMatch = recent.find(e =>
@@ -141,6 +190,7 @@ export async function checkCrossPlatformDuplicate(platform, text) {
 
 /**
  * Summarize recent cross-platform posting for wake context injection.
+ * Includes trigram similarity warnings for near-duplicate pairs.
  * Returns a short summary string or null if nothing to report.
  */
 export async function getCrossPlatformSummary() {
@@ -164,7 +214,26 @@ export async function getCrossPlatformSummary() {
       `Bluesky: ${byPlatform.bluesky.length} post(s) — topics: ${bsTopics.join(', ') || 'none'}`,
       `Mastodon: ${byPlatform.mastodon.length} post(s) — topics: ${msTopics.join(', ') || 'none'}`,
     ];
-    if (overlap.length > 0) {
+
+    // Trigram similarity — scan all cross-platform pairs for near-duplicates
+    const dupWarnings = [];
+    for (const bs of byPlatform.bluesky) {
+      for (const ms of byPlatform.mastodon) {
+        if (!bs.text_preview || !ms.text_preview) continue;
+        const sim = trigramSimilarity(bs.text_preview, ms.text_preview);
+        if (sim >= 0.65) {
+          const bsHours = Math.round((Date.now() - new Date(bs.timestamp).getTime()) / 3600000);
+          const msHours = Math.round((Date.now() - new Date(ms.timestamp).getTime()) / 3600000);
+          dupWarnings.push(
+            `⚠️ possible duplicate: Bluesky (${bsHours}h ago) and Mastodon (${msHours}h ago) share ${Math.round(sim * 100)}% text similarity — "${bs.text_preview.slice(0, 50)}..." / "${ms.text_preview.slice(0, 50)}..."`
+          );
+        }
+      }
+    }
+
+    if (dupWarnings.length > 0) {
+      lines.push(...dupWarnings);
+    } else if (overlap.length > 0) {
       lines.push(`⚠️ Topic overlap: "${overlap.join(', ')}" posted to BOTH platforms. Avoid repeating same argument — vary framing or choose a different topic.`);
     } else {
       lines.push(`No topic overlap — cross-platform coordination OK.`);
@@ -172,5 +241,42 @@ export async function getCrossPlatformSummary() {
     return lines.join('\n');
   } catch {
     return null;
+  }
+}
+
+/**
+ * Check whether you've posted very similar content to the SAME platform recently.
+ * Use before posting to catch same-platform repetition within the current wake.
+ *
+ * @param {string} platform - 'bluesky' or 'mastodon'
+ * @param {string} text - text you're about to post
+ * @param {number} [windowHours=24] - lookback window
+ * @returns {{ warn: boolean, message: string, similarity?: number }}
+ */
+export async function checkSamePlatformRepeat(platform, text, windowHours = 24) {
+  try {
+    const entries = JSON.parse(await fs.readFile(SHARED_POSTS_LOG, 'utf-8'));
+    const cutoff = Date.now() - windowHours * 3600000;
+    const recent = entries.filter(e =>
+      e.platform === platform && new Date(e.timestamp).getTime() > cutoff
+    );
+
+    for (const entry of recent) {
+      if (!entry.text_preview) continue;
+      const sim = trigramSimilarity(text.slice(0, 300), entry.text_preview);
+      if (sim >= 0.7) {
+        const hoursAgo = Math.round((Date.now() - new Date(entry.timestamp).getTime()) / 3600000);
+        return {
+          warn: true,
+          message: `⚠️ possible duplicate of post from ${hoursAgo}h ago on ${platform} (${Math.round(sim * 100)}% similar): "${entry.text_preview.slice(0, 60)}..."`,
+          similarity: sim,
+          match: entry,
+        };
+      }
+    }
+
+    return { warn: false, message: 'No same-platform repeat detected' };
+  } catch {
+    return { warn: false, message: 'No post log yet' };
   }
 }
