@@ -1836,6 +1836,101 @@ async function snapshotFollowers() {
 }
 
 /**
+ * Check whether our outgoing replies from the last 24h generated follow-on conversation.
+ * Reads post log for our replies, cross-references engagement log for responses back.
+ * Logs to workspace/logs/engagement/replies.json.
+ * Returns a compact context string for morning wake injection.
+ * Non-fatal — silently returns '' on any error.
+ */
+async function checkReplyFollowThrough() {
+  try {
+    const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+    const now = Date.now();
+    const cutoff = now - 24 * 60 * 60 * 1000; // 24 hours ago
+
+    // Read current month's post log — find our outgoing replies
+    const month = new Date().toLocaleDateString('en-CA', { timeZone: tz }).substring(0, 7);
+    const postsFile = path.join(WORKSPACE_PATH, 'logs', 'posts', `${month}.json`);
+    let posts = [];
+    try { posts = JSON.parse(await fs.readFile(postsFile, 'utf-8')); } catch { return ''; }
+
+    const ourReplies = posts.filter(p =>
+      p.type === 'reply' &&
+      p.in_reply_to &&
+      new Date(p.posted_at).getTime() >= cutoff
+    );
+    if (ourReplies.length === 0) return '';
+
+    // Build a set of our reply URIs for fast lookup
+    const ourReplyUris = new Set(ourReplies.map(r => r.uri));
+
+    // Read engagement log — find incoming replies to our reply posts
+    const engFile = path.join(WORKSPACE_PATH, 'logs', 'engagement', `${month}.json`);
+    let engagements = [];
+    try { engagements = JSON.parse(await fs.readFile(engFile, 'utf-8')); } catch {}
+
+    // Map: our_uri → { replied_back: bool, their_handle, reply_text_preview }
+    const followThrough = new Map();
+    for (const r of ourReplies) {
+      followThrough.set(r.uri, {
+        our_uri: r.uri,
+        in_reply_to: r.in_reply_to,
+        posted_at: r.posted_at,
+        their_handle: null,
+        replied_back: false,
+        reply_text_preview: null
+      });
+    }
+
+    // Mark follow-throughs from incoming engagement
+    for (const eng of engagements) {
+      if (!eng.in_reply_to_our_post) continue;
+      if (ourReplyUris.has(eng.in_reply_to_our_post)) {
+        const entry = followThrough.get(eng.in_reply_to_our_post);
+        if (entry && !entry.replied_back) {
+          entry.replied_back = true;
+          entry.their_handle = eng.handle || null;
+          entry.reply_text_preview = (eng.text_snippet || '').substring(0, 80);
+        }
+      }
+    }
+
+    const results = [...followThrough.values()];
+    const converted = results.filter(r => r.replied_back).length;
+    const total = results.length;
+
+    // Write to replies.json (append/update today's batch)
+    const repliesFile = path.join(WORKSPACE_PATH, 'logs', 'engagement', 'replies.json');
+    let existing = [];
+    try { existing = JSON.parse(await fs.readFile(repliesFile, 'utf-8')); } catch {}
+
+    // Replace entries with same our_uri (idempotent re-checks) then append new ones
+    const existingUris = new Set(existing.map(e => e.our_uri));
+    for (const r of results) {
+      if (existingUris.has(r.our_uri)) {
+        const idx = existing.findIndex(e => e.our_uri === r.our_uri);
+        existing[idx] = { ...r, checked_at: new Date().toISOString() };
+      } else {
+        existing.push({ ...r, checked_at: new Date().toISOString() });
+      }
+    }
+    // Keep last 200 entries
+    if (existing.length > 200) existing = existing.slice(-200);
+    await fs.mkdir(path.dirname(repliesFile), { recursive: true });
+    await fs.writeFile(repliesFile, JSON.stringify(existing, null, 2));
+
+    if (total === 0) return '';
+    const rate = Math.round((converted / total) * 100);
+    const converts = results.filter(r => r.replied_back).map(r => r.their_handle).filter(Boolean);
+    const convertNote = converts.length > 0 ? ` (${converts.slice(0, 3).join(', ')})` : '';
+    return `## Reply Follow-Through (last 24h)\n${converted}/${total} outgoing replies generated dialogue — ${rate}% conversion${convertNote}. ${total - converted} dropped into silence.\n`;
+  } catch (err) {
+    console.error(`[checkReplyFollowThrough] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * On morning wakes, fetch all subscribed RSS/Atom feeds and return articles from the last 48h.
  * Runs all fetches in parallel with 8s timeout each. Non-fatal — returns '' on any failure.
  */
@@ -2644,8 +2739,11 @@ export async function executeWake(label, time, purpose = null) {
   const isEssayWake = label === 'essay';
 
   // On morning wakes, snapshot follower/following/posts counts for trend tracking
+  // and run reply follow-through check to surface engagement conversion rate
+  let replyFollowThroughContext = '';
   if (label === 'morning') {
     await snapshotFollowers(); // non-fatal — errors logged, wake continues
+    replyFollowThroughContext = await checkReplyFollowThrough();
   }
 
   // Check facet verification failure rate — warn if hashtags are breaking
@@ -3053,6 +3151,7 @@ export async function executeWake(label, time, purpose = null) {
     resonanceScoreContext ? `\n${resonanceScoreContext}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
+    replyFollowThroughContext ? `\n${replyFollowThroughContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',
     mookOutlineAlert ? `\n${mookOutlineAlert}` : '',
     wakeQualityTrend ? `\n${wakeQualityTrend}` : '',
