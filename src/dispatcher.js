@@ -3029,7 +3029,22 @@ export async function executeWake(label, time, purpose = null) {
     timeoutMs: wakeTimeout
   });
 
-  const dailyCost = await accumulateDailyCost(result.cost, label, result.toolsUsed, { context_chars: contextChars, context_kb: contextKb });
+  // Token estimates: input from context chars, output from result text length
+  const inputTokenEst = contextBlockTokens.total_estimated;
+  const outputTokenEst = Math.round(result.text.length / 4);
+  const totalTokenEst = inputTokenEst + outputTokenEst;
+  const runawayContext = totalTokenEst > 50000;
+  if (runawayContext) {
+    console.warn(`[dispatcher] RUNAWAY CONTEXT: ${label} wake estimated ${totalTokenEst} tokens (input: ${inputTokenEst}, output: ${outputTokenEst}) — exceeds 50K threshold`);
+  }
+
+  const dailyCost = await accumulateDailyCost(result.cost, label, result.toolsUsed, {
+    context_chars: contextChars,
+    context_kb: contextKb,
+    input_tokens_est: inputTokenEst,
+    output_tokens_est: outputTokenEst,
+    total_tokens_est: totalTokenEst,
+  });
   console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
   const costThreshold = await getAdaptiveCostThreshold();
   if (dailyCost >= costThreshold) {
@@ -3095,8 +3110,14 @@ export async function executeWake(label, time, purpose = null) {
         const planContent = JSON.parse(await fs.readFile(planFile, 'utf-8'));
         planContent.quality_score = `${dayScore.score}/12 (${dayScore.pct}%)`;
         planContent.context_tokens = contextBlockTokens;
+        planContent.token_estimate = {
+          input_est: inputTokenEst,
+          output_est: outputTokenEst,
+          total_est: totalTokenEst,
+          runaway: runawayContext,
+        };
         await fs.writeFile(planFile, JSON.stringify(planContent, null, 2));
-        console.log(`[dispatcher] Quality score injected: ${planContent.quality_score} | context ~${contextBlockTokens.total_estimated} tokens`);
+        console.log(`[dispatcher] Quality score injected: ${planContent.quality_score} | tokens ~${totalTokenEst} (in:${inputTokenEst} out:${outputTokenEst})${runawayContext ? ' ⚠️ RUNAWAY' : ''}`);
       }
     } catch (err) {
       console.warn(`[dispatcher] Quality score injection failed (non-fatal): ${err.message}`);

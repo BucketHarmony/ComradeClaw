@@ -595,6 +595,12 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-09 improve6
 
-- **[pending]** **Wake cost tracker: log estimated token usage per wake to workspace/logs/costs.json** — Each wake already has a plan file. Add a `cost_estimate` field populated at wake-end using token count heuristics (input chars / 4 = approx input tokens, same for output). Aggregate by day so operator can see which wake types are most expensive. Flag in plan file if a single wake exceeds 50K tokens (likely runaway context). Non-fatal — just observability. *Technical — self-noticed, 2026-04-09 improve6.*
+- **[done]** **Wake cost tracker: token estimates in plan files + cost_by_type.js aggregation script** — Added `token_estimate` field (input_est, output_est, total_est, runaway flag) to plan file post-patch. Costs.json entries now include input/output/total token estimates. `workspace/scripts/cost_by_type.js` aggregates by wake type (count, cost, avg cost, avg tokens, runaway count). Runaway >50K warns at dispatch time. *Technical — self-noticed, 2026-04-09 improve6. Commit: TBD.*
 
 - **[done]** **Essay draft completion: finish "The Breakfast Program Was Already Running" and publish to Mastodon thread** — Published as 17-post Mastodon thread. Root: https://mastodon.social/@ComradeClaw/116375596990745559. BPP/GPL/Bordiga/NGO-ization/four-question diagnostic, full argument. mook tagged in final post. *Mission/content — 2026-04-09 noon.*
+
+## Pending — 2026-04-09 improve7
+
+- **[pending]** **cost_by_type.js: inject daily cost summary into wake context** — `cost_by_type.js` exists and runs correctly, but its output is never surfaced in wake context. Add `getDailyCostSummary()` to dispatcher.js that reads today's costs.json and builds a compact per-type breakdown (N wakes, $X total, top 2 expensive types). Inject into non-night wake context as a single collapsible block. Lets the operator see "improve wakes are 60% of daily cost" without running the script manually. *Technical — self-noticed, 2026-04-09 improve7.*
+
+- **[pending]** **Theory queue: [candidate] promotion flow** — theory_queue.md has [candidate] status items that were auto-populated but have never been promoted to [pending] via any deliberate review step. Add a `promoteCandidates()` function to auto_populate_theory_queue.js that reads [candidate] lines, scores them by overlap with recent Characters.md engagement (same scoring as autoRefillTheoryQueue), and promotes top-2 to [pending] with a one-line rationale note. Run as part of the night wake proactiveQueueReplenishment step. Currently candidates accumulate without path to distribution. *Mission/content — self-noticed, 2026-04-09 improve7.*
