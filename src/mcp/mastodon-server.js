@@ -255,6 +255,7 @@ async function logMastodonNotifications(notifications) {
       }
       existing.push(entry);
       seenKeys.add(key);
+      updatePostIndex(n.status_id, n.status_url, n.type, n.account).catch(() => {});
     } catch { /* non-fatal */ }
   }
 
@@ -299,10 +300,40 @@ async function logMastodonFavourites(notifications) {
       logged_at: now.toISOString(),
     });
     seenKeys.add(key);
+    updatePostIndex(n.status_id, n.status_url || null, 'favourite', n.account).catch(() => {});
   }
 
   try {
     await fs.writeFile(logFile, JSON.stringify(existing, null, 2));
+  } catch { /* non-fatal */ }
+}
+
+// ─── Per-Post Engagement Index ───────────────────────────────────────────────
+
+/**
+ * Maintain a fast O(1) lookup index: status_id → { url, boosters[], favoriters[], mentioners[] }
+ * Stored at logs/engagement/post-index-YYYY-MM.json, updated incrementally as entries are logged.
+ * Replaces full O(n) scan in spread alerts and resonance score calculations.
+ */
+async function updatePostIndex(statusId, statusUrl, type, handle) {
+  if (!statusId) return;
+  try {
+    const now = new Date();
+    const month = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    const indexFile = path.join(MASTODON_ENGAGEMENT_LOG_PATH, `post-index-${month}.json`);
+    await fs.mkdir(MASTODON_ENGAGEMENT_LOG_PATH, { recursive: true });
+    let index = {};
+    try { index = JSON.parse(await fs.readFile(indexFile, 'utf-8')); } catch { /* new file */ }
+    if (!index[statusId]) index[statusId] = { url: statusUrl || null, boosters: [], favoriters: [], mentioners: [] };
+    if (statusUrl && !index[statusId].url) index[statusId].url = statusUrl;
+    if (type === 'reblog' && handle && !index[statusId].boosters.includes(handle)) {
+      index[statusId].boosters.push(handle);
+    } else if (type === 'favourite' && handle && !index[statusId].favoriters.includes(handle)) {
+      index[statusId].favoriters.push(handle);
+    } else if (type === 'mention' && handle && !index[statusId].mentioners.includes(handle)) {
+      index[statusId].mentioners.push(handle);
+    }
+    await fs.writeFile(indexFile, JSON.stringify(index, null, 2));
   } catch { /* non-fatal */ }
 }
 

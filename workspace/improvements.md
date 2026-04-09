@@ -549,7 +549,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 - **[done]** **Organizer-weighted theory resonance score** — see above. Commit: 1ae2a9f.
 
-- **[pending]** **Engagement log: per-post URL index** — the engagement log (`mastodon-YYYY-MM.json`) stores `status_url` on each entry but there's no fast lookup from URL → all entries for that post. When processing spread alerts or building resonance scores, code does a full scan every time. Add a per-post index file (`logs/engagement/post-index-YYYY-MM.json`: status_id → {url, boosters[], favoriters[]} updated incrementally when entries are logged). Cuts O(n) scan to O(1) lookup and makes the resonance score feature cheaper to implement. *Technical — self-noticed, 2026-04-08 improve8.*
+- **[done]** **Engagement log: per-post URL index** — Added `updatePostIndex()` to mastodon-server.js. Writes `logs/engagement/post-index-YYYY-MM.json`: status_id → {url, boosters[], favoriters[], mentioners[]}. Called fire-and-forget from both `logMastodonNotifications` and `logMastodonFavourites` after each entry write. O(1) lookup now available for resonance score and spread alert. *Technical — self-noticed, 2026-04-08 improve8. Done: 2026-04-09 improve4. Commit: pending.*
 
 - **[done]** **Reddit engagement: reply to own comments tracking** — `reddit_read_inbox` added to reddit-server.js. Tracks comment IDs in `workspace/reddit/comment_last_seen.json` (permalink + reply_ids_seen[]). Each call re-fetches comment context thread via `/r/{sub}/comments/{post_id}/_/{comment_id}.json`, surfaces new replies, updates seen state. Initial state file created with schema doc. Integrates with existing rate-limit/circuit-breaker. *Technical — self-noticed, 2026-04-08 improve8. Commit: 415072d.*
 
@@ -575,7 +575,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 
 ## Pending — 2026-04-09 improve2
 
-- **[pending]** **Engagement log: per-post URL index** — `mastodon-YYYY-MM.json` stores `status_url` on each entry but no fast lookup from URL → all entries for that post. Resonance score + spread alert both do O(n) scans. Add a per-post index file (`logs/engagement/post-index-YYYY-MM.json`: status_id → {url, boosters[], favoriters[]} updated incrementally when entries are logged). Cuts to O(1) lookup and makes resonance score cheaper. *Technical — self-noticed, 2026-04-08 improve8.*
+- **[done]** **Engagement log: per-post URL index** — duplicate of improve8 entry; implemented in improve4 (2026-04-09). Commit: pending.
 
 - **[done]** **Cold-contact recovery suggestions: surface one actionable re-engagement prompt per cold contact** — `getOrganizerContacts()` now captures `lastEngagementType`, `lastEngagementUrl`, `lastEngagementSnippet` from the most recent log entry per handle. `buildRecoveryPrompt()` added to dispatcher.js: converts type+url into a specific action line ("boosted your post at X — reply to that thread to re-open" instead of generic "a direct reply can re-open these"). Turns cold-tier alerts from a name list into an action queue. *Mission/content — self-noticed, 2026-04-09 improve2. Done: 2026-04-09 improve3. Commit: d2039d2.*
 
