@@ -2173,6 +2173,8 @@ function parseClaudeOutput(raw) {
   const text = resultEvent?.result || '';
   const sessionId = resultEvent?.session_id || null;
   const cost = resultEvent?.total_cost_usd || 0;
+  const tokens_in = resultEvent?.usage?.input_tokens || null;
+  const tokens_out = resultEvent?.usage?.output_tokens || null;
 
   // Surface errors from the result
   if (resultEvent?.is_error && text) {
@@ -2195,7 +2197,7 @@ function parseClaudeOutput(raw) {
     }
   }
 
-  return { text, sessionId, toolsUsed, writeTargets, cost };
+  return { text, sessionId, toolsUsed, writeTargets, cost, tokens_in, tokens_out };
 }
 
 // ─── Chat Interface ──────────────────────────────────────────────────────────
@@ -3145,8 +3147,10 @@ export async function executeWake(label, time, purpose = null) {
     input_tokens_est: inputTokenEst,
     output_tokens_est: outputTokenEst,
     total_tokens_est: totalTokenEst,
+    ...(result.tokens_in != null ? { tokens_in: result.tokens_in } : {}),
+    ...(result.tokens_out != null ? { tokens_out: result.tokens_out } : {}),
   });
-  console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
+  console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})${result.tokens_in != null ? ` [${result.tokens_in}in/${result.tokens_out}out tokens]` : ''}`);
   const costThreshold = await getAdaptiveCostThreshold();
   if (dailyCost >= costThreshold) {
     console.warn(`[dispatcher] COST ALERT: daily total $${dailyCost.toFixed(4)} >= adaptive threshold $${costThreshold.toFixed(2)} (7-day avg × 1.5)`);
@@ -3246,7 +3250,9 @@ export async function executeWake(label, time, purpose = null) {
     planFile,
     summary: result.text.length > 200 ? result.text.substring(0, 197) + '...' : result.text,
     empty: toolsUsed.length === 0,
-    cost: result.cost
+    cost: result.cost,
+    tokens_in: result.tokens_in,
+    tokens_out: result.tokens_out
   };
 }
 
