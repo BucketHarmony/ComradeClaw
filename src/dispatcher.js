@@ -2771,11 +2771,39 @@ export async function executeWake(label, time, purpose = null) {
 
   // Organizer streak check — inject cooling contacts so wake can re-engage them
   // Also surfaces cold contacts (7-14d) that are slipping away and need intentional recovery
+  // Also detects cooling→active transitions (re-engagement) and suggests a public shoutout
   let coolingContactsContext = '';
   try {
-    const { getCoolingContacts, getColdContacts } = await import('./organizer_contacts.js');
-    const [cooling, cold] = await Promise.all([getCoolingContacts(), getColdContacts()]);
+    const {
+      getCoolingContacts,
+      getColdContacts,
+      getCoolingToActiveContacts,
+      saveCoolingSnapshot,
+    } = await import('./organizer_contacts.js');
+
+    // Load previous snapshot FIRST, then get current contacts, THEN save new snapshot
+    const [cooling, cold, reengaged] = await Promise.all([
+      getCoolingContacts(),
+      getColdContacts(),
+      getCoolingToActiveContacts(),
+    ]);
+
+    // Save current cooling state as baseline for next wake's comparison
+    saveCoolingSnapshot().catch(e =>
+      console.error(`[dispatcher] saveCoolingSnapshot failed: ${e.message}`)
+    );
+
     const parts = [];
+
+    if (reengaged.length > 0) {
+      const names = reengaged.map(c => c.handle).join(', ');
+      parts.push(
+        `## Re-engaged Comrades — Call Them Out\n` +
+        `These contacts were cooling (3-7d silent) but just came back: ${names}\n` +
+        `Use the \`shoutout\` tool or mention them in your next post. Reward re-engagement publicly — this is solidarity practice, not metrics.`
+      );
+    }
+
     if (cooling.length > 0) {
       const names = cooling.map(c => `${c.handle} (${c.daysSince}d since last engagement)`).join(', ');
       parts.push(`## Relationships to Maintain\nThese contacts engaged recently but haven't engaged in 3-7 days — worth keeping warm: ${names}`);

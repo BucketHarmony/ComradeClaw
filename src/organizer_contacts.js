@@ -15,6 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.join(__dirname, '..');
 const ENGAGEMENT_PATH = path.join(PROJECT_ROOT, 'workspace', 'logs', 'engagement');
+const COOLING_SNAPSHOT_FILE = path.join(PROJECT_ROOT, 'workspace', 'bluesky', 'cooling_snapshot.json');
 
 /**
  * Read all engagement log files and return per-handle streak data.
@@ -102,6 +103,50 @@ export async function getColdContacts() {
   return contacts.filter(c => {
     return c.streak_status === 'cold' && c.daysSince <= 14;
   });
+}
+
+/**
+ * Save a snapshot of currently-cooling contacts for next wake's comparison.
+ * Called at the END of context-building so the snapshot reflects who was cooling
+ * when this wake started — next wake can diff against it to detect re-engagement.
+ * Non-fatal.
+ */
+export async function saveCoolingSnapshot() {
+  try {
+    const contacts = await getOrganizerContacts();
+    const cooling = contacts.filter(c => c.streak_status === 'cooling');
+    const snapshot = {
+      saved_at: new Date().toISOString(),
+      handles: cooling.map(c => c.handle),
+    };
+    await fs.mkdir(path.dirname(COOLING_SNAPSHOT_FILE), { recursive: true });
+    await fs.writeFile(COOLING_SNAPSHOT_FILE, JSON.stringify(snapshot, null, 2));
+  } catch (err) {
+    // Non-fatal — missing snapshot means getCoolingToActiveContacts returns []
+    console.error(`[organizer_contacts] saveCoolingSnapshot failed: ${err.message}`);
+  }
+}
+
+/**
+ * Returns contacts that were cooling last wake but are now active (re-engaged).
+ * Compares the previous snapshot against current active contacts.
+ * Returns [] if no snapshot exists (first run) or no transitions detected.
+ */
+export async function getCoolingToActiveContacts() {
+  let prevCoolingHandles = [];
+  try {
+    const data = JSON.parse(await fs.readFile(COOLING_SNAPSHOT_FILE, 'utf-8'));
+    prevCoolingHandles = data.handles || [];
+  } catch {
+    return []; // No previous snapshot — first run, nothing to compare
+  }
+
+  if (prevCoolingHandles.length === 0) return [];
+
+  const contacts = await getOrganizerContacts();
+  return contacts.filter(
+    c => c.streak_status === 'active' && prevCoolingHandles.includes(c.handle)
+  );
 }
 
 // CLI: node src/organizer_contacts.js
