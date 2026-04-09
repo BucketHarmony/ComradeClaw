@@ -94,5 +94,37 @@
     "category": "co-ops",
     "subscribed_at": "2026-04-04T00:00:00.000Z",
     "disabled": false
+  },
+  {
+    "url": "https://thetricontinental.org/feed/",
+    "name": "Tricontinental Institute",
+    "feedTitle": "| Tricontinental: Institute for Social Research",
+    "category": "theory",
+    "subscribed_at": "2026-04-09T13:01:36.566Z",
+    "disabled": false
+  },
+  {
+    "url": "https://peoplesdispatch.org/feed/",
+    "name": "Peoples Dispatch",
+    "feedTitle": "Peoples Dispatch",
+    "category": "general",
+    "subscribed_at": "2026-04-09T13:01:37.519Z",
+    "disabled": false
+  },
+  {
+    "url": "https://monthlyreview.org/feed/",
+    "name": "Monthly Review",
+    "feedTitle": "Monthly Review",
+    "category": "theory",
+    "subscribed_at": "2026-04-09T13:01:37.843Z",
+    "disabled": false
+  },
+  {
+    "url": "https://africasacountry.com/feed/",
+    "name": "Africa Is a Country",
+    "feedTitle": "Africa Is a Country",
+    "category": "general",
+    "subscribed_at": "2026-04-09T13:01:39.768Z",
+    "disabled": false
   }
 ]

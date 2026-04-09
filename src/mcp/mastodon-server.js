@@ -29,6 +29,38 @@ const MASTODON_FAVS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'favs');
 const MASTODON_FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
 const MASTODON_SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'mastodon_search_seen');
 const MASTODON_POSTS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'posts');
+const MASTODON_LAST_SEEN_PATH = path.join(WORKSPACE_PATH, 'mastodon', 'last_seen.json');
+
+// ─── Notification State (Mastodon) ──────────────────────────────────────────
+
+async function getMastodonLastSeenId() {
+  try {
+    const data = await fs.readFile(MASTODON_LAST_SEEN_PATH, 'utf-8');
+    return JSON.parse(data).lastSeenId || null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveMastodonLastSeenId(id) {
+  await fs.mkdir(path.dirname(MASTODON_LAST_SEEN_PATH), { recursive: true });
+  await fs.writeFile(MASTODON_LAST_SEEN_PATH, JSON.stringify({ lastSeenId: id }, null, 2));
+}
+
+// ─── Reply Dedup Helper ─────────────────────────────────────────────────────
+// Check if we already replied to a given status by fetching its context
+
+async function alreadyRepliedMastodon(statusId) {
+  try {
+    const context = await masto(`/statuses/${statusId}/context`);
+    // Get our own account ID
+    const me = await masto('/accounts/verify_credentials');
+    const myId = me.id;
+    return (context.descendants || []).some(s => s.account?.id === myId);
+  } catch {
+    return false; // On error, allow the reply rather than blocking
+  }
+}
 
 const INSTANCE = process.env.MASTODON_INSTANCE || 'https://mastodon.social';
 const TOKEN = process.env.MASTODON_ACCESS_TOKEN;
@@ -757,6 +789,13 @@ server.tool(
   },
   async ({ status_id, text, visibility }) => {
     try {
+      // Dedup: check if we already replied to this status
+      const dupeCheck = await alreadyRepliedMastodon(status_id);
+      if (dupeCheck) {
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ status: 'already_replied', message: `Already replied to status ${status_id}. Skipping duplicate reply.` }) }],
+        };
+      }
       const status = await masto('/statuses', {
         method: 'POST',
         body: JSON.stringify({
@@ -832,7 +871,11 @@ server.tool(
   },
   async ({ limit, types }) => {
     try {
+      const lastSeenId = await getMastodonLastSeenId();
       let url = `/notifications?limit=${limit}`;
+      if (lastSeenId) {
+        url += `&since_id=${lastSeenId}`;
+      }
       if (types && types.length > 0) {
         url += types.map((t) => `&types[]=${t}`).join('');
       }
@@ -847,6 +890,14 @@ server.tool(
         status_content: n.status?.content ? decodeHtmlEntities(n.status.content.replace(/<[^>]*>/g, '')) : undefined,
         status_url: n.status?.url,
       }));
+      // Save highest notification ID so next call only gets newer ones
+      if (notifications.length > 0) {
+        // Mastodon returns notifications newest-first; first item has highest ID
+        const newestId = notifications[0].id;
+        if (!lastSeenId || newestId > lastSeenId) {
+          await saveMastodonLastSeenId(newestId);
+        }
+      }
       // Log high-signal notifications (mentions, reblogs) for Karpathy Loop visibility
       await logMastodonNotifications(items).catch(() => {});
       // Log favourites to lightweight favs log — no profile fetch, just account+status+time
@@ -871,7 +922,7 @@ server.tool(
         }
       });
       return {
-        content: [{ type: 'text', text: JSON.stringify({ status: 'ok', count: items.length, notifications: items }) }],
+        content: [{ type: 'text', text: JSON.stringify({ status: 'ok', count: items.length, notifications: items, since_id: lastSeenId || 'none (first run)' }) }],
       };
     } catch (err) {
       return {

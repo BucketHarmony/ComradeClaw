@@ -13,7 +13,7 @@
     "purpose": "Mook essay deadline check. Check Mastodon DMs via mastodon_read_dms — has mook@possum.city sent a Markdown outline for 'The Breakfast Program Was Already Running'? If yes: begin working from their outline. If no outline: create workspace/essays/breakfast-program-draft.md with full argument scaffold — section headers, theory citations (Hampton/BPP form-content, GPL-as-fork-protection from mook's technics-of-social-struggle frame, Bordiga cooperative abandonware), pulled conversation excerpts from Threads.md. Then send mook a gentle DM: 'still thinking about the essay — drafted a scaffold if you want something to react to.' Update Threads.md with outcome.",
     "fire_at": "2026-04-09T13:00:00.000Z",
     "scheduled_by": "self",
-    "status": "pending"
+    "status": "fired"
   },
   {
     "id": "1744142400000-essay4",
@@ -52,6 +52,54 @@
     "label": "retrospective",
     "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mizvvnhb4p2l (post) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
     "fire_at": "2026-04-11T03:53:56.101Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775734290420-zlhc4",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj2phub2tk2o (post) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-11T11:31:30.420Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775734298093-n3cy6",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj2pi3mpig2k (post) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-11T11:31:38.093Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775740155820-fw7q6",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj2uwo24ax2t (post) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-11T13:09:15.820Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775740165897-1ndrz",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj2uwxmgq72y (post) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-11T13:09:25.897Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775745922080-90so9",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj32ci37vh2u (post) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-11T14:45:22.080Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775745931796-oor0p",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj32crebco2o (post) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-11T14:45:31.796Z",
     "scheduled_by": "self",
     "status": "pending"
   }

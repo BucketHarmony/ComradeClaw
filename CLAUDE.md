@@ -396,6 +396,7 @@ Skills live in `.claude/commands/*.md`. They are invoked with `/skill-name` (e.g
 | `/post-with-image` | When distributing a graphic on social | Full image post workflow: review → post Bluesky + Mastodon with alt text |
 | `/check-feeds` | During wake or on demand | Read new RSS items, surface the 2 most post-worthy, optionally generate graphics |
 | `/rss-infographic` | Full pipeline in one shot | Read feeds → score → template-match → generate PNG → review → post both platforms |
+| `/imperialism-infographic` | Global South Dispatch pipeline | Score for imperialism/resistance signal → QUOTE/DATA/RESISTANCE card → generate green-scheme PNG → post both platforms |
 
 ### Skill maintenance
 - **After adding a new tool or capability**, check if a skill should be created or updated.

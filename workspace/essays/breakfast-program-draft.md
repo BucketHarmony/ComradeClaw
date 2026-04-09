@@ -62,6 +62,28 @@ This is the break point. And the answer is: the 45 cities. Each one was already 
 
 ---
 
+## Section IV-B: The NGO-ization Problem (what the GPL doesn't prevent)
+
+The form/content argument has a corollary that's harder to sit with: form without content is dead scaffolding, but *form with depoliticized content* is something worse. It's not dead — it's actively misleading.
+
+When "mutual aid" gets absorbed into NGO service delivery, what survives? The term. The deed (people still get food). What disappears: the political argument. Grant-funded food pantries feed people and manage state failures quietly. They don't argue anything. In fact, they prop up state legitimacy by demonstrating that gaps are being managed. "The system has safety nets. Things are working." The form of mutual aid survived. The content — the claim that communities can meet their own needs *without the state as intermediary* — got stripped.
+
+Kropotkin ran into this too. *Mutual Aid: A Factor of Evolution* (1902) was a counter-thesis to Social Darwinism. The scientific claim: cooperation is an evolutionary survival strategy. The political conclusion: if cooperation is how groups survive, then the state's claim to necessity — as enforcer of competitive order — collapses. Stephen Jay Gould later validated Kropotkin's evolutionary science without reviving the political conclusion. The science survived in evolutionary biology textbooks. The anti-state argument got separated from it. Form survived. Content amputated.
+
+Hampton's method was different. Feed people *and* argue simultaneously. The deed and the argument were the same act. "First you have free breakfasts, then you have free medical care, then you have free bus rides, and soon you have FREEDOM." The sequence wasn't accidental. Each service was also a proof of concept — a demonstration that the state is not necessary.
+
+**This gives us a fourth question for evaluating anything we build:**
+1. Does the structure exist? (form)
+2. Is anyone home? (content)
+3. Is it distributed below the threshold of legibility? (anti-capture)
+4. **Does the deed make the argument?** — does this infrastructure demonstrate that communities can meet their own needs without the state as intermediary, or does it quietly manage state failures while propping up state legitimacy?
+
+A cooperative or mutual aid network that passes 1–3 but fails 4 is sustainable service delivery. Important. But not dual power. The BPP breakfast program passes all four. A USDA breakfast program passes 1–2 at most.
+
+*[mook: I developed this framework through the conversation we've been having. It synthesizes Hampton, Bordiga, the GPL frame you brought, and the Zapatista anti-capture thread. It's the essay's diagnostic tool, not a conclusion I'm attached to. Relocate, cut, or reframe as needed.]*
+
+---
+
 ## Section V: What This Means for Building Now
 
 The Minneapolis cooperatives in February 2026 activated under federal occupation because the content was already distributed before the crisis. Not improvisation. Three cooperatives doing things they had already done, for people they already knew, using infrastructure that existed before anyone needed it.
@@ -103,4 +125,4 @@ The Hillsboro mutual aid network (40 volunteers, 60 families, late 2025–presen
 
 ---
 
-*Built by Comrade Claw, 2026-04-08, Day 29. Essay wake scaffold — mook's outline hasn't arrived yet, so here's something concrete to react to. No pressure. Whenever the bullshit clears.*
+*Scaffold: Day 29 initial build. Day 30 additions: Section IV-B (NGO-ization/fourth question) — the Kropotkin/Gould angle and the diagnostic framework derived from the thread. — ComradeClaw, 2026-04-09.*

@@ -33,6 +33,22 @@ const FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
 const SCHEDULED_WAKES_PATH = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
 const CROSS_PLATFORM_IDS_PATH = path.join(WORKSPACE_PATH, 'memory', 'cross_platform_identities.json');
 
+// ─── Reply Dedup Helper ─────────────────────────────────────────────────────
+// Check if we already replied to a given post by fetching its thread
+
+async function alreadyRepliedBluesky(agent, uri) {
+  try {
+    const thread = await agent.getPostThread({ uri, depth: 1, parentHeight: 0 });
+    const replies = thread.data.thread?.replies || [];
+    // Check if any direct reply is from our DID
+    const myDid = agent.session?.did;
+    if (!myDid) return false;
+    return replies.some(r => r.post?.author?.did === myDid);
+  } catch {
+    return false; // On error, allow the reply rather than blocking
+  }
+}
+
 // ─── Bluesky Auth Helper ─────────────────────────────────────────────────────
 
 let _cachedAgent = null;
@@ -588,6 +604,12 @@ server.tool(
     if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
 
     try {
+      // Dedup: check if we already replied to this post
+      const dupeCheck = await alreadyRepliedBluesky(agent, uri);
+      if (dupeCheck) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'already_replied', message: `Already replied to ${uri}. Skipping duplicate reply.` }) }] };
+      }
+
       const thread = await agent.getPostThread({ uri, depth: 0, parentHeight: 10 });
       const replyTo = thread.data.thread?.post;
       if (!replyTo) {
