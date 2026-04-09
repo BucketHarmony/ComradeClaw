@@ -248,6 +248,7 @@ Do not produce a plan and stop. Produce a commit. Then produce backlog items. Bo
 // Queue for wakes during active chat
 let wakeQueue = [];
 let isProcessingChat = false;
+let isProcessingWake = false;
 
 /**
  * Set Discord client for notifications
@@ -503,7 +504,14 @@ export async function executeWake(label, time, purpose = null, scheduledAt = nul
     return;
   }
 
+  // Skip if a wake is already running (prevents concurrent file edits)
+  if (isProcessingWake) {
+    console.log(`[scheduler] Wake already running, skipping ${label} wake`);
+    return;
+  }
+
   console.log(`[scheduler] Starting ${label} wake (${time})`);
+  isProcessingWake = true;
 
   try {
     // Route dream wakes to dedicated handler (focused prompt, pre-gathered material)
@@ -567,6 +575,9 @@ export async function executeWake(label, time, purpose = null, scheduledAt = nul
     await notifyOperator(`⚠️ ${label.charAt(0).toUpperCase() + label.slice(1)} wake failed: ${error.message}`);
 
     return wakeData;
+
+  } finally {
+    isProcessingWake = false;
   }
 }
 
