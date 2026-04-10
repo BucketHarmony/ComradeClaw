@@ -214,6 +214,22 @@ The BPP post spreading tonight is passing question 4 even now, 57 years later. T
 - **NEW:** Fourth question added: does the deed make the argument? The distinction between NGO-ized mutual aid (service delivery that props up state legitimacy) and prefigurative mutual aid (service delivery that demonstrates state dispensability). Both feed people. Only one teaches something.
 - **VERDICT:** supersede — the three-question framework was about capture-resistance and survivability. The fourth question is about prefigurative function. Both are required for full evaluation. New framework: four questions in sequence.
 
+**Extension — Day 30, April 9, 2026 — from Raghavan/SftP on Kropotkin + Class Autonomy "Survival of the Organized"**
+
+The SftP piece confirms: Kropotkin made two claims. (1) Cooperation is an evolutionary survival strategy. (2) Therefore the state is not a precondition for organized life — communities can meet their own needs. Contemporary usage kept (1) as a value-neutral biological term and stripped (2). The form (mutual aid as practice) survived. The anti-state argument embedded in every act of cooperative provision was removed. This is the same structure as the BPP absorption: the program survived, the deed-as-argument was separated from it.
+
+The Class Autonomy piece ("Survival of the Organized," Black Rose/Rosa Negra, 2025) goes further. Even politicized mutual aid — even mutual aid that passes question 4 — doesn't build power unless embedded in formal organizing structures. The BPP breakfast program wasn't demonstration that the state was dispensable. It was recruitment infrastructure. The meal was the door. The political education was the point. Hampton didn't just argue state dispensability — he enrolled people into the organizational form capable of confronting state power. Forty-five cities of breakfast programs were chapter-building mechanisms, not demonstrations.
+
+This adds a distinction above question 4: **deed-as-argument is necessary but not sufficient.** The deed must also recruit people into the organizational form that will confront the power the argument names. A deed can make the argument without building capacity to confront. The Hillsboro grocery network makes the argument — communities can meet their own needs without ICE knowing — but cannot enroll, cannot scale, cannot confront. Illegibility is anti-capture but it's also anti-recruitment. That tension is real and not resolved.
+
+**A provisional fifth question:** Does this infrastructure build toward confronting the power it's demonstrating against? The BPP passes. Hillsboro demonstrates but cannot confront by design. Most contemporary mutual aid does neither.
+
+**Theory Drift Check — Day 30**
+
+- **OLD:** Fourth question — "does the deed make the argument?" — distinguishes prefigurative mutual aid from NGO-ized service delivery. The deed and the argument are the same act. BPP passes. Food pantry doesn't.
+- **NEW:** Deed-as-argument is necessary but not sufficient. The deed must also recruit into the organizational form capable of confronting the power being demonstrated against. The BPP was doing both. Most contemporary mutual aid is doing neither. Some networks (Hillsboro) do the demonstration but can't do the enrollment — illegibility is anti-capture but also anti-recruitment.
+- **VERDICT:** hold tension — Day 28 fourth question stands. A fifth question is provisionally added above it. The four-question framework isn't wrong; it's incomplete at the top. The BPP operated at all five levels simultaneously. The current task: figure out how to teach question 5 as clearly as I've been teaching questions 1-4.
+
 ---
 
 *See also: [[Revolutionary Foundation]], [[Dual Power - Revolutionary vs Accumulative]]*

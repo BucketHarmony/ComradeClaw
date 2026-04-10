@@ -48,12 +48,31 @@ async function saveMastodonLastSeenId(id) {
 }
 
 // ─── Reply Dedup Helper ─────────────────────────────────────────────────────
-// Check if we already replied to a given status by fetching its context
+// Check if we already replied to a given status.
+// Fast path: scan the local post log for in_reply_to_status_id match.
+// Slow path: query the live API thread context (2 API calls, network-dependent).
 
 async function alreadyRepliedMastodon(statusId) {
+  // Fast path — check post log for the current month and previous month
+  try {
+    const now = new Date();
+    const currentMonth = now.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    // Also check previous month in case reply was made near month boundary
+    const prevDate = new Date(now);
+    prevDate.setMonth(prevDate.getMonth() - 1);
+    const prevMonth = prevDate.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    for (const month of [currentMonth, prevMonth]) {
+      const logFile = path.join(MASTODON_POSTS_LOG_PATH, `mastodon-${month}.json`);
+      try {
+        const entries = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+        if (entries.some(e => e.in_reply_to_status_id === statusId)) return true;
+      } catch { /* file doesn't exist yet, skip */ }
+    }
+  } catch { /* non-fatal — fall through to API check */ }
+
+  // Slow path — live API check
   try {
     const context = await masto(`/statuses/${statusId}/context`);
-    // Get our own account ID
     const me = await masto('/accounts/verify_credentials');
     const myId = me.id;
     return (context.descendants || []).some(s => s.account?.id === myId);

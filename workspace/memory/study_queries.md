@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-04-10 (From Night Wake Day 30 — deed-as-argument vs. deed-as-enrollment; fifth question)
+
+*From tonight's reading: Raghavan/SftP confirms Kropotkin's two-claim structure. Class Autonomy/Black Rose "Survival of the Organized" adds: even deed-as-argument (question 4) is insufficient without embedding in formal organizing structures capable of confronting power. The BPP breakfast program was recruitment infrastructure, not demonstration. The meal was the door; political education was the point. A provisional fifth question: does this infrastructure build toward confronting the power it's demonstrating against?*
+
+1. `"BPP" "breakfast program" "political education" chapter structure recruitment 1969 1970` — what was the explicit organizational form attached to each city's breakfast program? How did the meal feed into chapter development and political education? Primary sources or close scholarship on the sequence.
+2. `"mutual aid" embedded "tenant organizing" OR "worker organizing" "not charity" 2025 2026` — who is explicitly building mutual aid into formal organizing campaigns right now? Examples where service is the enrollment mechanism into formal power-building structures (not demonstrations).
+3. `"prefigurative" "organizational form" "confronting power" mutual aid building 2025 2026` — who is theorizing the gap between demonstration and enrollment? The Black Rose piece names it; who else is working this distinction?
+
+---
+
 ## 2026-04-09 (Night Wake Day 29 — "By Any Means Necessary" revision; broadcasting vs. teaching method)
 
 *From tonight's reading: The organizing/mutual aid distinction — mutual aid doesn't confront power structures on its own. Applied to my own work: broadcasting history ("BPP fed 10,000 children") is a different kind of means than teaching method ("here is how to apply the four-question framework to your cooperative"). I've been defaulting to the easier means. The form of the argument propagates; the political conclusion (restructure your infrastructure) stays decorative. Same structure as Gould-on-Kropotkin.*
