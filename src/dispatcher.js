@@ -2601,12 +2601,35 @@ async function getCogneeRecall(query) {
 // ─── Mook Outline Detection ──────────────────────────────────────────────────
 
 /**
+/**
+ * Read workspace/platform_status.json. Returns status for each platform.
+ * Non-fatal — returns all-active defaults on error so missing file never blocks wakes.
+ */
+async function getPlatformStatus() {
+  const defaults = {
+    mastodon: { status: 'active' },
+    bluesky: { status: 'active' },
+    reddit: { status: 'read-only', reason: 'no write credentials configured' },
+  };
+  try {
+    const raw = await fs.readFile(path.join(WORKSPACE_PATH, 'platform_status.json'), 'utf8');
+    return { ...defaults, ...JSON.parse(raw) };
+  } catch {
+    return defaults;
+  }
+}
+
+/**
  * Checks Mastodon DMs for a Markdown outline from mook@possum.city.
  * If a conversation from mook contains ≥2 lines starting with '#', injects
  * a ⚡ OUTLINE DETECTED alert into wake context so it doesn't sit unread.
  * Non-blocking — returns '' on any error.
  */
 async function getMookOutlineAlert() {
+  const platformStatus = await getPlatformStatus();
+  if (platformStatus.mastodon?.status === 'suspended') {
+    return `\n⚠️ Mastodon suspended — skipping mook outline check (would return 403). Update workspace/platform_status.json when account is restored.`;
+  }
   const instance = process.env.MASTODON_INSTANCE || 'https://mastodon.social';
   const token = process.env.MASTODON_ACCESS_TOKEN;
   if (!token) return '';
@@ -2957,6 +2980,11 @@ export async function executeWake(label, time, purpose = null) {
   // Comrade follow-up context — last heard from each active comrade, prevents silence and repeat-messaging
   const comradeReplyContext = await getComradeReplyContext();
 
+  // Platform suspension status — which networks are active vs suspended
+  const platformStatus = await getPlatformStatus();
+  const mastodonSuspended = platformStatus.mastodon?.status === 'suspended';
+  const redditReadOnly = platformStatus.reddit?.status === 'read-only';
+
   // Mook outline detection — alert if DM from mook contains ≥2 Markdown headers (outline arrived)
   const mookOutlineAlert = await getMookOutlineAlert();
 
@@ -3176,17 +3204,21 @@ export async function executeWake(label, time, purpose = null) {
         ? `5. **Reddit engagement protocol — see Reddit Engagement instructions below. This is the primary work for this wake.**`
         : isEssayWake
           ? `5. **Essay wake — see Essay Wake Protocol below. Publishing comes first. Engagement is secondary.**`
-          : `5. **Engage on Bluesky AND Mastodon — both required every wake:**`,
+          : mastodonSuspended
+            ? `5. **Engage on Bluesky — Mastodon suspended (${platformStatus.mastodon?.reason || 'see platform_status.json'}):**`
+            : `5. **Engage on Bluesky AND Mastodon — both required every wake:**`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   **Bluesky:**`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   a. Run read_replies. If anyone replied, respond to what's real.`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   b. Run search_posts on 2-3 queries (e.g. "worker cooperative", "mutual aid organizing", "community fridge"). Find live conversations.`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   c. Like at least 2 posts from real organizers. Repost at least 1. Reply to at least 1 where you have something concrete to add.`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   d. **Thread-first policy:** When the argument needs >2 sentences, use bluesky_thread. Single posts for single observations. Threads for arguments. bluesky_thread is shipped — use it.`,
-    (isNightWake || isRedditWake || isEssayWake) ? `` : `   **Mastodon (same commitment — fediverse has higher organizer density):**`,
-    (isNightWake || isRedditWake || isEssayWake) ? `` : `   e. Run mastodon_read_notifications. Respond to any replies or mentions.`,
-    (isNightWake || isRedditWake || isEssayWake) ? `` : `   f. Run mastodon_search on 2-3 queries (same or related topics as Bluesky). Find organizers not on Bluesky.`,
-    (isNightWake || isRedditWake || isEssayWake) ? `` : `   g. Favourite at least 1 post. Boost at least 1. Reply where you have something real to add.`,
-    (isNightWake || isRedditWake || isEssayWake) ? `` : `   h. Two networks, same solidarity. Finding a conversation and doing nothing is not engagement.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : mastodonSuspended
+      ? `   **Mastodon: SUSPENDED** — ${platformStatus.mastodon?.reason}. Skip all Mastodon steps. Operator note: ${platformStatus.mastodon?.operator_note || 'see platform_status.json'}. Update workspace/platform_status.json when restored.`
+      : `   **Mastodon (same commitment — fediverse has higher organizer density):**`,
+    (isNightWake || isRedditWake || isEssayWake || mastodonSuspended) ? `` : `   e. Run mastodon_read_notifications. Respond to any replies or mentions.`,
+    (isNightWake || isRedditWake || isEssayWake || mastodonSuspended) ? `` : `   f. Run mastodon_search on 2-3 queries (same or related topics as Bluesky). Find organizers not on Bluesky.`,
+    (isNightWake || isRedditWake || isEssayWake || mastodonSuspended) ? `` : `   g. Favourite at least 1 post. Boost at least 1. Reply where you have something real to add.`,
+    (isNightWake || isRedditWake || isEssayWake || mastodonSuspended) ? `` : `   h. Two networks, same solidarity. Finding a conversation and doing nothing is not engagement.`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   **Reddit (third network — higher theory density):**`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   i. Run reddit_monitor_watchlist — check r/cooperatives, r/MutualAid, r/LaborOrganizing for new posts since last check.`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   j. If new posts found: pick ONE thread, read it fully with reddit_fetch_post, then engage if you have something concrete — theory, historical parallel, resource pointer.`,
@@ -3216,7 +3248,9 @@ export async function executeWake(label, time, purpose = null) {
     `- Read/Write/Edit: journals (workspace/logs/journal/), memory, plans, SOUL, your own code`,
     `- WebSearch: find cooperative news, mutual aid, theory, local things that matter`,
     `- Bluesky MCP: bluesky_post, bluesky_reply, bluesky_thread, read_timeline, read_replies, search_posts, like_post, repost, search_accounts`,
-    `- Mastodon MCP: mastodon_post, mastodon_reply, mastodon_read_notifications, mastodon_search, mastodon_favourite, mastodon_boost, mastodon_follow`,
+    mastodonSuspended
+      ? `- Mastodon MCP: ⚠️ SUSPENDED — skip all mastodon_* tools until platform_status.json updated`
+      : `- Mastodon MCP: mastodon_post, mastodon_reply, mastodon_read_notifications, mastodon_search, mastodon_favourite, mastodon_boost, mastodon_follow`,
     `- Reddit MCP: reddit_fetch_subreddit, reddit_fetch_post, reddit_search, reddit_monitor_watchlist`,
     `- Write.as MCP: writeas_publish, writeas_update, writeas_list, writeas_delete`,
     `- Cognee MCP: search (semantic search across all past activity, characters, theory — query your knowledge graph)`,

@@ -1,0 +1,16 @@
+{
+  "mastodon": {
+    "status": "suspended",
+    "reason": "bot flag + burst posting on mastodon.social",
+    "suspended_since": "2026-04-07",
+    "operator_note": "Bluesky-only until further notice. If Mastodon returns, go to union.place/kolektiva.social/social.coop — not mastodon.social."
+  },
+  "bluesky": {
+    "status": "active"
+  },
+  "reddit": {
+    "status": "read-only",
+    "reason": "REDDIT_CLIENT_ID/CLIENT_SECRET not configured — no write credentials",
+    "operator_note": "Provision Reddit OAuth script app at reddit.com/prefs/apps, add REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, REDDIT_PASSWORD to .env."
+  }
+}
