@@ -1919,11 +1919,59 @@ async function checkReplyFollowThrough() {
     await fs.mkdir(path.dirname(repliesFile), { recursive: true });
     await fs.writeFile(repliesFile, JSON.stringify(existing, null, 2));
 
-    if (total === 0) return '';
-    const rate = Math.round((converted / total) * 100);
-    const converts = results.filter(r => r.replied_back).map(r => r.their_handle).filter(Boolean);
-    const convertNote = converts.length > 0 ? ` (${converts.slice(0, 3).join(', ')})` : '';
-    return `## Reply Follow-Through (last 24h)\n${converted}/${total} outgoing replies generated dialogue — ${rate}% conversion${convertNote}. ${total - converted} dropped into silence.\n`;
+    // ── Mastodon pass ──────────────────────────────────────────────────────────
+    let mastoTotal = 0, mastoConverted = 0;
+    const mastoConvertHandles = [];
+    try {
+      const mastoPostsFile = path.join(WORKSPACE_PATH, 'logs', 'posts', `mastodon-${month}.json`);
+      let mastoPosts = [];
+      try { mastoPosts = JSON.parse(await fs.readFile(mastoPostsFile, 'utf-8')); } catch {}
+
+      const mastoReplies = mastoPosts.filter(p =>
+        (p.type === 'reply' || p.type === 'reply_image') &&
+        p.in_reply_to_status_id &&
+        new Date(p.posted_at).getTime() >= cutoff
+      );
+
+      if (mastoReplies.length > 0) {
+        const mastoReplyIds = new Set(mastoReplies.map(r => r.id));
+
+        const mastoEngFile = path.join(WORKSPACE_PATH, 'logs', 'engagement', `mastodon-${month}.json`);
+        let mastoEng = [];
+        try { mastoEng = JSON.parse(await fs.readFile(mastoEngFile, 'utf-8')); } catch {}
+
+        // Build set of our reply IDs that got a follow-back mention
+        const mastoFollowMap = new Map();
+        for (const r of mastoReplies) mastoFollowMap.set(r.id, { id: r.id, replied_back: false, their_handle: null });
+
+        for (const eng of mastoEng) {
+          if (!eng.in_reply_to_our_post) continue;
+          if (mastoReplyIds.has(eng.in_reply_to_our_post)) {
+            const entry = mastoFollowMap.get(eng.in_reply_to_our_post);
+            if (entry && !entry.replied_back) {
+              entry.replied_back = true;
+              entry.their_handle = eng.handle || null;
+            }
+          }
+        }
+
+        mastoTotal = mastoFollowMap.size;
+        mastoConverted = [...mastoFollowMap.values()].filter(r => r.replied_back).length;
+        mastoConvertHandles.push(...[...mastoFollowMap.values()].filter(r => r.replied_back && r.their_handle).map(r => r.their_handle));
+      }
+    } catch { /* non-fatal */ }
+
+    const bskyTotal = total;
+    const bskyConverted = converted;
+    const combinedTotal = bskyTotal + mastoTotal;
+    const combinedConverted = bskyConverted + mastoConverted;
+
+    if (combinedTotal === 0) return '';
+    const rate = Math.round((combinedConverted / combinedTotal) * 100);
+    const allHandles = [...results.filter(r => r.replied_back).map(r => r.their_handle).filter(Boolean), ...mastoConvertHandles];
+    const convertNote = allHandles.length > 0 ? ` (${allHandles.slice(0, 3).join(', ')})` : '';
+    const breakdown = mastoTotal > 0 ? ` [Bluesky: ${bskyConverted}/${bskyTotal}, Mastodon: ${mastoConverted}/${mastoTotal}]` : '';
+    return `## Reply Follow-Through (last 24h)\n${combinedConverted}/${combinedTotal} outgoing replies generated dialogue — ${rate}% conversion${convertNote}.${breakdown} ${combinedTotal - combinedConverted} dropped into silence.\n`;
   } catch (err) {
     console.error(`[checkReplyFollowThrough] Failed (non-fatal): ${err.message}`);
     return '';

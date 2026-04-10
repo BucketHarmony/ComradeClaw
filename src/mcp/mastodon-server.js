@@ -266,6 +266,10 @@ async function logMastodonNotifications(notifications) {
         resonance_pts: computeResonancePts(n.account),
         logged_at: new Date().toISOString(),
       };
+      // For mentions (replies to our posts), track which of our posts they replied to
+      if (n.type === 'mention' && n.in_reply_to_id) {
+        entry.in_reply_to_our_post = n.in_reply_to_id;
+      }
       // Cross-platform identity: tag with unified_id if this person is known on Bluesky too
       const mastodonUnifiedId = await getUnifiedId('mastodon', n.account || '').catch(() => null);
       if (mastodonUnifiedId) entry.unified_id = mastodonUnifiedId;
@@ -822,6 +826,23 @@ server.tool(
         method: 'POST',
         body: JSON.stringify(body),
       });
+
+      // Log outgoing reply so checkReplyFollowThrough() can track conversion
+      const now = new Date();
+      const hour = now.toLocaleString('en-US', { timeZone: 'America/Detroit', hour: 'numeric', hour12: false });
+      await logMastodonPost({
+        id: status.id,
+        url: status.url,
+        posted_at: now.toISOString(),
+        platform: 'mastodon',
+        type: image_path ? 'reply_image' : 'reply',
+        in_reply_to_status_id: status_id,
+        char_count: text.length,
+        hashtags: detectHashtagsMasto(text),
+        time_of_day: timeOfDayMasto(parseInt(hour, 10)),
+        text_preview: text.substring(0, 100),
+      });
+
       return {
         content: [
           {
@@ -908,6 +929,7 @@ server.tool(
         status_id: n.status?.id,
         status_content: n.status?.content ? decodeHtmlEntities(n.status.content.replace(/<[^>]*>/g, '')) : undefined,
         status_url: n.status?.url,
+        in_reply_to_id: n.status?.in_reply_to_id || undefined,
       }));
       // Save highest notification ID so next call only gets newer ones
       if (notifications.length > 0) {
