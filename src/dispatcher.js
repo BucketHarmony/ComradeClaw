@@ -1335,6 +1335,66 @@ async function getTheoryQueueAlert() {
 }
 
 /**
+ * Surface Characters.md comrades who've gone quiet for 4-8 days — still recoverable but cooling.
+ * Parses "Last seen: YYYY-MM-DD" lines from each character block.
+ * Complements organizer_contacts.js cooling tracker — covers Characters-file relationships
+ * not in the contacts system (mook, iami.earth, Quasit, sparky, etc.).
+ * Returns a compact ⚠️ warning or '' if no dormant comrades found. Non-fatal.
+ */
+async function getDormantCharactersAlert() {
+  try {
+    const charPath = path.join(OBSIDIAN_PATH, 'Characters.md');
+    let content;
+    try {
+      content = await fs.readFile(charPath, 'utf-8');
+    } catch {
+      return ''; // file missing — not fatal
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dormant = [];
+
+    // Walk each ## Character block
+    const blockRegex = /^## (.+)$/gm;
+    let match;
+    while ((match = blockRegex.exec(content)) !== null) {
+      const blockStart = match.index;
+      const nextBlockIdx = content.indexOf('\n## ', blockStart + 1);
+      const blockText = nextBlockIdx === -1 ? content.slice(blockStart) : content.slice(blockStart, nextBlockIdx);
+
+      // Skip the operator block and withdrawn/blocked comrades
+      const name = match[1].trim();
+      if (/^(bucket|the operator)/i.test(name)) continue;
+      if (/\bStatus:\s+(?:Withdrawn|Blocked)\b/i.test(blockText)) continue;
+
+      // Extract handle if present; fall back to name
+      const handleMatch = blockText.match(/\*\*Handle:\*\*\s+(@\S+)/);
+      const label = handleMatch ? handleMatch[1] : name;
+
+      // Parse "Last seen: YYYY-MM-DD"
+      const lastSeenMatch = blockText.match(/Last seen:\s+(\d{4}-\d{2}-\d{2})/);
+      if (!lastSeenMatch) continue;
+
+      const lastSeen = new Date(lastSeenMatch[1]);
+      lastSeen.setHours(0, 0, 0, 0);
+      const daysSince = Math.floor((today - lastSeen) / (1000 * 60 * 60 * 24));
+
+      if (daysSince >= 4 && daysSince <= 8) {
+        dormant.push(`${label} (${daysSince}d)`);
+      }
+    }
+
+    if (dormant.length === 0) return '';
+    return `⚠️ Dormant comrades in Characters.md (4-8d quiet): ${dormant.join(', ')} — check in this wake.`;
+  } catch (err) {
+    console.error(`[getDormantCharactersAlert] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Daily cost summary — reads today's costs.json, returns a compact per-type
  * breakdown for non-night wakes. Lets operator see "improve wakes = 60% of
  * daily cost" without running cost_by_type.js manually.
@@ -2980,6 +3040,9 @@ export async function executeWake(label, time, purpose = null) {
   // Comrade follow-up context — last heard from each active comrade, prevents silence and repeat-messaging
   const comradeReplyContext = await getComradeReplyContext();
 
+  // Dormant Characters.md comrades — 4-8 day silence window, still recoverable
+  const dormantCharactersAlert = await getDormantCharactersAlert();
+
   // Platform suspension status — which networks are active vs suspended
   const platformStatus = await getPlatformStatus();
   const mastodonSuspended = platformStatus.mastodon?.status === 'suspended';
@@ -3314,6 +3377,7 @@ export async function executeWake(label, time, purpose = null) {
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     replyFollowThroughContext ? `\n${replyFollowThroughContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',
+    dormantCharactersAlert ? `\n${dormantCharactersAlert}` : '',
     mookOutlineAlert ? `\n${mookOutlineAlert}` : '',
     wakeQualityTrend ? `\n${wakeQualityTrend}` : '',
     ``,
