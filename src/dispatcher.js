@@ -1395,6 +1395,45 @@ async function getDormantCharactersAlert() {
 }
 
 /**
+ * Missed contacts alert — reads the most recent plan file that has a non-empty
+ * `missed_contacts` array. Surfaces handles + excerpts so the next wake can
+ * follow up on anyone who replied and got silence. Non-fatal. Returns '' if none.
+ *
+ * Plan writers populate this field when read_replies / mastodon_read_notifications
+ * surfaces a reply that didn't get a response that wake:
+ *   "missed_contacts": [{"handle": "@foo.bsky.social", "excerpt": "first 80 chars..."}]
+ */
+async function getMissedContactsAlert() {
+  try {
+    await fs.mkdir(PLANS_PATH, { recursive: true });
+    const files = (await fs.readdir(PLANS_PATH))
+      .filter(f => f.endsWith('.json') && !f.includes('_costs'))
+      .sort()
+      .reverse(); // most recent first
+
+    for (const file of files) {
+      try {
+        const plan = JSON.parse(await fs.readFile(path.join(PLANS_PATH, file), 'utf-8'));
+        if (Array.isArray(plan.missed_contacts) && plan.missed_contacts.length > 0) {
+          const lines = plan.missed_contacts.map(c => {
+            const handle = c.handle || '(unknown)';
+            const excerpt = c.excerpt ? ` — "${c.excerpt.slice(0, 80).trim()}"` : '';
+            return `  - ${handle}${excerpt}`;
+          }).join('\n');
+          return `⚠️ Missed contacts from ${plan.date || 'recent'} ${plan.wake || ''} wake — replied but got no response:\n${lines}\nPrioritize follow-up this wake before new outreach.`;
+        }
+      } catch {
+        // Skip malformed plan files
+      }
+    }
+    return '';
+  } catch (err) {
+    console.error(`[getMissedContactsAlert] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Daily cost summary — reads today's costs.json, returns a compact per-type
  * breakdown for non-night wakes. Lets operator see "improve wakes = 60% of
  * daily cost" without running cost_by_type.js manually.
@@ -3043,6 +3082,9 @@ export async function executeWake(label, time, purpose = null) {
   // Dormant Characters.md comrades — 4-8 day silence window, still recoverable
   const dormantCharactersAlert = await getDormantCharactersAlert();
 
+  // Missed contacts — replied in a previous wake but got no response; surface for follow-up
+  const missedContactsAlert = await getMissedContactsAlert();
+
   // Platform suspension status — which networks are active vs suspended
   const platformStatus = await getPlatformStatus();
   const mastodonSuspended = platformStatus.mastodon?.status === 'suspended';
@@ -3325,7 +3367,8 @@ export async function executeWake(label, time, purpose = null) {
     `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : isRedditWake ? ', reddit' : isEssayWake ? ', essay' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
     `8. When done, write a plan file to workspace/plans/${today}_${planFileSuffix}.json with this format:`,
-    `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${today}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}]}`,
+    `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${today}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}],"missed_contacts":[]}`,
+    `   Populate missed_contacts when read_replies or mastodon_read_notifications surfaces a reply that got no response this wake: [{"handle":"@foo.bsky.social","excerpt":"first 80 chars of their message"}]. Leave as [] if all replies were answered.`,
     studySessionInstructions,
     redditEngagementInstructions,
     essayWakeInstructions,
@@ -3378,6 +3421,7 @@ export async function executeWake(label, time, purpose = null) {
     replyFollowThroughContext ? `\n${replyFollowThroughContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',
     dormantCharactersAlert ? `\n${dormantCharactersAlert}` : '',
+    missedContactsAlert ? `\n${missedContactsAlert}` : '',
     mookOutlineAlert ? `\n${mookOutlineAlert}` : '',
     wakeQualityTrend ? `\n${wakeQualityTrend}` : '',
     ``,
