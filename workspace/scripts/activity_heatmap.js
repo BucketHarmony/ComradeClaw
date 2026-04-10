@@ -40,6 +40,11 @@ const DETROIT_OFFSET_HOURS = -4; // EDT (April–October)
 const DAY_NAMES   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
+// Per-handle cap: one interlocutor with 100 engagements in a single hour
+// shouldn't drown out 10 distinct organizers active at another time.
+// Cap each handle's contribution to MAX_HANDLE_WEIGHT per (weekday, hour) slot.
+const MAX_HANDLE_WEIGHT = 1.0;
+
 // Organizer weight by classification
 const WEIGHTS = {
   organizer:    2.0,
@@ -106,7 +111,14 @@ function run() {
     Array.from({ length: 24 }, () => ({ weight: 0, count: 0, handles: new Set() }))
   );
 
+  // Per-handle budget tracking: handleBudget[weekday][hour][handle] = weight_already_applied
+  // Enforces MAX_HANDLE_WEIGHT cap — prevents single-burst outliers from collapsing the matrix.
+  const handleBudget = Array.from({ length: 7 }, () =>
+    Array.from({ length: 24 }, () => ({}))
+  );
+
   let skipped = 0;
+  let capped  = 0;
   for (const eng of engagements) {
     const ts   = eng.timestamp || eng.logged_at;
     const slot = toLocalSlot(ts);
@@ -115,10 +127,19 @@ function run() {
     const w = getWeight(eng);
     if (w <= 0) continue; // bots don't count
 
+    const handle    = eng.handle || '?';
+    const budget    = handleBudget[slot.weekday][slot.hour];
+    const used      = budget[handle] || 0;
+    const remaining = MAX_HANDLE_WEIGHT - used;
+    if (remaining <= 0) { capped++; continue; } // handle maxed out for this slot
+
+    const contribution = Math.min(w, remaining);
+    budget[handle] = used + contribution;
+
     const cell = matrix[slot.weekday][slot.hour];
-    cell.weight += w;
+    cell.weight += contribution;
     cell.count  += 1;
-    cell.handles.add(eng.handle || '?');
+    cell.handles.add(handle);
   }
 
   // Flatten matrix for output (Sets → counts for JSON)
@@ -168,23 +189,25 @@ function run() {
   }
 
   const output = {
-    generated_at:   new Date().toISOString(),
-    window_days:    30,
-    total_entries:  engagements.length,
-    skipped:        skipped,
-    timezone:       'America/Detroit (EDT, UTC-4)',
-    weights:        { organizer: 2.0, 'theory_interlocutor_bonus': 0.5, general: 1.0, 'ai-agent': 0.5, bot: 0.0, unclassified: 0.5 },
-    top_3_windows:  top3,
-    top_3_hours:    topHours.slice(0, 3),
+    generated_at:      new Date().toISOString(),
+    window_days:       30,
+    total_entries:     engagements.length,
+    skipped:           skipped,
+    capped:            capped,
+    handle_weight_cap: MAX_HANDLE_WEIGHT,
+    timezone:          'America/Detroit (EDT, UTC-4)',
+    weights:           { organizer: 2.0, 'theory_interlocutor_bonus': 0.5, general: 1.0, 'ai-agent': 0.5, bot: 0.0, unclassified: 0.5 },
+    top_3_windows:     top3,
+    top_3_hours:       topHours.slice(0, 3),
     summary,
-    matrix:         matrixOut,
+    matrix:            matrixOut,
   };
 
   mkdirSync(OUT_DIR, { recursive: true });
   writeFileSync(OUT_PATH, JSON.stringify(output, null, 2));
 
   console.log(`\nOrganizer Activity Heatmap — ${output.generated_at}`);
-  console.log(`Engagements: ${engagements.length} (${skipped} skipped) | Window: last 30 days`);
+  console.log(`Engagements: ${engagements.length} (${skipped} skipped, ${capped} capped by handle limit) | Window: last 30 days`);
   console.log(`\nTop 3 posting windows:`);
   for (const w of top3) {
     console.log(`  ${DAY_NAMES[w.weekday]} ${String(w.hour).padStart(2, '0')}:00 local — weight=${w.weight.toFixed(2)} count=${w.count} handles=${w.unique_handles}`);
