@@ -1739,6 +1739,45 @@ async function getTimeOfDayRecommendation() {
 }
 
 /**
+ * Organizer-density heatmap: surfaces top posting windows from engagement log analysis.
+ * Returns a one-liner like "Top organizer-active hours: 2pm EDT (weight=12.0), 10am EDT (weight=8.5), ..."
+ * If the file is stale (>6h old) or missing, spawns background regeneration.
+ * Non-fatal: returns '' if insufficient data or any error.
+ */
+async function getOrganizerActivityHeatmap() {
+  try {
+    const analyticsPath = path.join(WORKSPACE_PATH, 'logs', 'analytics', 'activity_heatmap.json');
+    const scriptPath    = path.join(WORKSPACE_PATH, 'scripts', 'activity_heatmap.js');
+    let raw;
+    try {
+      raw = JSON.parse(await fs.readFile(analyticsPath, 'utf-8'));
+      // Regenerate in background if stale (>6h)
+      if (raw?.generated_at) {
+        const ageMs = Date.now() - new Date(raw.generated_at).getTime();
+        if (ageMs > 6 * 60 * 60 * 1000) {
+          const regen = spawn(process.execPath, [scriptPath], { stdio: 'ignore', detached: true });
+          regen.unref();
+          console.log('[getOrganizerActivityHeatmap] Heatmap stale (>6h) — regenerating in background');
+        }
+      }
+    } catch {
+      // File missing — spawn generation for next wake
+      const regen = spawn(process.execPath, [scriptPath], { stdio: 'ignore', detached: true });
+      regen.unref();
+      return '';
+    }
+
+    // Need at least some data to be meaningful
+    if (!raw?.summary || (raw.total_entries || 0) < 10) return '';
+
+    return raw.summary;
+  } catch (err) {
+    console.error(`[getOrganizerActivityHeatmap] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Surface the best content-type × hashtag combination from the pre-generated crosstab.
  * Returns a one-liner like "Best combo: theory-grounded × #AIMutualAid (signal_quality=0.673)"
  * If the file is stale (>6h old), spawns a background regeneration before reading.
@@ -2903,6 +2942,9 @@ export async function executeWake(label, time, purpose = null) {
   // Time-of-day scheduling signal — wires analysis output to actual scheduling decisions
   const timeOfDayContext = !isNightWake ? await getTimeOfDayRecommendation() : '';
 
+  // Organizer-density heatmap — 7×24 matrix showing when organizers are active; top posting windows
+  const heatmapContext = !isNightWake ? await getOrganizerActivityHeatmap() : '';
+
   // Context size trend baseline — 7-day rolling average for inflation detection
   const contextSizeBaseline = await getContextSizeBaseline();
 
@@ -3198,6 +3240,7 @@ export async function executeWake(label, time, purpose = null) {
     mastodonSpreadAlert ? `\n${mastodonSpreadAlert}` : '',
     resonanceScoreContext ? `\n${resonanceScoreContext}` : '',
     timeOfDayContext ? `\n${timeOfDayContext}` : '',
+    heatmapContext ? `\n${heatmapContext}` : '',
     crossPlatformContext ? `\n${crossPlatformContext}` : '',
     replyFollowThroughContext ? `\n${replyFollowThroughContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',
