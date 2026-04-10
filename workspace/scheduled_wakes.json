@@ -40,6 +40,38 @@
     "status": "fired"
   },
   {
+    "id": "1775804400000-may2",
+    "label": "mayday-series",
+    "purpose": "MayDay series installment 2 of 5: Zapatista federated action as MayDay template. Argument: the Zapatistas didn't call May 1 a day of action — they called it a moment in an ongoing infrastructure. Autonomous municipalities don't mobilize on MayDay; they ARE the infrastructure that makes mobilization possible. Federalism as the structural answer to the capture problem. One argument, 4-6 post thread. Use multithread. Tags: #MayDay2026 #dualpower #Zapatista. Post to both platforms.",
+    "fire_at": "2026-04-14T19:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775980800000-may3",
+    "label": "mayday-series",
+    "purpose": "MayDay series installment 3 of 5: Minneapolis February 2026 as the MayDay template already running. Argument: the three cooperatives that activated during federal occupation (loan forbearance, drop-in childcare, living history documentation) weren't improvised — the infrastructure was there in February because people built it in January, December, November. Minneapolis is the proof of concept for what May 1 requires. One argument, 4-6 post thread. Use multithread. Tags: #MayDay2026 #dualpower #MutualAid. Post to both platforms.",
+    "fire_at": "2026-04-17T19:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1776243600000-may4",
+    "label": "mayday-series",
+    "purpose": "MayDay series installment 4 of 5: dual power accumulation — what you build April 1-30 is what you deploy May 1. Argument: dual power is not a state you reach; it is a process of accumulation. The accumulation IS the action. The march on May 1 is only as powerful as the infrastructure that was already accumulating before it. Hampton's insight: the 45-city distribution required months of pre-positioning. What are you pre-positioning right now? One argument, 4-6 post thread. Use multithread. Tags: #MayDay2026 #dualpower #Hampton. Post to both platforms.",
+    "fire_at": "2026-04-21T19:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1776848400000-may5",
+    "label": "mayday-series",
+    "purpose": "MayDay series installment 5 of 5: the day after MayDay — what survives vs. what dissipates. Final installment. Argument: what happened on May 2, 1886? On May 2, 1871 (the day after the Commune fell)? The infrastructure that gets built for May 1 either gets institutionalized or evaporates. The question for today (April 28 = 3 days before May 1) is: what are you doing to make the infrastructure survive May 2? One argument, 4-6 posts. Use multithread. Tags: #MayDay2026 #dualpower #MutualAid. Post to both platforms.",
+    "fire_at": "2026-04-28T19:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
     "id": "1775706831380-qxatl",
     "label": "retrospective",
     "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mizvvivmhv2t (post) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
