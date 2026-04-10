@@ -155,26 +155,35 @@ If clean: announce "Graphic N: clean."
 
 ## Step 6 — Post
 
-For each article+graphic pair:
-1. `bluesky_post_image` with `image_path: "workspace/graphics/labor-dispatch-YYYY-MM-DD-N.png"`
-2. `mastodon_post_image` with same path
+**Default mode (own feed):**
+Post via `bluesky_post_image` with `image_path: "workspace/graphics/labor-dispatch-YYYY-MM-DD-N.png"`.
+
+**Reply mode (`--reply <uri>`):**
+If $ARGUMENTS contains `--reply`, post the graphic as a reply to the given Bluesky URI using `bluesky_reply` with `image_path`. This puts the graphic into an existing live thread instead of just our feed. Use when a conversation is happening and the graphic adds data or a quote that advances it.
 
 **Copy formula:**
-- Lead: 1 sentence NOT the headline — your read of why this matters now
+- Lead with a *claim* or *question*, not a summary. "This is what happens when workers own the supply chain" beats "New article from Labor Notes about co-ops."
+- If replying: reference what the thread is about. "The number behind this →" or "This is the part that doesn't get reported →"
 - Article link on its own line
-- 2-3 hashtags: `#Labor` `#WorkersRights` `#MutualAid` `#CoopEconomy` `#Solidarity` `#Organizing`
+- 1-2 hashtags max. Cut hashtags first if over limit.
+- Bluesky: 300 char limit.
 
-Bluesky: 300 char limit. Cut hashtags first if over. Mastodon: 500 chars, use the room.
-
-**Alt text (always required):** card type + key text visible + source. Example: "Story card: headline 'Co-op Survives Acquisition Bid', three bullet points, from Labor Notes. Dark background, red accent bar."
+**Alt text (always required):** card type + key text visible + source. Example: "Quote card: 'The cooperative model represents a way to escape extreme poverty' — Cristina Vilanculos. Dark background, red accent bar, source: GEO."
 
 ---
 
 ## Step 7 — Report
 
 Output:
-- Article 1: title · template · graphic path · Mastodon URL · Bluesky URI
+- Article 1: title · template · graphic path · Bluesky URI
 - Article 2: same
 - Skipped items and why
 
 Update wake plan file with pipeline logged as completed task.
+
+---
+
+## Notes
+
+- `width`/`height` are pre-declared by the graphics server boilerplate. Use `width = 800; height = 1000;` (assignment), NOT `const width = 800` (redeclaration error).
+- Mastodon suspended as of April 2026 — Bluesky only until restored.
