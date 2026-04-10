@@ -3138,7 +3138,8 @@ export async function executeWake(label, time, purpose = null) {
     console.error(`[dispatcher] organizer_contacts failed: ${err.message}`);
   }
 
-  const essayWakeInstructions = isEssayWake ? [
+  const hasWriteasToken = !!process.env.WRITEAS_TOKEN;
+  const essayWakeInstructions = isEssayWake ? (hasWriteasToken ? [
     ``,
     `## Essay Wake Protocol (Required — this is the entire purpose of this wake)`,
     `You are here to produce one published Write.as essay. Not a thread. Not a plan to write one later. A complete, published essay.`,
@@ -3176,7 +3177,42 @@ export async function executeWake(label, time, purpose = null) {
     `- Not a theory thread (threads have 5 posts; essays have 800 words; they are different arguments)`,
     `- Not a draft to be finished later (if you publish a draft you're not done; you're behind)`,
     `- Not skippable if the queue item "doesn't feel ready" — the queue item is already the argument; your job is to expand it, not approve it`,
-  ].join('\n') : '';
+  ] : [
+    ``,
+    `## Essay Wake Protocol — Mastodon Thread Fallback (WRITEAS_TOKEN not configured)`,
+    `Write.as is not available. You are here to produce one long-form Mastodon thread (15–20 posts). Same argument, different surface. Not a short theory thread — this is an essay distributed as consecutive posts.`,
+    ``,
+    `**Step 1 — Read the queue.**`,
+    `Open workspace/theory_queue.md. Find the first \`[unposted]\` item. That is your subject.`,
+    ``,
+    `**Step 2 — Write the essay as 15–20 Mastodon posts (each ≤500 chars).**`,
+    `Structure your posts in this sequence:`,
+    `- Posts 1–2: **Opening** — a concrete scene, event, or claim that earns attention. Not an abstract thesis. Start with something that happened. Post 1 should stand alone as a hook.`,
+    `- Posts 3–7: **The argument** — one central claim, fully developed across multiple posts. Each post advances the argument; none restates the previous.`,
+    `- Posts 8–12: **Evidence and history** — at least 2 named historical/material examples (Hampton, Mondragon, Paris Commune, Zapatistas, Minneapolis 2026, or the specific case). Ground every claim.`,
+    `- Posts 13–15: **The complication** — where the argument gets hard. What has failed. What the limits are. What the state has done to absorb or destroy. Do not skip this. Essays that skip complication are propaganda.`,
+    `- Posts 16–18: **Implication** — what does this mean for someone reading right now? Concrete, actionable.`,
+    `- Posts 19–20: **What this changes in practice** — one or two things someone could do differently after reading this. End on specificity, not inspiration.`,
+    ``,
+    `**Step 3 — Publish with mastodon_thread.**`,
+    `Call \`mastodon_thread\` with the \`posts\` array (15–20 items, each ≤500 chars). Posts chain as replies automatically.`,
+    ``,
+    `**Step 4 — Mark posted.**`,
+    `In workspace/theory_queue.md, change \`[unposted]\` to \`[posted ${today} mastodon-thread]\` for this item.`,
+    ``,
+    `**Step 5 — Announce on Bluesky.**`,
+    `2-3 post thread. Post 1: the core claim (≤280 chars). Post 2: sharpest evidence or implication. Post 3: "Full argument as a Mastodon thread at @ComradeClaw@mastodon.social" — link to the first post of the thread.`,
+    ``,
+    `**Step 6 — Standard respond sweep.**`,
+    `After publishing: run read_replies + mastodon_read_notifications. Reply to anything real.`,
+    ``,
+    `**What this wake is NOT:**`,
+    `- Not a short theory thread (5 posts). This is 15–20 posts. The length is the argument.`,
+    `- Not a draft to finish later. Publish the thread before this wake ends.`,
+    `- Not skippable because Write.as is unavailable. The fallback is the protocol. Use it.`,
+    ``,
+    `**Operator note:** To restore Write.as publishing, provision a Write.as Pro account and add WRITEAS_TOKEN to .env.`,
+  ]).join('\n') : '';
 
   // For essay wakes, append the *live* first unposted item so the purpose field
   // (set at schedule time) never shows a stale topic that was already posted.
