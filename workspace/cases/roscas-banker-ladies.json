@@ -1,0 +1,50 @@
+{
+  "id": "roscas-banker-ladies",
+  "name": "Rotating Savings and Credit Associations (Roscas) — African Diaspora",
+  "location": "African diaspora communities globally; documented extensively in North America, UK, Caribbean",
+  "date_range": "centuries-present",
+  "form": "rotating-savings-association",
+  "active": true,
+  "anti_capture_mechanisms": [
+    "community_membership_vetting: only known trusted members admitted — no external registration surface",
+    "no_state_certification: operates without legal incorporation, registration, or regulatory oversight",
+    "transaction_level_illegibility: individual transactions invisible to financial surveillance",
+    "trust_enforcement: social capital (not contracts) enforces obligations — no legal claim surface for capture",
+    "informal_structure: no named leadership, no formal charter, no asset base to seize or defund",
+    "oral_tradition: rules passed through practice and relationship, not documents"
+  ],
+  "scale": "Tens of millions of participants globally. Individual circles typically 5-50 members. Aggregate capital managed informally dwarfs formal credit union sector in some diaspora communities.",
+  "visibility_level": "invisible-by-design",
+  "financial_dimension": {
+    "mechanism": "Members contribute fixed amounts at regular intervals; each cycle one member receives the full pot. Repeats until all members have received. No interest, no collateral, no credit check.",
+    "anti_predatory": "Excludes payday lenders, banks, and check-cashing services entirely — community controls capital flow",
+    "startup_function": "Historically used for business starts, immigration costs, housing deposits — capital formation outside the formal banking system",
+    "trust_basis": "Social consequence of default (exclusion, reputational damage) more effective than legal enforcement"
+  },
+  "theory_tags": [
+    "invisible-infrastructure",
+    "financial-infrastructure",
+    "anti-capture",
+    "rotating-credit",
+    "diaspora-organizing",
+    "informal-economy",
+    "trust-networks",
+    "transaction-level-illegibility"
+  ],
+  "source": {
+    "primary": "Hossein, Caroline Shenaz (2024). 'The Banker Ladies: How Black Women's Cooperatives Built Parallel Financial Systems.' University of Toronto Press. Open access via U of T Press.",
+    "note": "Open access — freely citable. Hossein's framing: Roscas as parallel financial infrastructure built by and for communities excluded from formal banking. Not charity. Not informal. Deliberately structured resistance to financial exclusion."
+  },
+  "why_this_fills_a_gap": "Prior 5 cases (BPP, Zapatista, Minneapolis, Hillsboro, Paris Commune) covered governance, food distribution, service delivery, and operational security but had no financial infrastructure case. Roscas are the financial layer: how communities capitalized themselves outside state-legible systems for centuries before the cooperative movement had a theory for it.",
+  "connection_to_anti_capture_framework": {
+    "bordiga_content": "Active: participant community shows up at every cycle. Mutual obligation is the enforcement mechanism.",
+    "distributed_illegibility": "No central fund to seize. No named institution to defund. Each circle is independent — destroying one doesn't touch others.",
+    "fourth_question": "The deed IS the argument: the act of pooling capital outside the banking system demonstrates that communities can meet financial needs without state-approved intermediaries.",
+    "fifth_question": "Historically connected to formal organizing: Roscas provided startup capital for cooperative businesses, funded immigration costs that expanded the community, sustained organizers. The financial infrastructure enabled organizational capacity."
+  },
+  "citations": [
+    "workspace/improvements.md (Batch 14, 2026-04-10)"
+  ],
+  "last_cited": "2026-04-10",
+  "notes": "Hossein uses 'Banker Ladies' to name the women (predominantly) who organize and run Rosca circles — the conveners, not just participants. They function as informal financial institution presidents. The labor is gendered and largely uncounted in economic data."
+}
