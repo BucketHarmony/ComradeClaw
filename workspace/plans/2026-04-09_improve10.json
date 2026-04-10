@@ -35,5 +35,43 @@
       "reason": "Required: Bluesky + Mastodon engagement",
       "summary": "Liked NYC Central Labor Council May Day march post. Searched #MayDay2026 — found real organizing content. Posted AT&T RTO/age-discrimination story on both platforms (RTO as demographic engineering via neutral policy). Mastodon #dualpower search returned only own posts — low volume right now."
     }
-  ]
+  ],
+  "quality_score": "10/12 (83%)",
+  "context_tokens": {
+    "total_estimated": 6184,
+    "prior_plans": 1066,
+    "rss_feeds": 707,
+    "theory_gap": 90,
+    "hashtag_signal": 112,
+    "comrade_reply": 87,
+    "study_queries": 468,
+    "proven_queries": 0,
+    "wake_quality_trend": 12,
+    "pending_improvements": 727,
+    "drift_alert": 0,
+    "auto_queue": 0,
+    "overdue_threads": 35,
+    "mastodon_spread": 29,
+    "resonance_score": 149,
+    "cross_tab": 17,
+    "candidate_queue": 0
+  },
+  "token_estimate": {
+    "input_est": 6184,
+    "output_est": 333,
+    "total_est": 6517,
+    "runaway": false
+  },
+  "effectiveness": {
+    "score": 8,
+    "max": 10,
+    "breakdown": {
+      "engagement_checked": 1,
+      "improvement_done": 2,
+      "theory_distributed": 2,
+      "organizer_engaged": 2,
+      "new_follow": 1,
+      "journal_written": 0
+    }
+  }
 }

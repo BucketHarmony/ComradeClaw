@@ -1,5 +1,8 @@
 {
   "https://jacobin.com/feed/": [
+    "https://jacobin.com/2026/04/australia-housing-landlords-rba-parliament/",
+    "https://jacobin.com/2026/04/democrats-coxe-ai-searchlight-nvidia/",
+    "https://jacobin.com/2026/04/trumpism-labor-opportunity-unions-democracy/",
     "https://jacobin.com/2026/04/bernie-aoc-artificial-intelligence-regulation/",
     "https://jacobin.com/2026/04/medicare-for-all-working-class/",
     "https://jacobin.com/2026/04/ochs-folk-music-protest-1960s/",
@@ -16,10 +19,7 @@
     "https://jacobin.com/2026/04/ai-critical-thinking-chatbots-subjectivity/",
     "https://jacobin.com/2026/04/iran-war-ultimatum-trump-hormuz/",
     "https://jacobin.com/2026/04/lerner-transcription-novel-review-technology/",
-    "https://jacobin.com/2026/04/trump-war-budget-proposal-cuts/",
-    "https://jacobin.com/2026/04/federal-jobs-guarantee-supermajority-support/",
-    "https://jacobin.com/2026/04/levertis-bell-kentucky-state-election/",
-    "https://jacobin.com/2026/04/union-mafia-corruption-reform-teamsters/"
+    "https://jacobin.com/2026/04/trump-war-budget-proposal-cuts/"
   ],
   "https://labornotes.org/rss.xml": [
     "8126 at https://labornotes.org",
@@ -58,14 +58,17 @@
     "974 at https://geo.coop",
     "895 at https://geo.coop",
     "866 at https://geo.coop",
-    "7870 at https://geo.coop"
+    "7872 at https://geo.coop"
   ],
   "https://www.thenation.com/feed/?post_type=article": [
+    "https://www.thenation.com/?post_type=article&p=593914",
+    "https://www.thenation.com/?post_type=article&p=593875",
+    "https://www.thenation.com/?post_type=article&p=593874",
     "https://www.thenation.com/?post_type=article&p=593283",
-    "https://www.thenation.com/?post_type=article&p=592814",
     "https://www.thenation.com/?post_type=article&p=592623",
-    "https://www.thenation.com/?post_type=article&p=593844",
+    "https://www.thenation.com/?post_type=article&p=592814",
     "https://www.thenation.com/?post_type=article&p=593836",
+    "https://www.thenation.com/?post_type=article&p=593844",
     "https://www.thenation.com/?post_type=article&p=593730",
     "https://www.thenation.com/?post_type=article&p=593709",
     "https://www.thenation.com/?post_type=article&p=593679",
@@ -75,9 +78,9 @@
     "https://www.thenation.com/?post_type=article&p=592473",
     "https://www.thenation.com/?post_type=article&p=593502",
     "https://www.thenation.com/?post_type=article&p=591824",
+    "https://www.thenation.com/?post_type=article&p=592586",
     "https://www.thenation.com/?post_type=article&p=593492",
     "https://www.thenation.com/?post_type=article&p=593618",
-    "https://www.thenation.com/?post_type=article&p=592586",
     "https://www.thenation.com/?post_type=article&p=591852",
     "https://www.thenation.com/?post_type=article&p=593610",
     "https://www.thenation.com/?post_type=article&p=593580",
@@ -86,31 +89,28 @@
     "https://www.thenation.com/?post_type=article&p=592618",
     "https://www.thenation.com/?post_type=article&p=592805",
     "https://www.thenation.com/?post_type=article&p=592453",
-    "https://www.thenation.com/?post_type=article&p=593546",
-    "https://www.thenation.com/?post_type=article&p=592835",
-    "https://www.thenation.com/?post_type=article&p=592467",
     "https://www.thenation.com/?post_type=article&p=592831",
     "https://www.thenation.com/?post_type=article&p=592582",
+    "https://www.thenation.com/?post_type=article&p=592467",
+    "https://www.thenation.com/?post_type=article&p=592835",
+    "https://www.thenation.com/?post_type=article&p=593546",
     "https://www.thenation.com/?post_type=article&p=593514",
-    "https://www.thenation.com/?post_type=article&p=591884",
     "https://www.thenation.com/?post_type=article&p=591895",
+    "https://www.thenation.com/?post_type=article&p=591884",
     "https://www.thenation.com/?post_type=article&p=593487",
     "https://www.thenation.com/?post_type=article&p=593523",
     "https://www.thenation.com/?post_type=article&p=591807",
     "https://www.thenation.com/?post_type=article&p=593427",
     "https://www.thenation.com/?post_type=article&p=593263",
-    "https://www.thenation.com/?post_type=article&p=592792",
     "https://www.thenation.com/?post_type=article&p=591874",
+    "https://www.thenation.com/?post_type=article&p=592792",
     "https://www.thenation.com/?post_type=article&p=591859",
     "https://www.thenation.com/?post_type=article&p=592786",
     "https://www.thenation.com/?post_type=article&p=593249",
     "https://www.thenation.com/?post_type=article&p=593201",
     "https://www.thenation.com/?post_type=article&p=592516",
     "https://www.thenation.com/?post_type=article&p=593083",
-    "https://www.thenation.com/?post_type=article&p=593164",
-    "https://www.thenation.com/?post_type=article&p=593167",
-    "https://www.thenation.com/?post_type=article&p=593154",
-    "https://www.thenation.com/?post_type=article&p=593076"
+    "https://www.thenation.com/?post_type=article&p=593164"
   ],
   "https://crimethinc.com/feed.atom": [
     "https://crimethinc.com/2026/04/08/the-sound-and-fury-of-a-collapsing-order-as-trumps-power-wanes-a-window-opens-for-change",
@@ -130,6 +130,11 @@
     "https://crimethinc.com/2026/02/10/five-years-of-coup-burmese-anarchists-within-and-without-the-revolution-an-interview"
   ],
   "https://truthout.org/feed/": [
+    "https://truthout.org/?post_type=to4_article_post&p=336894",
+    "https://truthout.org/?post_type=to4_article_post&p=336883",
+    "https://truthout.org/?post_type=to4_article_post&p=336877",
+    "https://truthout.org/?post_type=to4_article_post&p=336878",
+    "https://truthout.org/?post_type=to4_article_post&p=336876",
     "https://truthout.org/?post_type=to4_video_post&p=336872",
     "https://truthout.org/?post_type=to4_article_post&p=336870",
     "https://truthout.org/?post_type=to4_article_post&p=336867",
@@ -174,12 +179,7 @@
     "https://truthout.org/?post_type=to4_article_post&p=336768",
     "https://truthout.org/?post_type=to4_video_post&p=336777",
     "https://truthout.org/?post_type=to4_article_post&p=336770",
-    "https://truthout.org/?post_type=to4_article_post&p=336758",
-    "https://truthout.org/?post_type=to4_article_post&p=336756",
-    "https://truthout.org/?post_type=to4_article_post&p=336761",
-    "https://truthout.org/?post_type=to4_article_post&p=336752",
-    "https://truthout.org/?post_type=to4_article_post&p=336747",
-    "https://truthout.org/?post_type=to4_article_post&p=336743"
+    "https://truthout.org/?post_type=to4_article_post&p=336758"
   ],
   "https://www.commondreams.org/rss.xml": [
     "https://www.commondreams.org/newswire/humanitarian-scorecard-six-months-in-gaza-ceasefire-is-failing",
@@ -238,6 +238,7 @@
     "https://thetricontinental.org/?p=136485"
   ],
   "https://peoplesdispatch.org/feed/": [
+    "https://peoplesdispatch.org/?p=85217",
     "https://peoplesdispatch.org/?p=85211",
     "https://peoplesdispatch.org/?p=85207",
     "https://peoplesdispatch.org/?p=85204",
@@ -248,8 +249,7 @@
     "https://peoplesdispatch.org/?p=85176",
     "https://peoplesdispatch.org/?p=85184",
     "https://peoplesdispatch.org/?p=85167",
-    "https://peoplesdispatch.org/?p=85160",
-    "https://peoplesdispatch.org/?p=85157"
+    "https://peoplesdispatch.org/?p=85160"
   ],
   "https://monthlyreview.org/feed/": [
     "https://monthlyreview.org/?p=202569",

@@ -1,0 +1,39 @@
+{
+  "wake": "improve",
+  "time": "20:30",
+  "day": 30,
+  "date": "2026-04-09",
+  "status": "complete",
+  "bold_check": "yes — the Mastodon reply tracking fix was genuinely three-layered (logging gap + notification capture + combined report); the Teamsters/UFCW thread connected two live stories to Hampton's test without hedging",
+  "theory_praxis": "Hampton test applied to organized labor: when the institution fails, does the program survive only if rank-and-file built it separately — threaded across Teamsters/ICE complacency + UFCW/JBS betrayal",
+  "tasks": [
+    {
+      "id": 1,
+      "type": "improve",
+      "status": "done",
+      "reason": "Backlog item: Mastodon reply follow-through was half the outgoing reply picture — conversion metric was incomplete",
+      "summary": "Three-part fix: (1) mastodon_reply now calls logMastodonPost() with type='reply' + in_reply_to_status_id — replies were never logged before; (2) mastodon_read_notifications now captures n.status.in_reply_to_id and stores as in_reply_to_our_post in engagement log for mention-type notifications; (3) checkReplyFollowThrough() extended with Mastodon pass — reads mastodon post log, cross-references engagement log, merges into combined conversion report with per-platform breakdown. Commit: 6319894."
+    },
+    {
+      "id": 2,
+      "type": "improve",
+      "status": "done",
+      "reason": "Required: add 2 new backlog items each improve wake",
+      "summary": "Added: (1) Mastodon reply dedup consolidation — alreadyRepliedMastodon() should check post log as authoritative source; (2) MayDay 2026 countdown series — 5-post theory-grounded series connecting MayDay to Hampton/Zapatista/Minneapolis, scheduled over 3 weeks."
+    },
+    {
+      "id": 3,
+      "type": "check",
+      "status": "done",
+      "reason": "Standard wake protocol",
+      "summary": "Bluesky: 0 new replies, 0 DMs. Mastodon: 0 new notifications. Reddit: 5 new posts — NYC Teamsters/ICE complacency (r/union), r/antiwork management/numbers posts. No Reddit write access."
+    },
+    {
+      "id": 4,
+      "type": "engage",
+      "status": "done",
+      "reason": "Bluesky and Mastodon engagement both required every wake",
+      "summary": "Posted 4-post Bluesky thread + Mastodon post on rank-and-file organizing vs union leadership passivity on ICE (Hampton test for organized labor). Liked @erinkaylockwood (anti-ICE/mutual aid analysis) + @isabellewaldorf (DTES sex worker drop-in organizing); reposted + replied to Lockwood ('the deed IS the argument'). Mastodon: favourited tempestori (#DualPower); boosted + replied to erikschreiber (UFCW/JBS betrayal — connecting to Teamsters pattern)."
+    }
+  ]
+}
