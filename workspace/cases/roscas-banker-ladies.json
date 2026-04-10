@@ -42,6 +42,10 @@
     "fourth_question": "The deed IS the argument: the act of pooling capital outside the banking system demonstrates that communities can meet financial needs without state-approved intermediaries.",
     "fifth_question": "Historically connected to formal organizing: Roscas provided startup capital for cooperative businesses, funded immigration costs that expanded the community, sustained organizers. The financial infrastructure enabled organizational capacity."
   },
+  "fifth_question": {
+    "passes": null,
+    "rationale": "Historically provided startup capital and sustained organizers, enabling confrontational capacity without constituting it — financial infrastructure for the organizational forms that confront power."
+  },
   "citations": [
     "workspace/improvements.md (Batch 14, 2026-04-10)"
   ],

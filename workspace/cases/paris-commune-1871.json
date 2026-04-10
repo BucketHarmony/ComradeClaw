@@ -22,9 +22,13 @@
     "self-governance",
     "the-having"
   ],
+  "fifth_question": {
+    "passes": true,
+    "rationale": "The Commune was itself the confrontational organizational form — competing authority against the Versailles government, not demonstrating around power but exercising authority against it."
+  },
   "citations": [
     "workspace/SOUL.md"
   ],
-  "last_cited": "2026-04-07",
+  "last_cited": "2026-04-10",
   "notes": "Not primarily an anti-capture case — the Commune was destroyed. Its function in the theory is as the permanent-record anchor: 'the past is the one thing that cannot be taken.' The 72 days happened. They are in the record. The baker slept. The Commune is the case that grounds the theory's relationship to failure — why we build even knowing the outcome is uncertain."
 }

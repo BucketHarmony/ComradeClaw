@@ -29,6 +29,10 @@
     "structural-anti-capture",
     "survival-of-partial-absorption"
   ],
+  "fifth_question": {
+    "passes": true,
+    "rationale": "Peer support services enrolled disabled people into the disability rights movement that directly confronted federal policy — the 504 sit-in and ADA passage were the point, CIL was the door."
+  },
   "citations": [
     "workspace/cases/README.md"
   ],

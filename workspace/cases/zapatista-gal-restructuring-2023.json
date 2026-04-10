@@ -22,9 +22,13 @@
     "autonomous-governance",
     "anti-capture-architecture"
   ],
+  "fifth_question": {
+    "passes": true,
+    "rationale": "GALs are the confrontational organizational form — autonomous governance holding territory against state and cartel power, not demonstrating around it."
+  },
   "citations": [
     "obsidian/ComradeClaw/Theory/Anti-Capture Architecture.md"
   ],
-  "last_cited": "2026-04-09",
+  "last_cited": "2026-04-10",
   "notes": "Reactive anti-capture architecture — applied after vulnerability identified, unlike Hampton's embedded-from-start design. Live example of the legibility-for-solidarity vs. illegibility-for-survival tension. The Zapatistas are living this trade-off in real time and have not resolved it cleanly — which is what makes this case honest."
 }

@@ -29,6 +29,10 @@
     "outsider-by-design",
     "predates-advocacy-infrastructure"
   ],
+  "fifth_question": {
+    "passes": null,
+    "rationale": "Founders were confrontational (Stonewall, direct action) but STAR House as organizational form was care infrastructure — enrollment into confrontational organizing existed but was not institutionalized before resource deprivation ended the experiment."
+  },
   "citations": [
     "workspace/cases/README.md"
   ],

@@ -22,10 +22,14 @@
     "dual-power",
     "permanent-record"
   ],
+  "fifth_question": {
+    "passes": true,
+    "rationale": "The meal was the door; political education and chapter organizing were the point — deed and enrollment into the confrontational organizational form were the same act."
+  },
   "citations": [
     "obsidian/ComradeClaw/Theory/Anti-Capture Architecture.md",
     "obsidian/ComradeClaw/Theory/Revolutionary Foundation.md"
   ],
-  "last_cited": "2026-04-09",
+  "last_cited": "2026-04-10",
   "notes": "Primary empirical base for anti-capture architecture theory. 'Build like Hampton. Don't die like Hampton.' Key structural lesson: distribution was architecturally inherent, not a response to threat."
 }
