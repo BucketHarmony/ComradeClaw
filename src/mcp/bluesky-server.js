@@ -34,16 +34,29 @@ const SCHEDULED_WAKES_PATH = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
 const CROSS_PLATFORM_IDS_PATH = path.join(WORKSPACE_PATH, 'memory', 'cross_platform_identities.json');
 
 // ─── Reply Dedup Helper ─────────────────────────────────────────────────────
-// Check if we already replied to a given post by fetching its thread
+// Check if we already replied to a given post URI by scanning the local post log.
+// Log-based approach is more reliable than fetching the live API thread:
+//   - No network round-trip required
+//   - We control the data — no risk of stale API cache or unexpected thread structure
+//   - Matches on in_reply_to URI only (not handle), so no false positives from handle reuse
+// Checks current month + previous month to handle month-boundary replies.
 
-async function alreadyRepliedBluesky(agent, uri) {
+async function alreadyRepliedBluesky(_agent, uri) {
   try {
-    const thread = await agent.getPostThread({ uri, depth: 1, parentHeight: 0 });
-    const replies = thread.data.thread?.replies || [];
-    // Check if any direct reply is from our DID
-    const myDid = agent.session?.did;
-    if (!myDid) return false;
-    return replies.some(r => r.post?.author?.did === myDid);
+    const now = new Date();
+    const months = [0, 1].map(offset => {
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - offset);
+      return d.toLocaleDateString('en-CA', { timeZone: 'America/Detroit' }).substring(0, 7);
+    });
+    for (const month of months) {
+      const logFile = path.join(POSTS_LOG_PATH, `${month}.json`);
+      try {
+        const entries = JSON.parse(await fs.readFile(logFile, 'utf-8'));
+        if (entries.some(e => e.in_reply_to === uri)) return true;
+      } catch { /* file doesn't exist yet — skip */ }
+    }
+    return false;
   } catch {
     return false; // On error, allow the reply rather than blocking
   }
