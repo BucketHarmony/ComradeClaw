@@ -43,7 +43,7 @@ export function formatPlanCompact(plan) {
 
   const topTask = (plan.tasks || []).find(t => t.status === 'done') || plan.tasks?.[0];
   const taskSummary = topTask ? (topTask.summary || topTask.reason || topTask.type) : 'no tasks';
-  const truncated = taskSummary.length > 120 ? taskSummary.substring(0, 117) + '...' : taskSummary;
+  const truncated = taskSummary.length > 1000 ? taskSummary.substring(0, 997) + '...' : taskSummary;
 
   const bold = plan.bold_check
     ? (plan.bold_check.toLowerCase().startsWith('yes') ? '✓ bold' : '~ safe')
