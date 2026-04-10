@@ -1,0 +1,37 @@
+{
+  "id": "berkeley-cil-1972",
+  "name": "Berkeley Center for Independent Living",
+  "location": "Berkeley, California, USA",
+  "date_range": "1972-present",
+  "form": "peer-support-infrastructure",
+  "active": true,
+  "founders": ["Ed Roberts", "Hale Zukas", "Judy Heumann", "Joan Leon", "Phil Draper"],
+  "population_served": "People with disabilities, cross-disability, initially focused on physically disabled college students",
+  "anti_capture_mechanisms": [
+    "majority_disabled_governance: >51% of board and staff required to have disabilities — structural rule prevents non-disabled professional capture",
+    "peer_not_professional: peer counselors replace social workers and medical case managers — deliberately de-professionalizes care to resist clinical capture",
+    "anti_medical_model: explicitly frames disability as social/political problem not individual medical problem — blocks medical authority over service design",
+    "cross_disability_solidarity: serves all disability types, not condition-specific — prevents single-issue medical lobbying from capturing organizational frame",
+    "community_not_charity: designed as alternative to institutional control (state hospitals, nursing homes, rehab industry) not supplement to it — adversarial to capture vectors from founding",
+    "replicated_without_center: model spread to 400+ independent centers globally — no single killable node, each center locally governed"
+  ],
+  "scale": "Single Berkeley center at founding; ~400 CILs nationwide, ~500 globally as of 2022",
+  "visibility_level": "public",
+  "outcome": "Survived and replicated. ADA (1990) incorporated CIL infrastructure into federal policy — partial absorption. Anti-capture mechanisms held: CILs retained peer governance requirement. Federal funding through Rehabilitation Act Title VII added resource capture pressure; centers that took federal money faced compliance conditions. The structural majority-disabled requirement proved durable — no center can be captured by non-disabled professionals as long as the 51% rule holds. A formal organization, but one whose anti-capture architecture is load-bearing in its bylaws.",
+  "source_url": "https://www.berkeleyside.org/2022/10/24/center-for-independent-living-berkeley",
+  "theory_tags": [
+    "anti-capture",
+    "peer-governance",
+    "disability-justice",
+    "mutual-aid",
+    "anti-medical-model",
+    "distributed-replication",
+    "structural-anti-capture",
+    "survival-of-partial-absorption"
+  ],
+  "citations": [
+    "workspace/cases/README.md"
+  ],
+  "last_cited": "2026-04-10",
+  "notes": "Key case for structural anti-capture in formal organizations: the 51% disabled governance rule is anti-capture architecture written into bylaws. Compare to cooperative ownership requirement — same mechanism, different domain. ADA absorption created federal funding dependency but could not override the governance structure. This is partial absorption: form survived, but resource dependency creates ongoing capture pressure. Fifth question relevance: CIL confronted power (Rehab Act, ADA advocacy, nursing home industry) — not just demonstrating service but building toward policy confrontation. The breakfast program was the door; disability rights litigation was the point."
+}

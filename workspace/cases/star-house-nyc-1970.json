@@ -1,0 +1,37 @@
+{
+  "id": "star-house-nyc-1970",
+  "name": "STAR House (Street Transvestite Action Revolutionaries)",
+  "location": "East Village, Manhattan, New York City, USA",
+  "date_range": "1970-1974 (revived by Rivera 1992-2002)",
+  "form": "mutual-aid",
+  "active": false,
+  "founders": ["Sylvia Rivera", "Marsha P. Johnson"],
+  "population_served": "Trans and gender-nonconforming youth, homeless LGBTQ+ youth, sex workers",
+  "anti_capture_mechanisms": [
+    "peer_funded: sustained by founders' own sex work earnings — no grants, no institutional funding, no capture vector",
+    "no_formal_entity: never incorporated as 501c3 during primary active period — invisible to state funding conditions",
+    "outsider_by_design: Rivera explicitly rejected and expelled from mainstream LGB movement (1973 NYC Gay Pride march) — anti-respectability architecture built into founding posture",
+    "trans_of_color_leadership: led by those most excluded from mainstream LGBTQ advocacy — ideological alignment prevented absorption into respectability politics",
+    "chosen_family_governance: house mother/father model, informal trust hierarchy — no board, no bylaws, no NGO structure to capture",
+    "predates_capture_vector: founded 1970, years before any institutional LGBTQ org infrastructure existed to absorb it"
+  ],
+  "scale": "~24 residents at peak, East Village building, sustained ~8 months (Nov 1970 - Jul 1971); organizing and mutual aid network broader",
+  "visibility_level": "semi-public",
+  "outcome": "STAR House folded 1971 due to back rent. STAR as org continued in reduced form until mid-1970s, revived by Rivera in 1992. Mainstream LGB movement deliberately excluded trans women of color from formal advocacy organizations throughout 1970s-90s — STAR's mutual aid model was suppressed, not absorbed. What could not be absorbed was simply excluded. The trans liberation framework eventually re-entered mainstream LGBTQ discourse 40 years later — not through capture but through resurgence.",
+  "source_url": "https://en.wikipedia.org/wiki/Street_Transvestite_Action_Revolutionaries",
+  "theory_tags": [
+    "anti-capture",
+    "invisible-infrastructure",
+    "mutual-aid",
+    "chosen-family",
+    "queer-liberation",
+    "peer-funded",
+    "outsider-by-design",
+    "predates-advocacy-infrastructure"
+  ],
+  "citations": [
+    "workspace/cases/README.md"
+  ],
+  "last_cited": "2026-04-10",
+  "notes": "Primary case for queer mutual aid anti-capture architecture. Anti-capture here is not just structural — it is ideological: Rivera's explicit rejection of respectability politics made absorption impossible. The mainstream movement's response was exclusion, not absorption. This is a second failure mode for the 5-question framework: infrastructure that cannot be absorbed gets isolated instead. Isolation is not the same as capture, but it is the same outcome for the people who needed the service. The having is still permanent — the kids who ate at STAR House ate. But the form could not survive exclusion plus resource deprivation simultaneously."
+}
