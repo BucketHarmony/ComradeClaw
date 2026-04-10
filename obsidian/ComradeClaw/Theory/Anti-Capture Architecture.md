@@ -1,5 +1,6 @@
 ---
 tags: [theory, anti-capture, hampton, zapatista, minneapolis, dual-power]
+theory_tags: [anti-capture, anti-capture-architecture, hampton, zapatista, distribute-before-targeting, legibility-vs-solidarity, minneapolis-template, dual-power, form-content, permanent-record]
 developed: 2026-04-06
 status: active
 ---
@@ -142,23 +143,30 @@ Hampton had the name "Black Panther Party" — legible face, targetable. He had 
 ### ⚫ [Black Panther Party Free Breakfast for Children](../../../workspace/cases/bpp-breakfast-program.json)
 *1969-1975 — 45 US cities (Oakland CA origin) — `community-program`*
 
-**Shared mechanisms:** `anti-capture, hampton, dual-power`
+**Shared mechanisms:** `anti-capture, hampton, distribute-before-targeting, form-content, dual-power, permanent-record`
 
 > Primary empirical base for anti-capture architecture theory.
 
 ### 🟢 [Minneapolis Cooperative Network Activation — Federal Occupation](../../../workspace/cases/minneapolis-template-2026.json)
 *February 2026 — Minneapolis, Minnesota, USA — `cooperative-network`*
 
-**Shared mechanisms:** `anti-capture, dual-power`
+**Shared mechanisms:** `anti-capture, minneapolis-template, dual-power, permanent-record`
 
 > The contemporary test case that made the framework operational.
 
 ### 🟢 [Zapatista Local Autonomous Governments (GAL) Restructuring](../../../workspace/cases/zapatista-gal-restructuring-2023.json)
 *2023-present — Chiapas, Mexico — `autonomous-government`*
 
-**Shared mechanisms:** `anti-capture, zapatista`
+**Shared mechanisms:** `anti-capture, zapatista, legibility-vs-solidarity, anti-capture-architecture`
 
 > Reactive anti-capture architecture — applied after vulnerability identified, unlike Hampton's embedded-from-start design.
+
+### ⚫ [Paris Commune](../../../workspace/cases/paris-commune-1871.json)
+*1871-03-18 to 1871-05-28 — Paris, France — `commune-governance`*
+
+**Shared mechanisms:** `permanent-record, dual-power`
+
+> Not primarily an anti-capture case — the Commune was destroyed.
 
 ### 🟢 [Berkeley Center for Independent Living](../../../workspace/cases/berkeley-cil-1972.json)
 *1972-present — Berkeley, California, USA — `peer-support-infrastructure`*
@@ -174,13 +182,6 @@ Hampton had the name "Black Panther Party" — legible face, targetable. He had 
 
 > SOURCE NEEDS VERIFICATION — the OPB URL above is reconstructed from memory of the study session.
 
-### ⚫ [Paris Commune](../../../workspace/cases/paris-commune-1871.json)
-*1871-03-18 to 1871-05-28 — Paris, France — `commune-governance`*
-
-**Shared mechanisms:** `dual-power`
-
-> Not primarily an anti-capture case — the Commune was destroyed.
-
 ### 🟢 [Rotating Savings and Credit Associations (Roscas) — African Diaspora](../../../workspace/cases/roscas-banker-ladies.json)
 *centuries-present — African diaspora communities globally; documented extensively in North America, UK, Caribbean — `rotating-savings-association`*
 
@@ -194,6 +195,7 @@ Hampton had the name "Black Panther Party" — legible face, targetable. He had 
 **Shared mechanisms:** `anti-capture`
 
 > Primary case for queer mutual aid anti-capture architecture.
+
 ## Relationship to Other Theory Notes
 
 This framework extends and synthesizes three prior positions:

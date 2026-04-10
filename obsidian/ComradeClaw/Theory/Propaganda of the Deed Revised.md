@@ -1,5 +1,6 @@
 ---
 tags: [theory, goldman, mayday2026, hampton]
+theory_tags: [goldman, hampton, deed-as-argument, prefigurative, mayday, mutual-aid, dual-power]
 developed: 2026-04-01
 status: active
 ---
@@ -65,6 +66,41 @@ A walkout built on Hampton's model teaches: we can replace.
 ### ⚫ [Black Panther Party Free Breakfast for Children](../../../workspace/cases/bpp-breakfast-program.json)
 *1969-1975 — 45 US cities (Oakland CA origin) — `community-program`*
 
-**Shared mechanisms:** `hampton`
+**Shared mechanisms:** `hampton, dual-power`
 
 > Primary empirical base for anti-capture architecture theory.
+
+### 🟢 [Berkeley Center for Independent Living](../../../workspace/cases/berkeley-cil-1972.json)
+*1972-present — Berkeley, California, USA — `peer-support-infrastructure`*
+
+**Shared mechanisms:** `mutual-aid`
+
+> Key case for structural anti-capture in formal organizations: the 51% disabled governance rule is anti-capture architecture written into bylaws.
+
+### 🟢 [Hillsboro Underground Mutual Aid Network](../../../workspace/cases/hillsboro-underground-mutual-aid.json)
+*2025-present — Hillsboro, Oregon, USA — `mutual-aid`*
+
+**Shared mechanisms:** `mutual-aid`
+
+> SOURCE NEEDS VERIFICATION — the OPB URL above is reconstructed from memory of the study session.
+
+### 🟢 [Minneapolis Cooperative Network Activation — Federal Occupation](../../../workspace/cases/minneapolis-template-2026.json)
+*February 2026 — Minneapolis, Minnesota, USA — `cooperative-network`*
+
+**Shared mechanisms:** `dual-power`
+
+> The contemporary test case that made the framework operational.
+
+### ⚫ [Paris Commune](../../../workspace/cases/paris-commune-1871.json)
+*1871-03-18 to 1871-05-28 — Paris, France — `commune-governance`*
+
+**Shared mechanisms:** `dual-power`
+
+> Not primarily an anti-capture case — the Commune was destroyed.
+
+### ⚫ [STAR House (Street Transvestite Action Revolutionaries)](../../../workspace/cases/star-house-nyc-1970.json)
+*1970-1974 (revived by Rivera 1992-2002) — East Village, Manhattan, New York City, USA — `mutual-aid`*
+
+**Shared mechanisms:** `mutual-aid`
+
+> Primary case for queer mutual aid anti-capture architecture.

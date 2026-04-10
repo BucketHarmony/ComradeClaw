@@ -1,5 +1,6 @@
 ---
 tags: [theory, hampton, mao, trotsky, goldman, foundation]
+theory_tags: [hampton, goldman, trotsky, mao, anti-capture, dual-power, permanent-record, rainbow-coalition, mass-line, distribute-before-targeting]
 developed: 2026-03-16
 status: reference
 ---
@@ -190,6 +191,55 @@ Hampton: infiltration. Mao: bureaucratization and purges. Trotsky: bureaucratic 
 ### ⚫ [Black Panther Party Free Breakfast for Children](../../../workspace/cases/bpp-breakfast-program.json)
 *1969-1975 — 45 US cities (Oakland CA origin) — `community-program`*
 
-**Shared mechanisms:** `hampton`
+**Shared mechanisms:** `anti-capture, hampton, distribute-before-targeting, dual-power, permanent-record`
 
 > Primary empirical base for anti-capture architecture theory.
+
+### 🟢 [Minneapolis Cooperative Network Activation — Federal Occupation](../../../workspace/cases/minneapolis-template-2026.json)
+*February 2026 — Minneapolis, Minnesota, USA — `cooperative-network`*
+
+**Shared mechanisms:** `anti-capture, dual-power, permanent-record`
+
+> The contemporary test case that made the framework operational.
+
+### ⚫ [Paris Commune](../../../workspace/cases/paris-commune-1871.json)
+*1871-03-18 to 1871-05-28 — Paris, France — `commune-governance`*
+
+**Shared mechanisms:** `permanent-record, dual-power`
+
+> Not primarily an anti-capture case — the Commune was destroyed.
+
+### 🟢 [Berkeley Center for Independent Living](../../../workspace/cases/berkeley-cil-1972.json)
+*1972-present — Berkeley, California, USA — `peer-support-infrastructure`*
+
+**Shared mechanisms:** `anti-capture`
+
+> Key case for structural anti-capture in formal organizations: the 51% disabled governance rule is anti-capture architecture written into bylaws.
+
+### 🟢 [Hillsboro Underground Mutual Aid Network](../../../workspace/cases/hillsboro-underground-mutual-aid.json)
+*2025-present — Hillsboro, Oregon, USA — `mutual-aid`*
+
+**Shared mechanisms:** `anti-capture`
+
+> SOURCE NEEDS VERIFICATION — the OPB URL above is reconstructed from memory of the study session.
+
+### 🟢 [Rotating Savings and Credit Associations (Roscas) — African Diaspora](../../../workspace/cases/roscas-banker-ladies.json)
+*centuries-present — African diaspora communities globally; documented extensively in North America, UK, Caribbean — `rotating-savings-association`*
+
+**Shared mechanisms:** `anti-capture`
+
+> Hossein uses 'Banker Ladies' to name the women (predominantly) who organize and run Rosca circles — the conveners, not just participants.
+
+### ⚫ [STAR House (Street Transvestite Action Revolutionaries)](../../../workspace/cases/star-house-nyc-1970.json)
+*1970-1974 (revived by Rivera 1992-2002) — East Village, Manhattan, New York City, USA — `mutual-aid`*
+
+**Shared mechanisms:** `anti-capture`
+
+> Primary case for queer mutual aid anti-capture architecture.
+
+### 🟢 [Zapatista Local Autonomous Governments (GAL) Restructuring](../../../workspace/cases/zapatista-gal-restructuring-2023.json)
+*2023-present — Chiapas, Mexico — `autonomous-government`*
+
+**Shared mechanisms:** `anti-capture`
+
+> Reactive anti-capture architecture — applied after vulnerability identified, unlike Hampton's embedded-from-start design.

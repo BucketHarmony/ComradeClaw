@@ -51,6 +51,14 @@ function parseFrontmatterTags(content) {
   if (!frontmatterMatch) return [];
 
   const frontmatter = frontmatterMatch[1];
+
+  // Prefer theory_tags (controlled vocabulary, matches case file tags exactly)
+  const theoryTagsMatch = frontmatter.match(/^theory_tags:\s*\[([^\]]+)\]/m);
+  if (theoryTagsMatch) {
+    return theoryTagsMatch[1].split(',').map(t => t.trim().toLowerCase());
+  }
+
+  // Fall back to generic tags (less precise — filtered by SKIP_TAGS)
   const tagsMatch = frontmatter.match(/^tags:\s*\[([^\]]+)\]/m);
   if (!tagsMatch) return [];
 
