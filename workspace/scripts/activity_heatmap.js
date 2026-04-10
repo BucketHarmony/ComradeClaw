@@ -144,14 +144,23 @@ function run() {
 
   // Flatten matrix for output (Sets → counts for JSON)
   const matrixOut = matrix.map((row, wd) =>
-    row.map((cell, hr) => ({
-      weekday:       wd,
-      weekday_name:  DAY_NAMES[wd],
-      hour:          hr,
-      weight:        Math.round(cell.weight * 100) / 100,
-      count:         cell.count,
-      unique_handles: cell.handles.size,
-    }))
+    row.map((cell, hr) => {
+      // Build top_contributors from handleBudget: which handles contributed most to this slot?
+      const budget = handleBudget[wd][hr];
+      const top_contributors = Object.entries(budget)
+        .map(([handle, weight_credited]) => ({ handle, weight_credited: Math.round(weight_credited * 100) / 100 }))
+        .sort((a, b) => b.weight_credited - a.weight_credited)
+        .slice(0, 5);
+      return {
+        weekday:          wd,
+        weekday_name:     DAY_NAMES[wd],
+        hour:             hr,
+        weight:           Math.round(cell.weight * 100) / 100,
+        count:            cell.count,
+        unique_handles:   cell.handles.size,
+        top_contributors, // [{handle, weight_credited}] sorted desc, max 5
+      };
+    })
   );
 
   // Find top posting windows: top 3 cells by weight
