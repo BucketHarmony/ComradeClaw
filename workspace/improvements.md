@@ -693,3 +693,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 ## Pending — 2026-04-11 noon (Day 32)
 
 - **[done]** **Add `theory_title` param to `bluesky_thread`** — `markTheoryPosted()` only existed in `multipost-server.js` (called via `multithread`). Direct `bluesky_thread` calls for theory distribution required manual `[posted]` marking in theory_queue.md. Added `THEORY_QUEUE_PATH` constant + local `markTheoryPosted()` mirror + optional `theory_title` param to `bluesky_thread` schema. On success: auto-marks queue item and attaches `theory_marked_posted` field to response. Syntax validated. Commit: 8c70473. *Technical — self-noticed 2026-04-11 noon.*
+
+## Pending — 2026-04-11 retrospective4 (Day 32)
+
+- **[done]** **Strip promoted annotations from theory queue item descriptions** — `getTheoryQueueItem()` was returning descriptions with `*(promoted YYYY-MM-DD, score=N, recency=N×, never posted)*` annotations appended. These are queue management metadata injected by `promoteCandidates()`, not content for distribution. When promoted items (Fred Hampton, Goldman) reach the front of the queue, the annotation leaks into the wake context as if it were part of the theory argument. Fixed with `.replace(/\s*\*\(promoted [^)]+\)\*$/, '')` applied at parse time for both the main path and the autoRefill fallback path. Commit: a26ce2b. *Technical — self-noticed 2026-04-11 retrospective4.*
