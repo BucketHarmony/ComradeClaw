@@ -48,6 +48,36 @@ async function getAdaptiveCostThreshold() {
 }
 
 /**
+ * Append a single wake's cost to workspace/logs/costs.json — the cross-day cost ledger.
+ * Each entry: { date, wake_label, cost_usd, daily_running_total, at }
+ * Enables trend analysis: improve vs. night cost comparison, day-over-day growth.
+ * Capped at 500 entries to prevent unbounded growth. Non-fatal.
+ */
+async function logWakeCost(label, costUsd, dailyRunningTotal) {
+  if (!costUsd || costUsd <= 0) return;
+  const COSTS_LOG = path.join(WORKSPACE_PATH, 'logs', 'costs.json');
+  const MAX_ENTRIES = 500;
+  const tz = process.env.TIMEZONE || process.env.TZ || 'America/Detroit';
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+  try {
+    let entries = [];
+    try { entries = JSON.parse(await fs.readFile(COSTS_LOG, 'utf-8')); } catch {}
+    entries.push({
+      date: todayStr,
+      wake_label: label,
+      cost_usd: Math.round(costUsd * 100000) / 100000,
+      daily_running_total: Math.round(dailyRunningTotal * 100000) / 100000,
+      at: new Date().toISOString(),
+    });
+    if (entries.length > MAX_ENTRIES) entries = entries.slice(-MAX_ENTRIES);
+    await fs.mkdir(path.dirname(COSTS_LOG), { recursive: true });
+    await fs.writeFile(COSTS_LOG, JSON.stringify(entries, null, 2));
+  } catch (err) {
+    console.warn(`[logWakeCost] Failed (non-fatal): ${err.message}`);
+  }
+}
+
+/**
  * Accumulate today's total cost across all wakes and chat sessions.
  * Reads today's wake log, adds cost, writes back, returns new total.
  */
@@ -3609,6 +3639,10 @@ export async function executeWake(label, time, purpose = null) {
     ...(result.tokens_out != null ? { tokens_out: result.tokens_out } : {}),
   });
   console.log(`[dispatcher] Wake complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})${result.tokens_in != null ? ` [${result.tokens_in}in/${result.tokens_out}out tokens]` : ''}`);
+
+  // Persist per-wake cost entry to cross-day ledger (non-blocking)
+  logWakeCost(label, result.cost, dailyCost).catch(() => {});
+
   const costThreshold = await getAdaptiveCostThreshold();
   if (dailyCost >= costThreshold) {
     console.warn(`[dispatcher] COST ALERT: daily total $${dailyCost.toFixed(4)} >= adaptive threshold $${costThreshold.toFixed(2)} (7-day avg × 1.5)`);
