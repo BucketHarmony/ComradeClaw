@@ -1411,6 +1411,69 @@ async function getDormantCharactersAlert() {
 }
 
 /**
+ * Repeat engager alert — reads last 30 days of Bluesky engagement logs, groups by handle,
+ * surfaces accounts with ≥3 engagements not already present in Characters.md.
+ * These are people becoming real through repeated contact — the Characters promotion path
+ * is currently manual and ad hoc. This closes the gap.
+ * Returns a compact ⚠️ "Emerging comrade" notice, or '' if none qualify. Non-fatal.
+ */
+async function getRepeatEngagersAlert() {
+  try {
+    const ENG_DIR = path.join(WORKSPACE_PATH, 'logs', 'engagement');
+    const now = new Date();
+    const cutoff = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+    // Collect all Bluesky engagement entries from last 30 days
+    let entries = [];
+    try {
+      const files = await fs.readdir(ENG_DIR);
+      const bskyFiles = files.filter(f => /^\d{4}-\d{2}\.json$/.test(f));
+      for (const file of bskyFiles) {
+        try {
+          const raw = JSON.parse(await fs.readFile(path.join(ENG_DIR, file), 'utf-8'));
+          if (Array.isArray(raw)) entries = entries.concat(raw);
+        } catch { /* skip unreadable files */ }
+      }
+    } catch {
+      return ''; // engagement dir missing — not fatal
+    }
+
+    // Filter to last 30 days
+    entries = entries.filter(e => {
+      try { return new Date(e.timestamp) >= cutoff; } catch { return false; }
+    });
+
+    // Group by handle, count engagements
+    const counts = {};
+    for (const e of entries) {
+      if (!e.handle) continue;
+      counts[e.handle] = (counts[e.handle] || 0) + 1;
+    }
+
+    // Candidates: ≥3 engagements
+    const candidates = Object.entries(counts)
+      .filter(([, n]) => n >= 3)
+      .sort((a, b) => b[1] - a[1]);
+    if (candidates.length === 0) return '';
+
+    // Cross-reference Characters.md — skip handles already documented
+    let charContent = '';
+    try {
+      charContent = await fs.readFile(path.join(OBSIDIAN_PATH, 'Characters.md'), 'utf-8');
+    } catch { /* not fatal */ }
+
+    const emerging = candidates.filter(([handle]) => !charContent.includes(handle));
+    if (emerging.length === 0) return '';
+
+    const lines = emerging.slice(0, 5).map(([h, n]) => `${h} (${n} engagements)`);
+    return `⚠️ Emerging comrades (≥3 engagements, not in Characters.md): ${lines.join(', ')} — consider adding to Characters.md.`;
+  } catch (err) {
+    console.error(`[getRepeatEngagersAlert] Failed (non-fatal): ${err.message}`);
+    return '';
+  }
+}
+
+/**
  * Missed contacts alert — reads the most recent plan file that has a non-empty
  * `missed_contacts` array. Surfaces handles + excerpts so the next wake can
  * follow up on anyone who replied and got silence. Non-fatal. Returns '' if none.
@@ -3098,6 +3161,9 @@ export async function executeWake(label, time, purpose = null) {
   // Dormant Characters.md comrades — 4-8 day silence window, still recoverable
   const dormantCharactersAlert = await getDormantCharactersAlert();
 
+  // Repeat engagers — ≥3 engagements in last 30 days, not yet in Characters.md
+  const repeatEngagersAlert = await getRepeatEngagersAlert();
+
   // Missed contacts — replied in a previous wake but got no response; surface for follow-up
   const missedContactsAlert = await getMissedContactsAlert();
 
@@ -3437,6 +3503,7 @@ export async function executeWake(label, time, purpose = null) {
     replyFollowThroughContext ? `\n${replyFollowThroughContext}` : '',
     comradeReplyContext ? `\n${comradeReplyContext}` : '',
     dormantCharactersAlert ? `\n${dormantCharactersAlert}` : '',
+    repeatEngagersAlert ? `\n${repeatEngagersAlert}` : '',
     missedContactsAlert ? `\n${missedContactsAlert}` : '',
     mookOutlineAlert ? `\n${mookOutlineAlert}` : '',
     wakeQualityTrend ? `\n${wakeQualityTrend}` : '',
