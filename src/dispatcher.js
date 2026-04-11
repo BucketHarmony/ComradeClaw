@@ -3554,7 +3554,7 @@ export async function executeWake(label, time, purpose = null) {
       .slice(0, 3)
       .map(([name, chars]) => `${name} (${(Math.round(chars / 102.4) / 10).toFixed(1)}KB)`)
       .join(', ');
-    dynamicContext += `\n⚠️ Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg (${contextSizeBaseline.count} wakes, 7d) — largest blocks: ${top3}`;
+    dynamicContext.push(`\n⚠️ Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg (${contextSizeBaseline.count} wakes, 7d) — largest blocks: ${top3}`);
     console.warn(`[dispatcher] Context size elevated: ${contextKb}KB vs ${avgFmt}KB avg — top blocks: ${top3}`);
   }
 
