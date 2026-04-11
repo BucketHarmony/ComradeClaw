@@ -408,11 +408,15 @@ async function getWakeQualityTrend() {
     if (planFiles.length < 3) return ''; // Not enough history yet
 
     const scores = [];
+    const boldScores = []; // newest-first, parallel to planFiles order
     for (const file of planFiles) {
       try {
         const content = JSON.parse(await fs.readFile(path.join(PLANS_PATH, file), 'utf-8'));
         const score = parseQualityScore(content.quality_score);
         if (score !== null) scores.push(score);
+        // bold_score: 1=bold, 0=safe, null=not yet recorded
+        const bs = content.bold_score;
+        boldScores.push(typeof bs === 'number' ? bs : null);
       } catch { /* skip unreadable plan */ }
     }
 
@@ -429,7 +433,19 @@ async function getWakeQualityTrend() {
     const trend = delta > 0.5 ? 'improving' : delta < -0.5 ? 'declining' : 'stable';
     const arrow = trend === 'improving' ? '↑' : trend === 'declining' ? '↓' : '→';
 
-    return `Wake quality (${scores.length}-wake avg): ${avg.toFixed(1)}/12 (${pct}%) ${arrow} ${trend}`;
+    // Boldness streak: count how many consecutive wakes (newest-first) have bold_score=0
+    // Only count wakes where bold_score was actually recorded
+    let wakesSinceBold = 0;
+    for (const bs of boldScores) {
+      if (bs === null) continue; // not recorded — skip, don't count as safe
+      if (bs === 1) break;       // found a bold wake — streak ends
+      wakesSinceBold++;
+    }
+    const boldAlert = wakesSinceBold >= 3
+      ? ` ⚠️ ${wakesSinceBold} wakes since last bold action`
+      : '';
+
+    return `Wake quality (${scores.length}-wake avg): ${avg.toFixed(1)}/12 (${pct}%) ${arrow} ${trend}${boldAlert}`;
   } catch {
     return ''; // Non-fatal
   }
@@ -3367,7 +3383,7 @@ export async function executeWake(label, time, purpose = null) {
     `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : isRedditWake ? ', reddit' : isEssayWake ? ', essay' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
     `8. When done, write a plan file to workspace/plans/${today}_${planFileSuffix}.json with this format:`,
-    `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${today}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}],"missed_contacts":[]}`,
+    `   {"wake":"${label}","time":"${time}","day":${dayNumber},"date":"${today}","status":"complete","bold_check":"yes/no — <one sentence: was this wake bold or did it play it safe?>","bold_score":<0 or 1 — 0=played safe, 1=bold>,"theory_praxis":"<what theory touched the work today, or 'none'>","tasks":[{"id":1,"type":"<type>","status":"done","reason":"<why>","summary":"<what happened>"}],"missed_contacts":[]}`,
     `   Populate missed_contacts when read_replies or mastodon_read_notifications surfaces a reply that got no response this wake: [{"handle":"@foo.bsky.social","excerpt":"first 80 chars of their message"}]. Leave as [] if all replies were answered.`,
     studySessionInstructions,
     redditEngagementInstructions,
