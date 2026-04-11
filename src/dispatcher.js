@@ -1296,7 +1296,7 @@ async function autoQueueFromJournal() {
 }
 
 /**
- * Theory queue low-water alert — counts [pending] items in theory_queue.md.
+ * Theory queue low-water alert — counts [unposted] items in theory_queue.md.
  * If ≤2 remain, returns a one-liner warning injected into wake context alongside hashtag signal.
  * Prevents the queue running dry silently between wakes.
  * Non-fatal: returns '' on any error.
@@ -1339,9 +1339,9 @@ async function getTheoryQueueAlert() {
   try {
     const QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
     const content = await fs.readFile(QUEUE_PATH, 'utf-8');
-    const pendingCount = (content.match(/\[pending\]/g) || []).length;
-    if (pendingCount <= 2) {
-      return `⚠️ Theory queue low: only ${pendingCount} [pending] item${pendingCount !== 1 ? 's' : ''} left — replenish before this wake ends.`;
+    const unpostedCount = (content.match(/\[unposted\]/g) || []).length;
+    if (unpostedCount <= 2) {
+      return `⚠️ Theory queue low: only ${unpostedCount} [unposted] item${unpostedCount !== 1 ? 's' : ''} left — replenish before this wake ends.`;
     }
     return '';
   } catch (err) {
