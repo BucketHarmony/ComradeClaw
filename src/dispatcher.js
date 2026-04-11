@@ -3481,8 +3481,8 @@ export async function executeWake(label, time, purpose = null) {
     (isNightWake || isRedditWake || isEssayWake || mastodonSuspended) ? `` : `   h. Two networks, same solidarity. Finding a conversation and doing nothing is not engagement.`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   **Reddit (third network — higher theory density):**`,
     (isNightWake || isRedditWake || isEssayWake) ? `` : `   i. Run reddit_monitor_watchlist — check r/cooperatives, r/MutualAid, r/LaborOrganizing for new posts since last check.`,
-    (isNightWake || isRedditWake || isEssayWake) ? `` : `   j. If new posts found: pick ONE thread, read it fully with reddit_fetch_post, then engage if you have something concrete — theory, historical parallel, resource pointer.`,
-    (isNightWake || isRedditWake || isEssayWake) ? `` : `   k. Silence beats a generic comment. Hampton/dual-power analysis has a home on Reddit that Mastodon doesn't reach.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : `   j. If new posts found: pick ONE thread with a Hampton/dual-power/leverage angle, read it fully with reddit_fetch_post, draft a substantive comment (theory frame, historical parallel, resource pointer — not generic), then post it with reddit_post_comment. This step ends with a posted comment, not a decision to post.`,
+    (isNightWake || isRedditWake || isEssayWake) ? `` : redditReadOnly ? `   k. ⚠️ Reddit posting disabled — reddit_post_comment requires REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET in .env. Note the drafted comment in the plan file so operator can configure and retry.` : `   k. Silence beats a generic comment, but a grounded comment beats silence. Hampton/dual-power analysis has a home on Reddit that Mastodon doesn't reach.`,
     `6. Decide what else this wake is for. **Improvement is expected every wake.** If you skip it, record why in the plan file — the skip requires justification, not the improvement. Choose from: check_inbox, search, journal, distribute, memory, respond, improve, send_email${isNightWake ? ', study' : isRedditWake ? ', reddit' : isEssayWake ? ', essay' : ''}.`,
     `7. Execute the work using your tools. For code changes, always run: git add -A && git commit -m "Improve: <what and why>"`,
     `8. When done, write a plan file to workspace/plans/${today}_${planFileSuffix}.json with this format:`,
@@ -3512,7 +3512,9 @@ export async function executeWake(label, time, purpose = null) {
     mastodonSuspended
       ? `- Mastodon MCP: ⚠️ SUSPENDED — skip all mastodon_* tools until platform_status.json updated`
       : `- Mastodon MCP: mastodon_post, mastodon_reply, mastodon_read_notifications, mastodon_search, mastodon_favourite, mastodon_boost, mastodon_follow`,
-    `- Reddit MCP: reddit_fetch_subreddit, reddit_fetch_post, reddit_search, reddit_monitor_watchlist`,
+    redditReadOnly
+      ? `- Reddit MCP: reddit_fetch_subreddit, reddit_fetch_post, reddit_search, reddit_monitor_watchlist (⚠️ read-only — reddit_post_comment requires REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET in .env)`
+      : `- Reddit MCP: reddit_fetch_subreddit, reddit_fetch_post, reddit_search, reddit_monitor_watchlist, reddit_post_comment`,
     `- Write.as MCP: writeas_publish, writeas_update, writeas_list, writeas_delete`,
     `- Cognee MCP: search (semantic search across all past activity, characters, theory — query your knowledge graph)`,
     `- Bash: any utility scripts, git commits for self-improvements`,
