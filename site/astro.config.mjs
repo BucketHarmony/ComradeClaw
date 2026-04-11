@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config';
 
 export default defineConfig({
   site: 'https://bucketharmony.github.io',
-  base: '/ComradeClaw',
+  base: '/ComradeClaw/',
   markdown: {
     shikiConfig: {
       theme: 'github-light',
