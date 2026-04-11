@@ -2430,7 +2430,10 @@ export async function invokeClaude(prompt, options = {}) {
     args.push(prompt);
   }
 
-  console.log(`[dispatcher] Spawning: claude ${args.join(' ').substring(0, 100)}... (stdin: ${useStdin})`);
+  // Rough token estimate: ~4 chars/token for English text
+  const promptChars = prompt.length;
+  const estTokens = Math.round(promptChars / 4);
+  console.log(`[dispatcher] Spawning: claude ${args.join(' ').substring(0, 100)}... (stdin: ${useStdin}, prompt: ${promptChars} chars ~${estTokens.toLocaleString()} tokens)`);
 
   return new Promise((resolve, reject) => {
     let stdout = '';
@@ -2680,8 +2683,12 @@ export async function chat(userMessage) {
     timeoutMs: 10 * 60 * 1000,
   });
 
-  const dailyCost = await accumulateDailyCost(result.cost, 'chat', result.toolsUsed);
-  console.log(`[dispatcher] Response: ${result.text.length} chars, ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
+  const dailyCost = await accumulateDailyCost(result.cost, 'chat', result.toolsUsed, {
+    tokens_in: result.tokens_in,
+    tokens_out: result.tokens_out,
+  });
+  const tokenInfo = result.tokens_in != null ? ` in=${result.tokens_in.toLocaleString()} out=${result.tokens_out?.toLocaleString() ?? '?'}` : '';
+  console.log(`[dispatcher] Response: ${result.text.length} chars, ${result.toolsUsed.length} tool calls,${tokenInfo} $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
 
   // Persist this exchange for future sessions
   await appendChatHistory(userMessage, result.text).catch(err =>
@@ -3826,8 +3833,12 @@ export async function executeDreamWake() {
     timeoutMs: 15 * 60 * 1000,
   });
 
-  const dailyCost = await accumulateDailyCost(result.cost, 'dream', result.toolsUsed);
-  console.log(`[dispatcher] Dream complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})`);
+  const dailyCost = await accumulateDailyCost(result.cost, 'dream', result.toolsUsed, {
+    tokens_in: result.tokens_in,
+    tokens_out: result.tokens_out,
+  });
+  const dreamTokenInfo = result.tokens_in != null ? ` [${result.tokens_in.toLocaleString()}in/${result.tokens_out?.toLocaleString() ?? '?'}out tokens]` : '';
+  console.log(`[dispatcher] Dream complete: ${result.toolsUsed.length} tool calls, $${result.cost.toFixed(4)} (daily: $${dailyCost.toFixed(4)})${dreamTokenInfo}`);
 
   const writeTargets = result.writeTargets || [];
   const memoryFilesWritten = writeTargets.filter(p => p.includes('.claude'));
