@@ -652,9 +652,9 @@ async function promoteCandidates(maxPromote = 2) {
     let updated = content;
     let promoted = 0;
     for (const item of toPromote) {
-      // Replace [candidate] with [pending] and append rationale note
+      // Replace [candidate] with [unposted] — the status getTheoryQueueItem() reads
       const replacement = item.fullMatch
-        .replace('**[candidate]**', '**[pending]**')
+        .replace('**[candidate]**', '**[unposted]**')
         + ` *(promoted ${today}, score=${item.score})*`;
       updated = updated.replace(item.fullMatch, replacement);
       promoted++;
@@ -663,7 +663,7 @@ async function promoteCandidates(maxPromote = 2) {
 
     if (promoted > 0) {
       await fs.writeFile(QUEUE_PATH, updated);
-      console.log(`[promoteCandidates] ${promoted} candidate${promoted !== 1 ? 's' : ''} promoted to [pending]`);
+      console.log(`[promoteCandidates] ${promoted} candidate${promoted !== 1 ? 's' : ''} promoted to [unposted]`);
     }
     return promoted;
   } catch (err) {

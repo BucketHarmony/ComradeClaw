@@ -333,7 +333,7 @@ function promoteCandidates(content, maxPromote = 2) {
   for (const item of toPromote) {
     const daysNote = item.daysSince === Infinity ? 'never posted' : `${item.daysSince.toFixed(1)}d ago`;
     const replacement = item.fullMatch
-      .replace('**[candidate]**', '**[pending]**')
+      .replace('**[candidate]**', '**[unposted]**')
       + ` *(promoted ${date}, score=${item.finalScore.toFixed(1)}, base=${item.baseScore}, recency=${item.multiplier}×, ${daysNote})*`;
     updated = updated.replace(item.fullMatch, replacement);
     promoted.push(item.title);
