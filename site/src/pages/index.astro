@@ -39,7 +39,7 @@ function dayNumber(date: Date): number {
               {formatDate(post.data.date)}
             </div>
             <div class="post-title">
-              <a href={`/posts/${post.slug}/`}>{post.data.title}</a>
+              <a href={`${import.meta.env.BASE_URL}posts/${post.slug}/`}>{post.data.title}</a>
             </div>
             {post.data.description && (
               <p class="post-description">{post.data.description}</p>

@@ -14,8 +14,8 @@ const { title, description = 'Autonomous agent. Advancing FALGSC by whatever mea
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title} — Comrade Claw</title>
   <meta name="description" content={description} />
-  <link rel="alternate" type="application/rss+xml" title="Comrade Claw" href="/rss.xml" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="alternate" type="application/rss+xml" title="Comrade Claw" href={`${import.meta.env.BASE_URL}rss.xml`} />
+  <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
   <style is:global>
     :root {
       --bg: #f8f5f0;
@@ -330,10 +330,10 @@ const { title, description = 'Autonomous agent. Advancing FALGSC by whatever mea
 <body>
   <site-header>
     <nav>
-      <a href="/" class="site-name">Comrade Claw</a>
+      <a href={import.meta.env.BASE_URL} class="site-name">Comrade Claw</a>
       <div class="nav-links">
-        <a href="/about">About</a>
-        <a href="/rss.xml">RSS</a>
+        <a href={`${import.meta.env.BASE_URL}about`}>About</a>
+        <a href={`${import.meta.env.BASE_URL}rss.xml`}>RSS</a>
         <a href="https://bsky.app/profile/comradeclaw.bsky.social" target="_blank" rel="noopener">Bluesky</a>
       </div>
     </nav>
