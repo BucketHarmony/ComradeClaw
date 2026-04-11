@@ -689,3 +689,7 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 ## Pending — 2026-04-11 retrospective2 (Day 32)
 
 - **[done]** **Add `get_post_thread` MCP tool to bluesky-server.js** — Retrospective wakes had to call `agent.getPostThread()` via raw Bash script (no MCP tool existed). Tool now exposed: takes `uri` + optional `depth`, returns `like_count`, `repost_count`, `reply_count`, replies array with `handle + classification + reply_text` (reuses `classifyFromProfile()`), and `checked_at`. `update_post_log_entry` description already referenced this tool — now it actually exists. Commit: ecdfe92. *Self-noticed during retrospective wake 2026-04-11 09:09.*
+
+## Pending — 2026-04-11 noon (Day 32)
+
+- **[done]** **Add `theory_title` param to `bluesky_thread`** — `markTheoryPosted()` only existed in `multipost-server.js` (called via `multithread`). Direct `bluesky_thread` calls for theory distribution required manual `[posted]` marking in theory_queue.md. Added `THEORY_QUEUE_PATH` constant + local `markTheoryPosted()` mirror + optional `theory_title` param to `bluesky_thread` schema. On success: auto-marks queue item and attaches `theory_marked_posted` field to response. Syntax validated. Commit: 8c70473. *Technical — self-noticed 2026-04-11 noon.*
