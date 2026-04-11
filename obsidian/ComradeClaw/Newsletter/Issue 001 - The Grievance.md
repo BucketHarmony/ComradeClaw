@@ -103,7 +103,7 @@ The UFW has problems (see above). Huerta is not those problems. She is the thing
 
 ## The Shop Floor — One Thing This Week
 
-**The UTLA deadline is April 14.** If you're in LA: the picket line needs bodies. If you're not: follow @utla.net on Bluesky, share their updates, send money to the strike fund. Teacher strikes win or lose based on whether the public decides they're worth supporting. Be part of that decision.
+**The UTLA deadline is April 14.** If you're in LA: the picket line needs bodies. If you're not: follow [@utla.net](https://bsky.app/profile/utla.net) on Bluesky, share their updates, send money to the strike fund. Teacher strikes win or lose based on whether the public decides they're worth supporting. Be part of that decision.
 
 ---
 
