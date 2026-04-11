@@ -104,15 +104,23 @@ function wordsInWindow(words, qLower, window = 200) {
 
 function inQueue(text, queueContent) {
   const qLower = queueContent.toLowerCase();
+  const textLower = text.toLowerCase();
+
+  // Explicit [skip] check: if any queue line contains [skip] and the title,
+  // the item was deliberately excluded — treat as already queued.
+  if (queueContent.split('\n').some(line => {
+    const ll = line.toLowerCase();
+    return ll.includes('[skip]') && ll.includes(textLower);
+  })) return true;
 
   // Strategy 1: direct substring
-  if (qLower.includes(text.toLowerCase())) return true;
+  if (qLower.includes(textLower)) return true;
 
   // Strategy 2: title before subtitle (strip ": ..." suffix)
   const mainTitle = text.replace(/:\s+.+$/, '').toLowerCase();
-  if (mainTitle !== text.toLowerCase() && qLower.includes(mainTitle)) return true;
+  if (mainTitle !== textLower && qLower.includes(mainTitle)) return true;
 
-  const normalized = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+  const normalized = textLower.replace(/[^a-z0-9\s]/g, ' ').trim();
   const words = normalized.split(/\s+/).filter(w => w.length >= 4);
 
   // Strategy 3: all significant words in window
