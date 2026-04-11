@@ -28,6 +28,7 @@ const ENGAGEMENT_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'engagement');
 const SYSTEM_TESTS_PATH = path.join(WORKSPACE_PATH, 'logs', 'system_tests');
 const CONTACTS_PATH = path.join(WORKSPACE_PATH, 'union', 'contacts.json');
 const SOLIDARITY_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'solidarity');
+const THEORY_QUEUE_PATH = path.join(WORKSPACE_PATH, 'theory_queue.md');
 const SEARCH_SEEN_PATH = path.join(WORKSPACE_PATH, 'logs', 'search_seen');
 const FOLLOWS_LOG_PATH = path.join(WORKSPACE_PATH, 'logs', 'follows');
 const SCHEDULED_WAKES_PATH = path.join(WORKSPACE_PATH, 'scheduled_wakes.json');
@@ -1241,15 +1242,38 @@ server.tool(
   }
 );
 
+// ─── Theory Queue Marker ──────────────────────────────────────────────────────
+// Marks a [pending]/[unposted] theory_queue.md line as [posted YYYY-MM-DD].
+// Mirrors the same function in multipost-server.js — kept local to avoid
+// cross-server imports. Both should stay in sync.
+
+async function markTheoryPosted(title) {
+  if (!title) return;
+  try {
+    const content = await fs.readFile(THEORY_QUEUE_PATH, 'utf-8');
+    const titlePrefix = title.slice(0, 40).toLowerCase();
+    const date = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Detroit' });
+    const updated = content.split('\n').map(line => {
+      if (!/\[(pending|unposted)\]/i.test(line)) return line;
+      if (line.toLowerCase().includes(titlePrefix)) {
+        return line.replace(/\[(pending|unposted)\]/i, `[posted ${date}]`);
+      }
+      return line;
+    }).join('\n');
+    if (updated !== content) await fs.writeFile(THEORY_QUEUE_PATH, updated, 'utf-8');
+  } catch { /* non-fatal */ }
+}
+
 // ─── Tool: bluesky_thread ─────────────────────────────────────────────────────
 
 server.tool(
   'bluesky_thread',
   'Post a connected thread of up to 10 posts. Each post chains to the previous. Use for long-form distribution, theory threads, or research findings that exceed 300 chars.',
   {
-    posts: z.array(z.string()).min(2).max(10).describe('Array of 2-10 post texts, each max 300 characters. Posted in order, chained as replies.')
+    posts: z.array(z.string()).min(2).max(10).describe('Array of 2-10 post texts, each max 300 characters. Posted in order, chained as replies.'),
+    theory_title: z.string().optional().describe('Title of the theory_queue.md item being distributed. When provided and the thread posts successfully, marks the item as [posted YYYY-MM-DD] in workspace/theory_queue.md.')
   },
-  async ({ posts }) => {
+  async ({ posts, theory_title }) => {
     const oversized = posts.map((t, i) => t.length > 300 ? i : -1).filter(i => i >= 0);
     if (oversized.length > 0) {
       return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: `Posts ${oversized.map(i => `#${i+1}`).join(', ')} exceed 300 char limit.` }) }] };
@@ -1295,8 +1319,10 @@ server.tool(
       await logPost({ uri: rootUri, cid: rootCid, posted_at: now.toISOString(), type: 'thread', thread_length: posts.length, char_count: posts.reduce((s, p) => s + p.length, 0), hashtags: [...new Set(posts.flatMap(p => detectHashtags(p)))], time_of_day: timeOfDay(hour), content_type: classifyContentType(posts[0]), text_preview: posts[0].substring(0, 100) });
       await logSharedPost('bluesky', posts[0]);
       scheduleRetrospectiveWake(rootUri, 'thread');
+      if (theory_title) await markTheoryPosted(theory_title);
       verifyFacets(agent, rootUri, posts[0]);
       const response = { status: 'success', threadLength: posts.length, rootUri, posts: results };
+      if (theory_title) response.theory_marked_posted = theory_title;
       if (dedupWarning) response.duplicate_warning = dedupWarning;
       return { content: [{ type: 'text', text: JSON.stringify(response) }] };
     } catch (err) {
