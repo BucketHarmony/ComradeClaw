@@ -950,7 +950,9 @@ async function getTheoryQueueItem() {
       if (line.includes('[unposted]')) {
         const match = line.match(/\*\*\[unposted\]\*\*\s+\*\*(.+?)\*\*\s+—\s+(.+)/);
         if (match) {
-          unpostedItems.push({ title: match[1], description: match[2] });
+          // Strip queue management annotations (promoted, score, recency) — metadata, not content
+          const desc = match[2].replace(/\s*\*\(promoted [^)]+\)\*$/, '').trim();
+          unpostedItems.push({ title: match[1], description: desc });
         }
       }
     }
@@ -963,7 +965,8 @@ async function getTheoryQueueItem() {
           if (line.includes('[unposted]')) {
             const m = line.match(/\*\*\[unposted\]\*\*\s+\*\*(.+?)\*\*\s+—\s+(.+)/);
             if (m) {
-              const newItem = { title: m[1], description: m[2], remaining: added, autoRefilled: true };
+              const desc = m[2].replace(/\s*\*\(promoted [^)]+\)\*$/, '').trim();
+              const newItem = { title: m[1], description: desc, remaining: added, autoRefilled: true };
               newItem.longForm = newItem.description.length > 1500;
               return newItem;
             }
