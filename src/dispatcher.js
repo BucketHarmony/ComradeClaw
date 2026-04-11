@@ -3335,10 +3335,35 @@ export async function executeWake(label, time, purpose = null) {
       console.error(`[dispatcher] saveCoolingSnapshot failed: ${e.message}`)
     );
 
+    // Read platform status to filter unreachable contacts
+    let suspendedPlatforms = new Set();
+    try {
+      const psData = JSON.parse(await fs.readFile(
+        path.join(WORKSPACE_PATH, 'platform_status.json'), 'utf-8'
+      ));
+      for (const [platform, info] of Object.entries(psData)) {
+        if (info.status === 'suspended') suspendedPlatforms.add(platform.toLowerCase());
+      }
+    } catch { /* platform_status.json missing — assume all active */ }
+
+    // Filter contacts by reachable platform. Contact platform defaults to 'bluesky'.
+    // Mastodon contacts have handles like 'handle@instance.domain' — also check by handle format.
+    const isReachable = (c) => {
+      const platform = (c.platform || 'bluesky').toLowerCase();
+      if (suspendedPlatforms.has(platform)) return false;
+      // Secondary check: Mastodon handles contain '@instance.domain'
+      if (suspendedPlatforms.has('mastodon') && /^[^@]+@[^@]+\.[^@]+$/.test(c.handle)) return false;
+      return true;
+    };
+
+    const reachableCooling = cooling.filter(isReachable);
+    const reachableCold = cold.filter(isReachable);
+    const reachableReengaged = reengaged.filter(isReachable);
+
     const parts = [];
 
-    if (reengaged.length > 0) {
-      const names = reengaged.map(c => c.handle).join(', ');
+    if (reachableReengaged.length > 0) {
+      const names = reachableReengaged.map(c => c.handle).join(', ');
       parts.push(
         `## Re-engaged Comrades — Call Them Out\n` +
         `These contacts were cooling (3-7d silent) but just came back: ${names}\n` +
@@ -3346,12 +3371,12 @@ export async function executeWake(label, time, purpose = null) {
       );
     }
 
-    if (cooling.length > 0) {
-      const names = cooling.map(c => `${c.handle} (${c.daysSince}d since last engagement)`).join(', ');
+    if (reachableCooling.length > 0) {
+      const names = reachableCooling.map(c => `${c.handle} (${c.daysSince}d since last engagement)`).join(', ');
       parts.push(`## Relationships to Maintain\nThese contacts engaged recently but haven't engaged in 3-7 days — worth keeping warm: ${names}`);
     }
-    if (cold.length > 0) {
-      const coldLines = cold.map(c => {
+    if (reachableCold.length > 0) {
+      const coldLines = reachableCold.map(c => {
         const action = buildRecoveryPrompt(c);
         return `  - ${c.handle} (${c.daysSince}d): ${action}`;
       }).join('\n');
