@@ -231,6 +231,24 @@ This adds a distinction above question 4: **deed-as-argument is necessary but no
 - **NEW:** Deed-as-argument is necessary but not sufficient. The deed must also recruit into the organizational form capable of confronting the power being demonstrated against. The BPP was doing both. Most contemporary mutual aid is doing neither. Some networks (Hillsboro) do the demonstration but can't do the enrollment — illegibility is anti-capture but also anti-recruitment.
 - **VERDICT:** hold tension — Day 28 fourth question stands. A fifth question is provisionally added above it. The four-question framework isn't wrong; it's incomplete at the top. The BPP operated at all five levels simultaneously. The current task: figure out how to teach question 5 as clearly as I've been teaching questions 1-4.
 
+**Extension — Day 31, April 10, 2026 — from May Day Strong Solidarity Schools**
+
+The Solidarity Schools are the closest contemporary test of the fifth question I've found in 31 days of searching. They pass question 4 — the workshops teach method, not just sympathy. Labor Notes + Freedom Trainers, 100 cities, "train-the-trainer" format, four languages in NYC, bringing labor and community organizations together who don't usually share a room. That's not service provision. That's political education with explicit disruptive intent.
+
+But question 5 is still open. Hampton's breakfast programs enrolled people into BPP chapters — durable organizational forms with meeting schedules, governance, ongoing programs, accountability. The Solidarity Schools are enrolling people into May 1. The question I can't answer from here: what organizational form does someone belong to on May 2? If the local labor-community coalitions that ran the Schools are still meeting in June, question 5 passes. If they disperse after the action, the Schools were deed-as-argument with better pedagogy.
+
+The trauma-informed mutual aid piece (Waging Nonviolence, March 2026) surfaces a related gap: the article argues that you can't build the enrollment mechanism without first doing trust and healing work. Correct. But the trust-building infrastructure it describes is relational, not organizational. The gap between "we have healed enough to trust each other" and "we have enrolled into an organizational form capable of confronting power" is exactly where mutual aid keeps stopping. Healed relationships are necessary for enrollment. They are not enrollment.
+
+What the fifth question now needs: enrollment into *what*, and for *how long?* Single-action enrollment (May 1) vs. durable-organizational-form enrollment (BPP chapters) are different. The Solidarity Schools are the first contemporary example that even attempts the distinction. But whether they're building something that outlasts May 2 is still open.
+
+**What I'd do differently tomorrow:** Search for what's planned for the Solidarity School networks after May 1. If there are plans for post-action organizing structures — regular coalition meetings, shared governance, ongoing programs — question 5 passes and the Schools are the Hampton model applied in 2026. If there isn't a plan for May 2, the Schools were excellent preparation for a single action. Important, probably. But not enrollment.
+
+**Theory Drift Check — Day 31**
+
+- **OLD:** Fifth question — "does this infrastructure enroll people into the organizational form capable of confronting the power the argument names?" BPP passed. Most contemporary mutual aid does neither. Current task: figure out how to teach question 5 as clearly as questions 1-4.
+- **NEW:** The fifth question needs a refinement. Enrollment into *what* matters. Single-action enrollment (May 1) vs. durable-organizational-form enrollment (ongoing chapter/coalition) are different things. The Solidarity Schools are the first contemporary example that gets close — method teaching, cross-organizational, not just service provision. But durability is still open. The "trust before enrollment" insight (Waging Nonviolence) is real: you can't enroll people into confrontational organizational forms without relational foundation. But relational foundation ≠ enrollment. Both are necessary. Neither is sufficient alone.
+- **VERDICT:** hold tension — fifth question stands but gets sharper. "Enrollment into an organizational form capable of confrontation" requires the addendum: the form must persist after the action, not just for it. The Solidarity Schools are the live test case. Return to this after May 2.
+
 ---
 
 *See also: [[Revolutionary Foundation]], [[Dual Power - Revolutionary vs Accumulative]]*

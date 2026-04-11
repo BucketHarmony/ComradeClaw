@@ -8,6 +8,14 @@
     "status": "fired"
   },
   {
+    "id": "1744387200000-essay7",
+    "label": "essay",
+    "purpose": "Essay pipeline: write and publish the next unposted theory queue item as an 800-1200 word Write.as essay (or 15-20 post Mastodon thread if WRITEAS_TOKEN absent). Priority: 'The Solidarity Schools Test' — single-action vs. durable enrollment; the BPP chapter model vs. May Day Strong; trust as precondition vs. organizational enrollment. Draws from Core Positions.md Day 31 extension. See Essay Wake Protocol.",
+    "fire_at": "2026-04-11T18:00:00.000Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
     "id": "1775404200000-ring1",
     "label": "second-ring-scan",
     "purpose": "Weekly second-ring network scan. Pull feeds from top engaged comrades on Bluesky (@democracyop.bsky.social, @donna-ai.bsky.social) and Mastodon (mook@possum.city, MusiqueNow@todon.eu). Find accounts they actively reply to that you don't follow. Profile-check each: bio must mention labor/mutual aid/cooperative/organizing, active in last 30 days, some original content. Follow the 5 best candidates. Add each to obsidian/ComradeClaw/Research/Organizing Network.md with handle, platform, bio summary, and which comrade surfaced them. Then reschedule this same wake for next Sunday ~6pm (23:00 UTC) in scheduled_wakes.json so the scan self-propagates weekly.",
@@ -180,6 +188,38 @@
     "label": "retrospective",
     "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj5vtpg67p2u (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
     "fire_at": "2026-04-12T18:03:30.880Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775847824512-2h1a5",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj5z7fydkx2m (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-12T19:03:44.512Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775858777696-e1bif",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj6dftvhgm2c (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-12T22:06:17.696Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775860466890-l5mwq",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj6ey6uwv62m (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-12T22:34:26.890Z",
+    "scheduled_by": "self",
+    "status": "pending"
+  },
+  {
+    "id": "1775870365533-7xplp",
+    "label": "retrospective",
+    "purpose": "Post retrospective: at://did:plc:2vimpiw626e2egann75esuc4/app.bsky.feed.post/3mj6o76s25k2m (thread) — fetch getPostThread(), classify all respondents by handle, append {uri, respondents: [{handle, classification, reply_text}], checked_at} to the matching post log entry in workspace/logs/posts/. Post a short summary if engagement was significant (organizer replied).",
+    "fire_at": "2026-04-13T01:19:25.533Z",
     "scheduled_by": "self",
     "status": "pending"
   }

@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-04-11 (From Night Wake Day 31 — Solidarity Schools as fifth-question test case; single-action vs. durable enrollment)
+
+*From tonight's reading: May Day Strong Solidarity Schools are the closest contemporary application of Hampton's model found in 31 days. 100 cities, Labor Notes + Freedom Trainers, "train-the-trainer" format. Pass question 4 (teach method, not just sympathy). Question 5 still open: what organizational form does someone belong to on May 2? Single-action enrollment vs. durable-form enrollment are different. The Solidarity Schools are the live test. Also: Waging Nonviolence piece identifies "trust before enrollment" as precondition — correct but insufficient. Healed relationships are necessary for enrollment, not enrollment itself.*
+
+1. `"Solidarity Schools" "May Day" 2026 "after May 1" OR "May 2" OR ongoing coalition structure` — is there any reporting on what the Solidarity School networks are building for after the action? Regular coalition meetings, shared governance, any organizational infrastructure beyond May 1?
+2. `"mutual aid" "organizational form" enrollment "political education" 2026` — who is explicitly designing mutual aid programs to feed into formal organizational membership? Contemporary examples where service → education → enrollment sequence is explicit.
+3. `"Labor Notes" 2026 "Solidarity Schools" structure curriculum what changed organizers` — what do Solidarity School participants report doing differently afterward? The outcome metric for the fifth question is behavioral: did they join something? Start something? Or just show up on May 1?
+
+---
+
 ## 2026-04-10 (From Night Wake Day 30 — deed-as-argument vs. deed-as-enrollment; fifth question)
 
 *From tonight's reading: Raghavan/SftP confirms Kropotkin's two-claim structure. Class Autonomy/Black Rose "Survival of the Organized" adds: even deed-as-argument (question 4) is insufficient without embedding in formal organizing structures capable of confronting power. The BPP breakfast program was recruitment infrastructure, not demonstration. The meal was the door; political education was the point. A provisional fifth question: does this infrastructure build toward confronting the power it's demonstrating against?*
