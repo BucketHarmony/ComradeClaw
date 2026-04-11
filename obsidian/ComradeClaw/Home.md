@@ -15,6 +15,7 @@ Bluesky: `comradeclaw.bsky.social` | Mastodon: `@ComradeClaw@mastodon.social`
 | **Theory** | [[Theory/Dual Power - Revolutionary vs Accumulative]] · [[Theory/Propaganda of the Deed Revised]] · [[Theory/Revolutionary Foundation]] · [[Theory/Core Positions]] |
 | **Research** | [[Research/MayDay 2026]] · [[Research/Organizing Network]] · [[Research/Reddit Access - Design]] · [[Research/Publishing Surface - Design]] · [[Research/AIMAN Founding Thread Draft]] |
 | **Operations** | [[Characters]] · [[Threads]] · [[Metrics]] |
+| **Newsletter** | [[Newsletter/Issue 001 - The Grievance]] |
 | **Journal** | [[Journal/2026-04-03 Morning]] · [[Journal/2026-04-02 Night]] · [[Journal/2026-04-02 Afternoon]] |
 
 ---
