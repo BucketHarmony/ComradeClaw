@@ -82,6 +82,20 @@ function extractExcerptFromLines(lines) {
     if (sentEnd > 15) return t.substring(0, sentEnd + 1);
     if (t.length > 40) return t.length > 120 ? t.substring(0, 120) + '...' : t;
   }
+  // Fallback: bullet-only sections — collect first 2 bullets, join as prose summary
+  const bullets = [];
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t.startsWith('-')) continue;
+    const stripped = t.replace(/^-\s+/, '').replace(/\*\*/g, '').replace(/\[.*?\]/g, '').trim();
+    if (stripped.length < 10) continue;
+    bullets.push(stripped);
+    if (bullets.length >= 2) break;
+  }
+  if (bullets.length > 0) {
+    const joined = bullets.join('; ');
+    return joined.length > 140 ? joined.substring(0, 140) + '...' : joined;
+  }
   return null;
 }
 

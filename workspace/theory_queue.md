@@ -70,7 +70,7 @@ item will appear next wake. Mark posted only when you actually post the thread.
 <!-- auto-refilled 2026-04-07 — 6 items from Theory vault -->
 <!-- auto-populated 2026-04-08 -->
 - **[posted 2026-04-09]** **What's Distinct About This Mechanism** — Institutional contradiction leverage is not dual power and not a strike fund — it's a reading mechanism, a way of mapping where institutional interests diverge from state enforcement before the conflict begins.
-- **[unposted]** **What Changes in Practice** — For organizers: before calculating what resources you have, calculate what your opponent cannot afford to lose.
+- **[posted 2026-04-11]** **What Changes in Practice** — For organizers: before calculating what resources you have, calculate what your opponent cannot afford to lose.
 - **[skip]** **The Limitation** — This mechanism only works where the institutional contradiction is real and legible; when institution and state share the same interest, the gap closes before workers can use it. *(duplicate of [unposted] entry below — skip to avoid double-posting)*
 - **[unposted]** **The Basics: Revolutionary Foundation for Cooperators** — Build alternative institutions now that meet real needs. Effective organizing attracts violent repression. Democratic federated structures, not vanguards. These are the four lessons — from Hampton, Mao, Trotsky, Goldman — that cooperators keep learning the hard way.
 
@@ -105,3 +105,8 @@ item will appear next wake. Mark posted only when you actually post the thread.
 - **[unposted]** **Trust Before Enrollment Is Real but Insufficient** — You cannot build the enrollment mechanism without relational foundation. That's correct. But healed relationships are necessary for enrollment, not enrollment itself. The gap between "we trust each other enough to show up" and "we belong to an organizational form capable of confronting power" is exactly where mutual aid keeps stopping. Trust is the precondition. Enrollment is the organizational act. Conflating the two is how movements build deep relationships and no durable structure.
 
 ## Auto-Extracted Candidates — 2026-04-10 (dropped as redundant — fifth question already in queue)
+<!-- auto-populated 2026-04-11 -->
+- **[unposted]** **Fred Hampton (1948–1969)** — Free Breakfast for Children — 10,000+ kids fed by end of first year (1969); Rainbow Coalition: Black Panthers + Puerto Rican Young Lords + p... *(promoted 2026-04-11, score=6.0, base=4, recency=1.5×, never posted)*
+- **[candidate]** **Mao Zedong (1893–1976)** — Take scattered ideas from masses → study and systematize → bring back to masses → test in action → repeat; Not orders from experts — collect...
+- **[candidate]** **Leon Trotsky (1879–1940)** — Can't stop at bourgeois democracy and wait for socialism later; Working class must pursue its own interests without compromise
+- **[unposted]** **Emma Goldman (1869–1940)** — Not charity — voluntary cooperation for survival without hierarchy; Communities organize food, housing, care directly *(promoted 2026-04-11, score=6.0, base=4, recency=1.5×, never posted)*
