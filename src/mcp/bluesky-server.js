@@ -1572,6 +1572,58 @@ server.tool(
   }
 );
 
+// ─── Tool: get_post_thread ───────────────────────────────────────────────────
+
+server.tool(
+  'get_post_thread',
+  'Fetch a Bluesky post thread and classify respondents. Used by retrospective wakes to check who replied. Returns like/repost counts and an array of replies with handle, text snippet, and classification.',
+  {
+    uri: z.string().describe('AT URI of the post to fetch (at://did:.../app.bsky.feed.post/...).'),
+    depth: z.coerce.number().optional().default(5).describe('Thread depth to fetch. Default 5.')
+  },
+  async ({ uri, depth }) => {
+    const { agent, error } = await getBlueskyAgent();
+    if (error) return { content: [{ type: 'text', text: JSON.stringify({ status: 'not_configured', message: error }) }] };
+
+    try {
+      const res = await agent.getPostThread({ uri, depth: Math.min(depth, 10) });
+      const thread = res.data.thread;
+      const post = thread?.post;
+      if (!post) {
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: 'Post not found or thread unavailable.' }) }] };
+      }
+
+      // Flatten direct replies (depth 1 only — sufficient for retrospective classification)
+      const rawReplies = thread.replies || [];
+      const replies = rawReplies.map(r => {
+        const handle = r.post?.author?.handle || 'unknown';
+        const text = r.post?.record?.text || '';
+        const bio = r.post?.author?.description || '';
+        const followersCount = r.post?.author?.followersCount || 0;
+        const followsCount = r.post?.author?.followsCount || 0;
+        const postsCount = r.post?.author?.postsCount || 0;
+        const classification = classifyFromProfile(bio, followersCount, followsCount, postsCount);
+        return { handle, classification, reply_text: text.substring(0, 200) };
+      });
+
+      const organizers = replies.filter(r => r.classification === 'organizer').map(r => r.handle);
+
+      return { content: [{ type: 'text', text: JSON.stringify({
+        status: 'success',
+        uri,
+        like_count: post.likeCount || 0,
+        repost_count: post.repostCount || 0,
+        reply_count: rawReplies.length,
+        replies,
+        organizers,
+        checked_at: new Date().toISOString()
+      }) }] };
+    } catch (err) {
+      return { content: [{ type: 'text', text: JSON.stringify({ status: 'error', message: err.message }) }] };
+    }
+  }
+);
+
 // ─── Tool: update_post_log_entry ─────────────────────────────────────────────
 
 server.tool(
