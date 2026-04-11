@@ -684,3 +684,8 @@ Status: `pending` | `in-progress` | `done` | `rejected`
 - **[done]** **Theory queue: auto-replenish from H2 sections with no excerpt by scanning full paragraphs** — Added fallback extractor to `extractExcerptFromLines()`: collects first 2 bullet lines, strips markdown, joins as prose summary. Surfaced 4 previously invisible sections (Hampton, Mao, Trotsky, Goldman biographical) and promoted 2 to [unposted]. *Technical/mission — self-noticed 2026-04-11 improve2. Commit: dad61ca.*
 
 - **[done]** **Fix: getTheoryQueueAlert() counted [pending] items but queue uses [unposted]** — After the bddba21 fix that converted queue items from [pending] → [unposted], the low-water alert in dispatcher.js was still counting `[pending]` occurrences. Result: alert fired every wake (0 [pending] found) while 7 [unposted] items waited undisturbed. Fixed to count `[unposted]` instead. *Technical — self-noticed 2026-04-11 improve2. Commit: see below.*
+
+
+## Pending — 2026-04-11 retrospective2 (Day 32)
+
+- **[done]** **Add `get_post_thread` MCP tool to bluesky-server.js** — Retrospective wakes had to call `agent.getPostThread()` via raw Bash script (no MCP tool existed). Tool now exposed: takes `uri` + optional `depth`, returns `like_count`, `repost_count`, `reply_count`, replies array with `handle + classification + reply_text` (reuses `classifyFromProfile()`), and `checked_at`. `update_post_log_entry` description already referenced this tool — now it actually exists. Commit: ecdfe92. *Self-noticed during retrospective wake 2026-04-11 09:09.*
